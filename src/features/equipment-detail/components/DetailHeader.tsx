@@ -3,7 +3,13 @@ import { ChevronLeft, Layers } from 'lucide-react'
 import { usePlayback } from '@/features/playback'
 import { monitorView } from '@/shared/stores/monitorView'
 
-export default function DetailHeader({ robotName }: { robotName: string }) {
+interface DetailHeaderProps {
+  title?: string
+  trail?: string
+  name: string
+}
+
+export default function DetailHeader({ title = '장비 상세', trail = '메인 관제 / 팔레트 적재', name }: DetailHeaderProps) {
   const { playing } = usePlayback()
 
   return (
@@ -17,9 +23,11 @@ export default function DetailHeader({ robotName }: { robotName: string }) {
         <ChevronLeft size={18} />
       </button>
 
-      <h1 className="text-h1 text-text-primary">장비 상세</h1>
+      <h1 className="text-h1 text-text-primary">{title}</h1>
 
-      <p className="text-caption text-text-tertiary">메인 관제 / 팔레트 적재 / {robotName}</p>
+      <p className="text-caption text-text-tertiary">
+        {trail} / <span className="font-semibold text-text-primary">{name}</span>
+      </p>
 
       <span className="ml-auto flex h-8 items-center gap-1 rounded border border-border-default bg-bg-surface px-2 text-caption text-text-primary">
         <Layers size={14} />

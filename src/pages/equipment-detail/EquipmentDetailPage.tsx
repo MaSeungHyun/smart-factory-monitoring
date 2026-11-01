@@ -12,7 +12,7 @@ export default function EquipmentDetailPage() {
       header={<Header />}
       main={
         <>
-          <DetailHeader robotName={detail?.name ?? '로봇'} />
+          <DetailHeader name={detail?.name ?? '로봇'} />
 
           <DetailScene />
         </>

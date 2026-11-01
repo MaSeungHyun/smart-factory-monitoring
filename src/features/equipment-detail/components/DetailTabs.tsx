@@ -6,6 +6,7 @@ interface DetailTabsProps {
   tab: DetailTabId
   alarmCount: number
   onChange: (tab: DetailTabId) => void
+  logLabel?: string
 }
 
 const TABS: { id: DetailTabId; label: string }[] = [
@@ -14,7 +15,7 @@ const TABS: { id: DetailTabId; label: string }[] = [
   { id: 'alarm', label: '알림' },
 ]
 
-export default function DetailTabs({ tab, alarmCount, onChange }: DetailTabsProps) {
+export default function DetailTabs({ tab, alarmCount, onChange, logLabel }: DetailTabsProps) {
   return (
     <div className="flex h-11 rounded border border-border-default bg-bg-surface-2 p-1">
       {TABS.map((item) => (
@@ -27,7 +28,7 @@ export default function DetailTabs({ tab, alarmCount, onChange }: DetailTabsProp
             tab === item.id ? 'bg-primary-fill font-semibold text-text-primary' : 'text-text-secondary',
           )}
         >
-          {item.label}
+          {item.id === 'log' && logLabel ? logLabel : item.label}
 
           {item.id === 'alarm' && alarmCount > 0 && (
             <span className="rounded bg-status-error/16 px-1 text-caption text-status-error tabular-nums">{alarmCount}</span>

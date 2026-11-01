@@ -3,7 +3,7 @@ import { Play, Square } from 'lucide-react'
 import { playbackStore, usePlayback } from '@/features/playback'
 
 /** 시작 / 정지 — 지금은 재생 제어에 연결 (실장비 제어 API 연결 전) */
-export default function RunButtons() {
+export default function RunButtons({ stopLabel = '정지' }: { stopLabel?: string }) {
   const { playing } = usePlayback()
 
   return (
@@ -25,7 +25,7 @@ export default function RunButtons() {
         className="flex h-11 items-center justify-center gap-1 rounded border border-status-error bg-status-error/16 text-label font-semibold text-status-error disabled:opacity-50"
       >
         <Square size={14} />
-        정지
+        {stopLabel}
       </button>
     </div>
   )

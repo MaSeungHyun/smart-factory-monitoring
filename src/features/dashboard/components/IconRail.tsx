@@ -7,7 +7,7 @@ import { monitorView, type MonitorView } from '@/shared/stores/monitorView'
 const NAV_ITEMS: { id: string; icon: typeof Box; view?: MonitorView }[] = [
   { id: 'dashboard', icon: LayoutGrid, view: 'main' },
   { id: 'equipment', icon: Cpu, view: 'robot' },
-  { id: 'scan', icon: ScanLine },
+  { id: 'scan', icon: ScanLine, view: 'scan' },
   { id: 'storage', icon: Warehouse },
   { id: 'report', icon: BarChart3 },
 ]
