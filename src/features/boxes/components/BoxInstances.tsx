@@ -48,6 +48,7 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
   const gripSync = useMemo(() => createGripSync(world), [world])
 
+
   const scratch = useMemo(
     () => ({ pose: [0, 0, 0, 0], matrix: new Matrix4(), rotation: new Quaternion(), position: new Vector3(), scale: new Vector3(1, 1, 1) }),
     [],

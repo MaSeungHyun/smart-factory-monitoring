@@ -5,6 +5,7 @@ import { findGripPoint } from '@/shared/lib/three/findGripPoint'
 
 import type { DecodedBox, DecodedGrip } from './decodeBoxes'
 
+
 /** 잡을 때 / 놓을 때 기록 위치와 그리퍼 위치 사이를 섞는 시간 s */
 const BLEND = 0.35
 
@@ -15,7 +16,11 @@ interface Held {
 
 const gripWorld = new Matrix4()
 
-const inverse = new Matrix4()
+const gripPos = new Vector3()
+
+const gripRot = new Quaternion()
+
+const UNIT = new Vector3(1, 1, 1)
 
 const held = new Matrix4()
 
@@ -51,7 +56,7 @@ const smooth = (value: number) => {
 
 /** 로봇이 든 박스를 실제 그리퍼 노드에 붙인다 (기록 위치는 잡기 직전 / 놓은 직후만 사용) */
 export function createGripSync(scene: Object3D) {
-  const offsets = new Map<DecodedGrip, Matrix4>()
+  const offsets = new Map<DecodedGrip, Quaternion>()
 
   const lastHeld = new Map<DecodedBox, Held>()
 
@@ -66,15 +71,20 @@ export function createGripSync(scene: Object3D) {
 
     gripWorld.copy(point.matrixWorld)
 
+    gripWorld.decompose(gripPos, gripRot, scaleB)
+
     let offset = offsets.get(grip)
 
     if (!offset) {
-      offset = inverse.copy(gripWorld).invert().multiply(recorded).clone()
+      // 박스 원점(윗면 중앙)을 그리퍼 끝점에 그대로 붙이고, 잡는 순간의 상대 회전만 유지
+      recorded.decompose(posA, rotA, scaleA)
+
+      offset = gripRot.clone().invert().multiply(rotA)
 
       offsets.set(grip, offset)
     }
 
-    return held.multiplyMatrices(gripWorld, offset)
+    return held.compose(gripPos, rotB.copy(gripRot).multiply(offset), UNIT)
   }
 
   /** recorded 를 그리퍼 동기화 결과로 바꾼다. 로봇이 들고 있으면 true */
@@ -91,6 +101,7 @@ export function createGripSync(scene: Object3D) {
         else lastHeld.set(box, { grip, matrix: attached.clone() })
 
         const weight = smooth((time - grip.start) / BLEND)
+
 
         blend(recorded, attached, weight, recorded)
 

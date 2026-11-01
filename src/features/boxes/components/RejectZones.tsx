@@ -23,7 +23,7 @@ export default function RejectZones({ boxes }: { boxes: DecodedBox[] }) {
             <mesh position={[0, top + 0.005, 0]}>
               <boxGeometry args={[0.95, 0.01, 0.95]} />
 
-              <meshStandardMaterial color='#ff3b30' emissive='#ff3b30' emissiveIntensity={0.4} />
+              <meshStandardMaterial color='#2b2f36' emissive='#ffcc00' emissiveIntensity={0.15} />
             </mesh>
 
             <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
