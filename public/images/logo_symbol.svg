@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+  <g id="logo_symbol" transform="translate(-10 -10)">
+    <rect id="_safe-area" width="44" height="44" transform="translate(10 10)" fill="none"/>
+    <rect id="logo_bg" width="40" height="40" rx="8" transform="translate(12 12)" fill="#2478a0"/>
+    <path id="패스_1" data-name="패스 1" d="M21.12,6.4,15.07,2.34a2,2,0,0,0-2.17-.05L2.95,8.41A2,2,0,0,0,2,10.11v5.82a2,2,0,0,0,.88,1.66l6.05,4.07a2,2,0,0,0,2.17.05l9.95-6.12a2,2,0,0,0,.95-1.7V8.06a2,2,0,0,0-.88-1.66Z" transform="translate(20 20)" fill="none" stroke="#f2f5f6" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+    <path id="패스_2" data-name="패스 2" d="M10,22V14L2.25,9.15" transform="translate(20 20)" fill="none" stroke="#f2f5f6" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+    <path id="패스_3" data-name="패스 3" d="M10,14,21.77,7.13" transform="translate(20 20)" fill="none" stroke="#f2f5f6" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+  </g>
+</svg>
