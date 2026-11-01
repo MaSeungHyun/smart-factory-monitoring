@@ -1,6 +1,7 @@
 import { indexAt } from '@/features/playback/lib/frameAt'
 
 import type { DecodedBox } from './decodeBoxes'
+import { placeYaw } from './placeYaw'
 
 /** time 의 박스 포즈를 out [x, y, z, yaw] 에 채운다 (키프레임 선형 보간) */
 export function boxPoseAt(box: DecodedBox, time: number, out: number[]) {
@@ -24,7 +25,7 @@ export function boxPoseAt(box: DecodedBox, time: number, out: number[]) {
 
   if (delta < -Math.PI) delta += Math.PI * 2
 
-  out[3] = poses[index * 4 + 3] + delta * k
+  out[3] = placeYaw(box, time, poses[index * 4 + 3] + delta * k)
 
   return out
 }

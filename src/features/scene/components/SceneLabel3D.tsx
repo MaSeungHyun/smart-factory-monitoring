@@ -1,13 +1,13 @@
 import { Html } from '@react-three/drei'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import { Vector3, type Group } from 'three'
 
 import { TONE_BG, TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
 import { cn } from '@/shared/lib/cn'
-import { worldTopCenter } from '@/shared/lib/three/worldAnchor'
 
 import type { FaultLabel } from '../lib/faultTargets'
+import { equipmentById, equipmentTop } from '../lib/boundsRaycast'
 
 const anchor = new Vector3()
 
@@ -15,14 +15,10 @@ const anchor = new Vector3()
 export default function SceneLabel3D({ label }: { label: FaultLabel }) {
   const group = useRef<Group>(null)
 
-  const scene = useThree((state) => state.scene)
-
   useFrame(() => {
-    const target = scene.getObjectByName(label.id)
+    const target = equipmentById(label.id)
 
-    if (!target || !group.current) return
-
-    worldTopCenter(target, anchor, 0.3)
+    if (!target || !group.current || !equipmentTop(target, anchor, 0.3)) return
 
     group.current.position.copy(anchor)
   })

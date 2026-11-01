@@ -1,8 +1,9 @@
 import { useFrame, useThree } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useRef } from 'react'
 import { Color, Mesh, MeshStandardMaterial, type Material, type Object3D } from 'three'
 
-import { useDashboardView } from '@/features/playback'
+import { dashboardAt, playbackStore } from '@/features/playback'
+import type { DashboardView } from '@/features/playback/lib/dashboardView'
 
 import { faultedIds } from '../lib/faultTargets'
 
@@ -49,28 +50,36 @@ function restore(applied: Applied) {
   applied.materials.forEach((material) => material.dispose())
 }
 
-/** 미확인 고장 알람 장비의 재질을 붉게 발광(맥동). 확인하면 원래 재질로 복구 */
+/** 미확인 고장 알람 장비의 재질을 붉게 발광(맥동). 확인하면 원래 재질로 복구. 시계에는 구독하지 않는다 */
 export default function FaultHighlight() {
-  const view = useDashboardView()
-
   const scene = useThree((state) => state.scene)
-
-  const ids = useMemo(() => faultedIds(view?.alarms ?? []), [view])
 
   const active = useRef(new Map<string, Applied>())
 
+  const ids = useRef(new Set<string>())
+
+  const viewSeen = useRef<DashboardView | null | undefined>(undefined)
+
   useFrame(({ clock }) => {
+    const view = dashboardAt(playbackStore.getState())
+
+    if (view !== viewSeen.current) {
+      viewSeen.current = view
+
+      ids.current = faultedIds(view?.alarms ?? [])
+    }
+
     const current = active.current
 
     for (const [id, applied] of current) {
-      if (ids.has(id)) continue
+      if (ids.current.has(id)) continue
 
       restore(applied)
 
       current.delete(id)
     }
 
-    for (const id of ids) {
+    for (const id of ids.current) {
       if (current.has(id)) continue
 
       const root = scene.getObjectByName(id)

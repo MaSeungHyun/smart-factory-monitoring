@@ -1,13 +1,13 @@
 import { useMemo } from 'react'
 
-import { useDashboardView, usePlayback } from '@/features/playback'
-import { useMonitorState } from '@/shared/hooks/useMonitorView'
+import { useDashboardView, usePlayback, usePlaybackPick } from '@/features/playback'
+import { useMonitorState } from '@/shared/stores/useMonitorViewStore'
 
 import { scanDetail, scanRecords } from '../lib/scanDetail'
 
 /** 선택 스캐너의 스캔 기록 (재생 기록 전체, 시각 무관) */
 export function useScanRecords() {
-  const { run } = usePlayback()
+  const run = usePlaybackPick((snap) => snap.run)
 
   const { scannerId } = useMonitorState()
 
@@ -34,7 +34,7 @@ export function useScanDetail() {
 
 /** 선택 가능한 스캐너 */
 export function useScannerOptions() {
-  const { run } = usePlayback()
+  const run = usePlaybackPick((snap) => snap.run)
 
   return useMemo(() => run?.equipment.filter((entry) => entry.kind === 'scanner') ?? [], [run])
 }

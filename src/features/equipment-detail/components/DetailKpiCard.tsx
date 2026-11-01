@@ -10,10 +10,11 @@ interface DetailKpiCardProps {
   unit: string
   note: string
   noteClassName?: string
+  valueClassName?: string
   mock?: boolean
 }
 
-export default function DetailKpiCard({ icon, label, value, unit, note, noteClassName, mock }: DetailKpiCardProps) {
+export default function DetailKpiCard({ icon, label, value, unit, note, noteClassName, valueClassName, mock }: DetailKpiCardProps) {
   return (
     <Card className="p-2.5">
       <div className="flex items-center gap-1 text-caption text-text-secondary">
@@ -25,7 +26,7 @@ export default function DetailKpiCard({ icon, label, value, unit, note, noteClas
       </div>
 
       <div className="mt-1 flex items-end gap-1" title={mock ? '목업 값 (재생 데이터 없음)' : undefined}>
-        <span className="text-[26px] leading-tight font-bold text-text-primary tabular-nums">{value}</span>
+        <span className={cn('text-[26px] leading-tight font-bold text-text-primary tabular-nums', valueClassName)}>{value}</span>
 
         <span className="pb-1 text-caption text-text-tertiary">{unit}</span>
       </div>

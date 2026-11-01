@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
-import { useDashboardView, usePlayback } from '@/features/playback'
-import { useMonitorState } from '@/shared/hooks/useMonitorView'
+import { useDashboardView, usePlayback, usePlaybackPick } from '@/features/playback'
+import { useMonitorState } from '@/shared/stores/useMonitorViewStore'
 
 import { robotDetail } from '../lib/robotDetail'
 
@@ -23,7 +23,7 @@ export function useRobotDetail() {
 
 /** 선택 가능한 로봇 목록 */
 export function useRobotOptions() {
-  const { run } = usePlayback()
+  const run = usePlaybackPick((snap) => snap.run)
 
   return useMemo(() => run?.equipment.filter((entry) => entry.kind === 'robot') ?? [], [run])
 }

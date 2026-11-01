@@ -2,8 +2,7 @@ import { useRef, useState } from "react";
 
 import Panel from "@/shared/components/Panel";
 import { useScrollToSelected } from "@/shared/hooks/useScrollToSelected";
-import { useUi } from "@/shared/hooks/useUi";
-import { statusVisible } from "@/shared/stores/uiStore";
+import { statusVisible, useUi } from "@/shared/stores/useUiStore";
 
 import type { Vehicle } from "../lib/vehicles";
 import DockSection from "./DockSection";

@@ -1,7 +1,7 @@
 import { ChevronLeft, Layers } from 'lucide-react'
 
-import { usePlayback } from '@/features/playback'
-import { monitorView } from '@/shared/stores/monitorView'
+import { usePlaybackPick } from '@/features/playback'
+import { monitorView } from '@/shared/stores/useMonitorViewStore'
 
 interface DetailHeaderProps {
   title?: string
@@ -10,14 +10,14 @@ interface DetailHeaderProps {
 }
 
 export default function DetailHeader({ title = '장비 상세', trail = '메인 관제 / 팔레트 적재', name }: DetailHeaderProps) {
-  const { playing } = usePlayback()
+  const playing = usePlaybackPick((snap) => snap.playing)
 
   return (
     <div className="flex h-9 shrink-0 items-center gap-3">
       <button
         type="button"
         aria-label="뒤로"
-        onClick={() => monitorView.set('main')}
+        onClick={() => monitorView.getState().set('main')}
         className="flex size-9 items-center justify-center rounded border border-border-default bg-bg-surface text-text-primary"
       >
         <ChevronLeft size={18} />

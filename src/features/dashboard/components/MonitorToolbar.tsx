@@ -3,18 +3,17 @@ import { AlertCircle, CheckCircle2, Clock, Layers } from "lucide-react";
 import {
   playbackStore,
   useDashboardView,
-  usePlayback,
+  usePlaybackPick,
 } from "@/features/playback";
-import { useUi } from "@/shared/hooks/useUi";
 import { cn } from "@/shared/lib/cn";
-import { uiStore, type StatusFilter } from "@/shared/stores/uiStore";
+import { uiStore, useUi, type StatusFilter } from "@/shared/stores/useUiStore";
 
 import { STATUS_COUNTS } from "../data/dashboard.mock";
 
 export default function MonitorToolbar() {
   const view = useDashboardView();
 
-  const { playing } = usePlayback();
+  const playing = usePlaybackPick((snap) => snap.playing);
 
   const { statusFilter } = useUi();
 
@@ -61,7 +60,7 @@ export default function MonitorToolbar() {
             data-status-chip={id}
             aria-pressed={statusFilter === id}
             title={statusFilter === id ? "필터 해제" : `${label} 장비만 보기`}
-            onClick={() => uiStore.toggleFilter(id)}
+            onClick={() => uiStore.getState().toggleFilter(id)}
             className={cn(
               "flex h-8 w-[88px] items-center justify-center gap-2 rounded border text-label hover:brightness-125",
               statusFilter === id
@@ -84,7 +83,7 @@ export default function MonitorToolbar() {
         <button
           type="button"
           title={playing ? "일시정지" : "재생"}
-          onClick={() => playbackStore.toggle()}
+          onClick={() => playbackStore.getState().toggle()}
           className="flex h-9 w-20 items-center justify-center gap-1 rounded bg-primary-fill text-label font-semibold text-text-primary hover:brightness-110"
         >
           <span

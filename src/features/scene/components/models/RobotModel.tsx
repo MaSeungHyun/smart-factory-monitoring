@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo } from 'react'
 import { Group, Vector3, type Object3D } from 'three'
 
 import { findGlbNode } from '@/shared/lib/three/glbNode'
-import { enableShadows } from '@/shared/lib/three/modelBounds'
+import { castShadows } from '@/shared/lib/three/modelBounds'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import type { SceneEquipment } from '@/shared/types'
 
@@ -20,7 +20,7 @@ function Pedestal({ kind }: { kind: keyof typeof PEDESTAL_URL }) {
   const { scene } = useGLTF(PEDESTAL_URL[kind])
 
   const model = useMemo(() => {
-    const clone = enableShadows(scene.clone(true))
+    const clone = castShadows(scene.clone(true))
 
     clone.updateMatrixWorld(true)
 
@@ -41,6 +41,10 @@ function Pedestal({ kind }: { kind: keyof typeof PEDESTAL_URL }) {
 /** RobotArm.glb (원본 그대로) + 선택된 받침대 */
 export default function RobotModel({ entity }: { entity: SceneEquipment }) {
   const arm = useCloned(MODEL_URL.robotArm)
+
+  useLayoutEffect(() => {
+    castShadows(arm)
+  }, [arm])
 
   const pedestal = entity.settings?.robotPedestal
 

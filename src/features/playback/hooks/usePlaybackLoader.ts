@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 import { loadRun } from '../lib/loadRun'
-import { playbackStore } from '../lib/playbackStore'
+import { playbackStore } from '../lib/usePlaybackStore'
 
 /** 앱 시작 시 재생 데이터를 한 번 읽어 store 에 넣는다 */
 export function usePlaybackLoader() {
@@ -10,10 +10,10 @@ export function usePlaybackLoader() {
 
     loadRun()
       .then((run) => {
-        if (!cancelled) playbackStore.setRun(run)
+        if (!cancelled) playbackStore.getState().setRun(run)
       })
       .catch(() => {
-        if (!cancelled) playbackStore.setError()
+        if (!cancelled) playbackStore.getState().setError()
       })
 
     return () => {

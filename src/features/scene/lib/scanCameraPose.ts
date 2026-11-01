@@ -1,6 +1,6 @@
 import { Vector3, type Object3D } from 'three'
 
-import type { ViewAngle } from '@/shared/stores/monitorView'
+import type { ViewAngle } from '@/shared/stores/useMonitorViewStore'
 
 import type { CameraPose } from './glbCameraPose'
 

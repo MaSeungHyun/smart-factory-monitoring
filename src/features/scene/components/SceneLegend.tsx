@@ -1,7 +1,6 @@
 import { TONE_BG } from '@/shared/constants/status'
-import { useUi } from '@/shared/hooks/useUi'
 import { cn } from '@/shared/lib/cn'
-import { uiStore } from '@/shared/stores/uiStore'
+import { uiStore, useUi } from '@/shared/stores/useUiStore'
 import type { EquipmentStatus } from '@/shared/types'
 
 const LEGEND: Array<{ tone: EquipmentStatus; label: string }> = [
@@ -27,7 +26,7 @@ export default function SceneLegend() {
             data-legend={tone}
             aria-pressed={!hidden}
             title={hidden ? `${label} 표시` : `${label} 숨기기`}
-            onClick={() => uiStore.toggleStatus(tone)}
+            onClick={() => uiStore.getState().toggleStatus(tone)}
             className={cn('flex h-8 items-center gap-2 rounded px-2 hover:bg-bg-surface-2 hover:text-text-primary', hidden && 'opacity-40 line-through')}
           >
             <span className={cn('size-2 rounded-full', TONE_BG[tone])} />

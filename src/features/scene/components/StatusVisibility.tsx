@@ -1,30 +1,46 @@
-import { useThree } from '@react-three/fiber'
-import { useEffect } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useRef } from 'react'
 
-import { useDashboardView } from '@/features/playback'
-import { useMonitorView } from '@/shared/hooks/useMonitorView'
-import { useUi } from '@/shared/hooks/useUi'
-import { statusVisible } from '@/shared/stores/uiStore'
+import { dashboardAt, playbackStore } from '@/features/playback'
+import type { DashboardView } from '@/features/playback/lib/dashboardView'
+import { monitorView, type MonitorView } from '@/shared/stores/useMonitorViewStore'
+import { statusVisible, uiStore, type UiState } from '@/shared/stores/useUiStore'
 
-/** 범례 · 상태 칩으로 걸러진 상태의 장비를 3D 에서 숨김 (메인 · 창고 화면만) */
+import { equipmentById } from '../lib/boundsRaycast'
+
+interface Seen {
+  view: DashboardView | null
+  screen: MonitorView
+  ui: UiState
+}
+
+/** 범례 · 상태 칩으로 걸러진 상태의 장비를 3D 에서 숨김 (메인 · 창고 화면만). 시계에는 구독하지 않는다 */
 export default function StatusVisibility() {
-  const view = useDashboardView()
+  const seen = useRef<Seen | null>(null)
 
-  const screen = useMonitorView()
+  useFrame(() => {
+    const view = dashboardAt(playbackStore.getState())
 
-  const ui = useUi()
+    const ui = uiStore.getState()
 
-  const scene = useThree((state) => state.scene)
+    const screen = monitorView.getState().view
 
-  useEffect(() => {
+    const prev = seen.current
+
+    if (prev && prev.view === view && prev.ui === ui && prev.screen === screen) return
+
+    seen.current = { view, screen, ui }
+
+    if (!view) return
+
     const filtering = screen === 'main' || screen === 'warehouse'
 
-    for (const item of view?.equipment ?? []) {
-      const object = scene.getObjectByName(item.id)
+    for (const item of view.equipment) {
+      const object = equipmentById(item.id)
 
       if (object) object.visible = !filtering || statusVisible(item.status, ui)
     }
-  }, [view, ui, screen, scene])
+  })
 
   return null
 }

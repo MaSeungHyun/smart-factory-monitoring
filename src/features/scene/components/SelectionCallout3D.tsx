@@ -1,30 +1,54 @@
 import { Html } from '@react-three/drei'
-import { useFrame, useThree } from '@react-three/fiber'
-import { useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useRef, useState } from 'react'
 import { Vector3, type Group } from 'three'
 
-import { useDashboardView } from '@/features/playback'
+import { dashboardAt, playbackStore } from '@/features/playback'
 import StatusBadge from '@/shared/components/StatusBadge'
-import { worldTopCenter } from '@/shared/lib/three/worldAnchor'
+import type { EquipmentItem } from '@/shared/types'
+
+import { equipmentById, equipmentTop } from '../lib/boundsRaycast'
 
 const anchor = new Vector3()
 
-/** 메인 관제: 선택 장비 위 콜아웃 (이름 · 공정 · 상태) */
+const PERCENT_LABEL: Record<EquipmentItem['type'], string> = {
+  robot: '가동률',
+  amr: '배터리',
+  scanner: '처리율',
+}
+
+function itemKey(id: string, item: EquipmentItem | null) {
+  if (!item) return id
+
+  return `${id}|${item.name}|${item.status}|${item.statusLabel}|${item.process}|${item.metricLeft}|${item.metricRight}|${item.percent}|${item.type}`
+}
+
+function itemOf(id: string) {
+  return dashboardAt(playbackStore.getState())?.equipment.find((entry) => entry.id === id) ?? null
+}
+
+/** 클릭으로 고정되는 콜아웃. 호버 칩(이름·공정·상태)보다 작업량·비율을 더 보여 준다. 내용이 바뀔 때만 다시 그린다 */
 export default function SelectionCallout3D({ id }: { id: string }) {
   const group = useRef<Group>(null)
 
-  const scene = useThree((state) => state.scene)
+  const [item, setItem] = useState<EquipmentItem | null>(() => itemOf(id))
 
-  const view = useDashboardView()
-
-  const item = view?.equipment.find((entry) => entry.id === id)
+  const sig = useRef(itemKey(id, item))
 
   useFrame(() => {
-    const target = scene.getObjectByName(id)
+    const next = itemOf(id)
 
-    if (!target || !group.current) return
+    const key = itemKey(id, next)
 
-    worldTopCenter(target, anchor, 0.4)
+    if (key !== sig.current) {
+      sig.current = key
+
+      setItem(next)
+    }
+
+    const target = equipmentById(id)
+
+    if (!target || !group.current || !equipmentTop(target, anchor, 0.4)) return
 
     group.current.position.copy(anchor)
   })
@@ -32,13 +56,35 @@ export default function SelectionCallout3D({ id }: { id: string }) {
   return (
     <group ref={group}>
       <Html zIndexRange={[6, 0]} style={{ pointerEvents: 'none', transform: 'translate(-50%, -100%)' }}>
-        <div className="flex flex-col items-center whitespace-nowrap">
-          <div className="flex items-center gap-2 rounded border border-primary-on-dark bg-bg-surface/95 px-2.5 py-1.5 text-caption text-text-primary shadow-lg">
-            <span className="font-semibold">{item?.name ?? id}</span>
+        <div className="flex flex-col items-center">
+          <div className="min-w-[200px] rounded border border-primary-on-dark bg-bg-surface/95 px-2.5 py-2 text-caption text-text-primary shadow-lg">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{item?.name ?? id}</span>
 
-            {item && <span className="text-text-tertiary">{item.process}</span>}
+              {item && (
+                <span className="ml-auto">
+                  <StatusBadge tone={item.status} label={item.statusLabel} />
+                </span>
+              )}
+            </div>
 
-            {item && <StatusBadge tone={item.status} label={item.statusLabel} />}
+            {item && <p className="mt-0.5 text-text-tertiary">{item.process}</p>}
+
+            {item && (
+              <dl className="mt-1.5 flex flex-col gap-1 border-t border-border-default pt-1.5">
+                <div className="flex gap-3">
+                  <dt className="min-w-0 truncate text-text-tertiary">{item.metricLeft}</dt>
+
+                  <dd className="ml-auto shrink-0 font-semibold tabular-nums">{item.metricRight}</dd>
+                </div>
+
+                <div className="flex gap-3">
+                  <dt className="text-text-tertiary">{PERCENT_LABEL[item.type]}</dt>
+
+                  <dd className="ml-auto font-semibold tabular-nums">{item.percent}%</dd>
+                </div>
+              </dl>
+            )}
           </div>
 
           <span className="h-7 w-px bg-primary-on-dark" />

@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import type { Mesh, MeshBasicMaterial } from 'three'
 
-import { playbackStore } from '@/features/playback'
+import { getExactTime } from '@/features/playback'
 
 import type { InboundPoint } from '../lib/inboundPoints'
 
@@ -29,7 +29,9 @@ function InboundPulse({ point }: { point: InboundPoint }) {
 
     if (!mesh) return
 
-    const age = playbackStore.getExactTime() - lastSpawn(point.spawns, playbackStore.getExactTime())
+    const time = getExactTime()
+
+    const age = time - lastSpawn(point.spawns, time)
 
     const k = age / PULSE_SECONDS
 

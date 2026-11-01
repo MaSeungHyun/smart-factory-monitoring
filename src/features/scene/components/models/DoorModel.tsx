@@ -60,8 +60,6 @@ export default function DoorModel({ entity }: { entity: SceneEquipment }) {
       material={panel.material}
       position={[0, panel.height, 0]}
       scale={[1, visible, 1]}
-      castShadow
-      receiveShadow
     />
   )
 }

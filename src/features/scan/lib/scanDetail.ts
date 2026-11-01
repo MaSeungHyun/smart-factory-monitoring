@@ -192,6 +192,17 @@ export function scanRecords(run: PlaybackRun, id: string): ScanRecord[] {
 
 const verdictAt = (record: ScanRecord, time: number): ScanVerdict => (record.at > time ? 'pending' : record.defect ? 'defect' : 'pass')
 
+/** 현재 벨트 위 박스, 없으면 마지막 판정 박스 */
+export function currentScanBox(records: ScanRecord[], time: number): ScanBox | null {
+  const done = records.filter((record) => record.at <= time).sort((a, b) => a.at - b.at)
+
+  const onBelt = records.filter((record) => record.enter <= time && record.leave > time)
+
+  const last = onBelt[onBelt.length - 1] ?? done[done.length - 1] ?? null
+
+  return last ? { ...last, verdict: verdictAt(last, time) } : null
+}
+
 /** 선택 스캐너 상세 (재생 시각 time 기준) */
 export function scanDetail(
   run: PlaybackRun,
@@ -230,10 +241,6 @@ export function scanDetail(
   }
 
   const withVerdict = (record: ScanRecord): ScanBox => ({ ...record, verdict: verdictAt(record, time) })
-
-  const onBelt = entered.filter((record) => record.leave > time)
-
-  const last = onBelt[onBelt.length - 1] ?? done[done.length - 1] ?? null
 
   const open = alarms.filter((alarm) => alarm.equipmentId === id)
 
@@ -284,7 +291,7 @@ export function scanDetail(
     defectRate: done.length ? round2((defects.length / done.length) * 100) : 0,
     buckets,
     bucketSeconds,
-    current: last ? withVerdict(last) : null,
+    current: currentScanBox(records, time),
     recent: entered.slice(-6).map(withVerdict),
     lastDefect: defects.length ? withVerdict(defects[defects.length - 1]) : null,
     events,

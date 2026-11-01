@@ -1,6 +1,5 @@
-import { useMonitorState } from '@/shared/hooks/useMonitorView'
 import { cn } from '@/shared/lib/cn'
-import { monitorView, type ViewAngle } from '@/shared/stores/monitorView'
+import { monitorView, useMonitorState, type ViewAngle } from '@/shared/stores/useMonitorViewStore'
 
 const ANGLES: { id: ViewAngle; label: string }[] = [
   { id: 'front', label: '정면' },
@@ -17,7 +16,7 @@ export default function ViewAngleButtons() {
         <button
           key={item.id}
           type="button"
-          onClick={() => monitorView.setAngle(item.id)}
+          onClick={() => monitorView.getState().setAngle(item.id)}
           className={cn(
             'w-[60px] rounded text-caption',
             angle === item.id ? 'bg-primary-fill font-semibold text-text-primary' : 'text-text-secondary',

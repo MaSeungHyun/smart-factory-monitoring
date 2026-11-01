@@ -2,7 +2,7 @@ import { MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
 
 import { DetailTabs, EventList, HeroKpi, RunButtons, type DetailTabId } from '@/features/equipment-detail'
-import { usePlayback } from '@/features/playback'
+import { usePlaybackPick } from '@/features/playback'
 import Panel from '@/shared/components/Panel'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 
@@ -17,7 +17,7 @@ export default function ScanInfoPanel() {
 
   const detail = useScanDetail()
 
-  const { origins } = usePlayback()
+  const origins = usePlaybackPick((snap) => snap.origins)
 
   const origin = origins[origins.length - 1] ?? 0
 

@@ -1,6 +1,7 @@
 import { AlertPanel } from '@/features/alerts'
 import { SceneControls, SceneLegend, SceneSlot } from '@/features/scene'
-import { useUi } from '@/shared/hooks/useUi'
+import { useUi } from '@/shared/stores/useUiStore'
+import { cn } from '@/shared/lib/cn'
 
 import type { WarehouseView } from '../hooks/useWarehouse'
 import RackMapPanel from './RackMapPanel'
@@ -8,15 +9,19 @@ import VehicleTagOverlay from './VehicleTagOverlay'
 
 /** 가운데: 상주 3D 창고 탑뷰 + 콜아웃 · 랙 맵 · 알림 · 범례 */
 export default function WarehouseScene({ data, selected }: { data: WarehouseView | null; selected: string | null }) {
-  const { labelsVisible } = useUi()
+  const { labelsVisible, sceneExpanded } = useUi()
 
   return (
-    <div className="relative mt-2.5 min-h-0 flex-1 overflow-hidden rounded bg-bg-base">
+    <div className={cn('relative min-h-0 flex-1 overflow-hidden rounded bg-bg-base', !sceneExpanded && 'mt-2.5')}>
       <SceneSlot />
 
-      <div className="pointer-events-none absolute inset-0">
-        {data && labelsVisible && <VehicleTagOverlay vehicles={data.vehicles} selected={selected} />}
+      {data && labelsVisible && (
+        <div className="pointer-events-none absolute inset-0 z-10">
+          <VehicleTagOverlay vehicles={data.vehicles} selected={selected} />
+        </div>
+      )}
 
+      <div className="pointer-events-none absolute inset-0 z-30">
         <div className="absolute top-[18px] right-3.5">
           <AlertPanel />
         </div>

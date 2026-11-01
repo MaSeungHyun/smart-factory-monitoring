@@ -1,15 +1,23 @@
-import { useMonitorView } from '@/shared/hooks/useMonitorView'
-import { useUi } from '@/shared/hooks/useUi'
+import { useMonitorState } from '@/shared/stores/useMonitorViewStore'
+import { useUi } from '@/shared/stores/useUiStore'
 
+import HoverCallout3D from './HoverCallout3D'
 import SelectionCallout3D from './SelectionCallout3D'
 import SelectionHighlight from './SelectionHighlight'
 import StatusVisibility from './StatusVisibility'
 
-/** Canvas 안: 선택/호버 외곽 + (메인) 선택 콜아웃 + 상태 필터 */
-export default function SelectionLayer() {
-  const { selectedId, labelsVisible } = useUi()
+/** 장비 상세 리더 카드가 같은 장비를 보여 주면 선택 콜아웃은 겹치지 않는다 */
+function detailCardOwns(view: string, id: string, detailId: string) {
+  return view === 'robot' && id === detailId && (id.startsWith('robot-') || id.startsWith('amr-'))
+}
 
-  const view = useMonitorView()
+/** Canvas 안: 선택/호버 외곽 + 콜아웃 + 상태 필터. 호버는 한 줄, 클릭은 더 자세한 카드 */
+export default function SelectionLayer() {
+  const { selectedId } = useUi()
+
+  const { view, robotId } = useMonitorState()
+
+  const showSelection = selectedId !== null && !detailCardOwns(view, selectedId, robotId)
 
   return (
     <>
@@ -17,7 +25,9 @@ export default function SelectionLayer() {
 
       <StatusVisibility />
 
-      {view === 'main' && labelsVisible && selectedId && <SelectionCallout3D id={selectedId} />}
+      <HoverCallout3D />
+
+      {showSelection && <SelectionCallout3D id={selectedId} />}
     </>
   )
 }

@@ -1,23 +1,13 @@
 import { Focus, Minus, Plus } from "lucide-react";
 
 import IconButton from "@/shared/components/IconButton";
-import { useUi } from "@/shared/hooks/useUi";
 import { cn } from "@/shared/lib/cn";
 import { cameraBus } from "@/shared/stores/cameraBus";
-import { monitorView } from "@/shared/stores/monitorView";
-import { uiStore } from "@/shared/stores/uiStore";
+import { uiStore, useUi } from "@/shared/stores/useUiStore";
 
-/** 카메라: 확대 · 축소 · 맞춤(선택 장비 / 현재 시점) · 전체 보기(main_cam) · View(라벨 표시) */
+/** 카메라: 확대 · 축소 · 맞춤(선택 장비 / 현재 시점) · 전체 보기(씬 확대) · View(라벨 표시) */
 export default function SceneControls() {
-  const { labelsVisible, selectedId } = useUi();
-
-  const home = () => {
-    uiStore.select(null);
-
-    monitorView.set("main");
-
-    cameraBus.request({ kind: "home" });
-  };
+  const { labelsVisible, sceneExpanded, selectedId } = useUi();
 
   return (
     <div className="pointer-events-auto flex items-center gap-1">
@@ -47,8 +37,15 @@ export default function SceneControls() {
 
       <button
         type="button"
-        onClick={home}
-        className="h-11 w-[92px] rounded bg-primary-fill text-label font-semibold text-text-primary hover:brightness-110"
+        aria-pressed={sceneExpanded}
+        title="헤더와 사이드바를 남기고 씬을 크게 보기"
+        onClick={uiStore.getState().toggleSceneExpanded}
+        className={cn(
+          "h-11 w-[92px] rounded text-label font-semibold text-text-primary hover:brightness-110",
+          sceneExpanded
+            ? "bg-primary-fill ring-2 ring-primary-on-dark"
+            : "bg-primary-fill",
+        )}
       >
         전체 보기
       </button>
@@ -57,7 +54,7 @@ export default function SceneControls() {
         type="button"
         aria-pressed={labelsVisible}
         title="라벨 · 콜아웃 표시"
-        onClick={uiStore.toggleLabels}
+        onClick={uiStore.getState().toggleLabels}
         className={cn(
           "h-11 w-[92px] rounded border text-label hover:border-text-tertiary",
           labelsVisible

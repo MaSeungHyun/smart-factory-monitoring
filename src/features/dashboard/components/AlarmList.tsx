@@ -1,6 +1,6 @@
 import { playbackStore, type ActiveAlarm } from '@/features/playback'
 import { AlertItemRow } from '@/features/alerts'
-import { useUi } from '@/shared/hooks/useUi'
+import { useUi } from '@/shared/stores/useUiStore'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
 
@@ -20,7 +20,7 @@ export default function AlarmList({ alarms }: { alarms: ActiveAlarm[] }) {
           alert={{ id: alarm.key, severity: alarm.severity, message: alarm.message, time: formatClock(alarm.at, true) }}
           selected={selectedId === alarm.equipmentId}
           onOpen={() => flyToEquipment(alarm.equipmentId)}
-          onAck={() => playbackStore.ack(alarm.key)}
+          onAck={() => playbackStore.getState().ack(alarm.key)}
         />
       ))}
     </ul>

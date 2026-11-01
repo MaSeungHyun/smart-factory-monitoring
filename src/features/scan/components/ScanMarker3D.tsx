@@ -1,13 +1,15 @@
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef, type RefObject } from 'react'
+import { useRef, useState, type RefObject } from 'react'
 import { Box3, Vector3, type Group } from 'three'
 
-import { boxPoseAt, decodeBoxes } from '@/features/boxes'
+import { boxPoseAt, decodeBoxes, type DecodedBox } from '@/features/boxes'
 import { WorkSpotMarker, type CalloutLayout } from '@/features/equipment-detail'
-import { playbackStore, usePlayback } from '@/features/playback'
+import { getExactTime, playbackStore } from '@/features/playback'
 import { screenBounds, type ScreenRect } from '@/shared/lib/three/screenBounds'
+import { monitorView } from '@/shared/stores/useMonitorViewStore'
+import type { PlaybackRun } from '@/shared/types/playback'
 
-import { useScanDetail } from '../hooks/useScanDetail'
+import { currentScanBox, scanRecords, type ScanBox, type ScanRecord } from '../lib/scanDetail'
 import { VERDICT_COLOR } from '../lib/scanTone'
 
 /** 박스 윗면 위로 살짝 띄움 */
@@ -27,22 +29,56 @@ interface Props {
   layout: RefObject<CalloutLayout | null>
 }
 
-/** 스캐너 벨트 위 현재 박스에 링 마커 (판정 색) + 마커를 가리지 않는 콜아웃 위치 계산 */
+interface Cache {
+  run: PlaybackRun | null
+  scannerId: string
+  records: ScanRecord[]
+  boxes: DecodedBox[]
+}
+
+/** 스캐너 벨트 위 현재 박스에 링 마커 (판정 색). 판정이 바뀔 때만 다시 그린다 */
 export default function ScanMarker3D({ layout }: Props) {
-  const { run } = usePlayback()
-
-  const detail = useScanDetail()
-
-  const boxes = useMemo(() => (run ? decodeBoxes(run) : []), [run])
-
-  const current = detail?.current ?? null
-
-  const box = useMemo(() => boxes.find((entry) => entry.id === current?.boxId) ?? null, [boxes, current?.boxId])
-
   const group = useRef<Group>(null)
+
+  const cache = useRef<Cache>({ run: null, scannerId: '', records: [], boxes: [] })
+
+  const boxRef = useRef<DecodedBox | null>(null)
+
+  const keyRef = useRef('')
+
+  const [current, setCurrent] = useState<ScanBox | null>(null)
 
   useFrame(({ camera, size }) => {
     if (!group.current) return
+
+    const snap = playbackStore.getState()
+
+    const scannerId = monitorView.getState().scannerId
+
+    if (snap.run !== cache.current.run || scannerId !== cache.current.scannerId) {
+      cache.current = {
+        run: snap.run,
+        scannerId,
+        records: snap.run ? scanRecords(snap.run, scannerId) : [],
+        boxes: snap.run ? decodeBoxes(snap.run) : [],
+      }
+
+      keyRef.current = ''
+    }
+
+    const next = currentScanBox(cache.current.records, getExactTime())
+
+    const key = next ? `${next.boxId}:${next.verdict}` : ''
+
+    if (key !== keyRef.current) {
+      keyRef.current = key
+
+      boxRef.current = next ? (cache.current.boxes.find((entry) => entry.id === next.boxId) ?? null) : null
+
+      setCurrent(next)
+    }
+
+    const box = boxRef.current
 
     if (!box) {
       group.current.visible = false
@@ -52,7 +88,7 @@ export default function ScanMarker3D({ layout }: Props) {
       return
     }
 
-    boxPoseAt(box, playbackStore.getExactTime(), pose)
+    boxPoseAt(box, getExactTime(), pose)
 
     spot.set(pose[0], pose[1] + LIFT, pose[2])
 

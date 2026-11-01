@@ -2,11 +2,12 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import { Group } from 'three'
 
-import { playbackStore } from '@/features/playback'
+import { getExactTime } from '@/features/playback'
 import PalletModel from '@/features/scene/components/models/PalletModel'
-import { PALLET_HEIGHT, PALLET_YAW } from '@/features/scene/constants/modelPlacement'
+import { PALLET_HEIGHT } from '@/features/scene/constants/modelPlacement'
 
 import { boxPoseAt } from '../lib/boxPoseAt'
+import { holdBoxesOnPallet, nearestAmrYaw } from '../lib/carryYaw'
 import type { DecodedBox } from '../lib/decodeBoxes'
 
 /** 박스 원점은 윗면 */
@@ -42,7 +43,7 @@ interface Load {
  * 더미의 바닥 기울기로 그 그룹을 복원한다. 레일 안에서만 만들면 AMR 위에는 없고
  * 리프트에 올라가면 사라진다.
  */
-function loadsOf(points: Point[]): Load[] {
+function loadsOf(points: Point[], time: number): Load[] {
   const clusters: Array<{ x: number; z: number; n: number; members: Point[] }> = []
 
   for (const point of points) {
@@ -84,10 +85,7 @@ function loadsOf(points: Point[]): Load[] {
 
     const bottom = members.filter((member) => member.y <= minY + LAYER)
 
-    let forwardX = 0
-
-    let forwardZ = 1
-
+    // 팔레트는 입하·레일의 90°를 따르지 않는다. AMR에 실린 뒤에만 그 AMR yaw를 따른다.
     let pitch = 0
 
     if (bottom.length >= 2) {
@@ -101,52 +99,22 @@ function loadsOf(points: Point[]): Load[] {
         if (member.y > high.y) high = member
       }
 
-      const dx = high.x - low.x
-
       const dz = high.z - low.z
 
-      const span = Math.hypot(dx, dz)
+      const span = Math.abs(dz)
 
       const rise = high.y - low.y
 
-      if (span > 0.15 && rise > 0.03) {
-        forwardX = dx / span
-
-        forwardZ = dz / span
-
-        pitch = Math.atan2(rise, span)
-      } else {
-        const yaw = Math.atan2(
-          bottom.reduce((sum, member) => sum + Math.sin(member.yaw), 0),
-          bottom.reduce((sum, member) => sum + Math.cos(member.yaw), 0),
-        )
-
-        forwardX = Math.sin(yaw - PALLET_YAW)
-
-        forwardZ = Math.cos(yaw - PALLET_YAW)
-      }
+      if (span > 0.15 && rise > 0.03) pitch = Math.atan2(rise, span) * Math.sign(dz)
     }
 
     const average = bottom.reduce((sum, member) => sum + member.y, 0) / bottom.length
-
-    let yaw = Math.atan2(forwardX, forwardZ)
-
-    // 팔레트는 180° 돌려도 같아서, 높은 쪽이 바뀌며 한 바퀴 도는 것을 막는다
-    if (yaw > Math.PI / 2) {
-      yaw -= Math.PI
-
-      pitch = -pitch
-    } else if (yaw < -Math.PI / 2) {
-      yaw += Math.PI
-
-      pitch = -pitch
-    }
 
     return {
       x,
       y: average - BOX_HEIGHT - PALLET_HEIGHT,
       z,
-      yaw,
+      yaw: nearestAmrYaw(x, z, time) ?? 0,
       pitch,
     }
   })
@@ -155,12 +123,18 @@ function loadsOf(points: Point[]): Load[] {
 export default function RailPallets({ boxes }: { boxes: DecodedBox[] }) {
   const slots = useRef<Array<Group | null>>([])
 
+  const applied = useRef(Number.NaN)
+
   const pose = useMemo(() => [0, 0, 0, 0], [])
 
   const points = useMemo(() => [] as Point[], [])
 
   useFrame(() => {
-    const time = playbackStore.getExactTime()
+    const time = getExactTime()
+
+    if (applied.current === time) return
+
+    applied.current = time
 
     points.length = 0
 
@@ -172,7 +146,9 @@ export default function RailPallets({ boxes }: { boxes: DecodedBox[] }) {
       points.push({ x: pose[0], y: pose[1], z: pose[2], yaw: pose[3] })
     }
 
-    const loads = loadsOf(points)
+    holdBoxesOnPallet(points, points.length, time)
+
+    const loads = loadsOf(points, time)
 
     slots.current.forEach((slot, index) => {
       if (!slot) return

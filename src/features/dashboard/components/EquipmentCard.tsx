@@ -6,7 +6,7 @@ import Card from '@/shared/components/Card'
 import SegmentBar from '@/shared/components/SegmentBar'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { openEquipment } from '@/shared/lib/equipmentActions'
-import { uiStore } from '@/shared/stores/uiStore'
+import { uiStore } from '@/shared/stores/useUiStore'
 import type { EquipmentItem } from '@/shared/types'
 
 const TYPE_ICON = { robot: Bot, amr: Truck, scanner: ScanLine }
@@ -26,7 +26,7 @@ export default function EquipmentCard({ item, selected }: EquipmentCardProps) {
     if (event.key === ' ') {
       event.preventDefault()
 
-      uiStore.toggleSelect(item.id)
+      uiStore.getState().toggleSelect(item.id)
     }
   }
 
@@ -35,7 +35,7 @@ export default function EquipmentCard({ item, selected }: EquipmentCardProps) {
       interactive
       selected={selected}
       data-equipment-id={item.id}
-      onClick={() => uiStore.toggleSelect(item.id)}
+      onClick={() => uiStore.getState().toggleSelect(item.id)}
       onDoubleClick={() => openEquipment(item.id)}
       onKeyDown={onKeyDown}
       className="h-20 shrink-0 px-3.5 py-2.5"

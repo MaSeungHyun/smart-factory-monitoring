@@ -4,11 +4,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, type Componen
 import { PerspectiveCamera, Vector3, type Object3D } from 'three'
 
 import { FACTORY_GLB_URL } from '@/features/template'
-import { useMonitorState } from '@/shared/hooks/useMonitorView'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import { cameraBus, type CameraCommand } from '@/shared/stores/cameraBus'
-import { DEFAULT_ROBOT_ID, monitorView, type MonitorViewState } from '@/shared/stores/monitorView'
-import { uiStore } from '@/shared/stores/uiStore'
+import { DEFAULT_ROBOT_ID, monitorView, useMonitorState, type MonitorViewState } from '@/shared/stores/useMonitorViewStore'
+import { uiStore } from '@/shared/stores/useUiStore'
 
 import { focusPose, zoomPose } from '../lib/focusPose'
 import { glbCameraPose, type CameraPose } from '../lib/glbCameraPose'
@@ -233,7 +232,7 @@ export default function GlbCameraRig() {
         return
       }
 
-      const id = command.kind === 'focus' ? command.id : uiStore.get().selectedId
+      const id = command.kind === 'focus' ? command.id : uiStore.getState().selectedId
 
       const object = id ? scene.getObjectByName(id) : null
 
@@ -243,7 +242,7 @@ export default function GlbCameraRig() {
         return
       }
 
-      const goal = goalPose(monitorView.get(), poses.main, poses.robot, scene)
+      const goal = goalPose(monitorView.getState(), poses.main, poses.robot, scene)
 
       if (goal) fly(goal)
     }
@@ -263,8 +262,8 @@ export default function GlbCameraRig() {
         return
       }
 
-      if (uiStore.get().selectedId) uiStore.select(null)
-      else monitorView.set('main')
+      if (uiStore.getState().selectedId) uiStore.getState().select(null)
+      else monitorView.getState().set('main')
     }
 
     window.addEventListener('keydown', onKey)

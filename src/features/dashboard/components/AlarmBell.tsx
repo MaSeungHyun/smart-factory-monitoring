@@ -1,9 +1,8 @@
 import { Bell } from 'lucide-react'
 
 import { useDashboardView } from '@/features/playback'
-import { useUi } from '@/shared/hooks/useUi'
 import { cn } from '@/shared/lib/cn'
-import { uiStore } from '@/shared/stores/uiStore'
+import { uiStore, useUi } from '@/shared/stores/useUiStore'
 
 /** 알림 패널 토글. 배지 = 확인 안 한 알람 수 */
 export default function AlarmBell() {
@@ -19,7 +18,7 @@ export default function AlarmBell() {
       aria-label={alarmPanelOpen ? '알림 패널 닫기' : '알림 패널 열기'}
       aria-pressed={alarmPanelOpen}
       data-alarm-bell
-      onClick={uiStore.toggleAlarmPanel}
+      onClick={uiStore.getState().toggleAlarmPanel}
       className={cn(
         'relative ml-6 flex size-9 items-center justify-center rounded border text-text-secondary hover:text-text-primary',
         alarmPanelOpen ? 'border-primary-on-dark bg-primary-fill/16 text-text-primary' : 'border-border-default hover:border-text-tertiary',

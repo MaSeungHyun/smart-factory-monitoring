@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react'
 
+import { useUi } from '@/shared/stores/useUiStore'
+import { cn } from '@/shared/lib/cn'
+
 import BottomRegion from './regions/BottomRegion'
 import HeaderRegion from './regions/HeaderRegion'
 import MainRegion from './regions/MainRegion'
@@ -29,18 +32,27 @@ interface DashboardLayoutProps {
  * └──────┴──────────────────────────────┘
  */
 export default function DashboardLayout({ rail, header, sidebar, main, bottom, overlay }: DashboardLayoutProps) {
+  const { sceneExpanded } = useUi()
+
   return (
     <div className="grid h-screen w-screen grid-cols-[64px_minmax(0,1fr)] grid-rows-[64px_minmax(0,1fr)] overflow-hidden bg-bg-base text-text-primary">
       <RailRegion>{rail}</RailRegion>
 
       <HeaderRegion>{header}</HeaderRegion>
 
-      <main className="grid min-h-0 min-w-0 grid-cols-[440px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_184px] gap-4 px-6 pt-4 pb-6">
-        <SidebarRegion>{sidebar}</SidebarRegion>
+      <main
+        className={cn(
+          'grid min-h-0 min-w-0',
+          sceneExpanded
+            ? 'grid-cols-1 grid-rows-1'
+            : 'grid-cols-[440px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_184px] gap-4 px-6 pt-4 pb-6',
+        )}
+      >
+        {!sceneExpanded && <SidebarRegion>{sidebar}</SidebarRegion>}
 
         <MainRegion>{main}</MainRegion>
 
-        <BottomRegion>{bottom}</BottomRegion>
+        {!sceneExpanded && <BottomRegion>{bottom}</BottomRegion>}
       </main>
 
       {overlay}

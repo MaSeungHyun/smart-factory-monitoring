@@ -4,13 +4,13 @@ import {
   Cpu,
   LayoutGrid,
   ScanLine,
-  Settings,
   Warehouse,
 } from "lucide-react";
 
-import { useMonitorView } from "@/shared/hooks/useMonitorView";
+import GraphicsSettings from "./GraphicsSettings";
+
 import { cn } from "@/shared/lib/cn";
-import { monitorView, type MonitorView } from "@/shared/stores/monitorView";
+import { monitorView, useMonitorView, type MonitorView } from "@/shared/stores/useMonitorViewStore";
 
 const NAV_ITEMS: { id: string; icon: typeof Box; view?: MonitorView }[] = [
   { id: "dashboard", icon: LayoutGrid, view: "main" },
@@ -38,7 +38,7 @@ export default function IconRail() {
           key={id}
           type="button"
           aria-pressed={view === current}
-          onClick={() => view && monitorView.set(view)}
+          onClick={() => view && monitorView.getState().set(view)}
           className={cn(
             "flex size-10 items-center justify-center rounded",
             view === current
@@ -50,12 +50,7 @@ export default function IconRail() {
         </button>
       ))}
 
-      <button
-        type="button"
-        className="mt-auto flex size-10 items-center justify-center text-text-tertiary"
-      >
-        <Settings size={24} />
-      </button>
+      <GraphicsSettings />
     </nav>
   );
 }

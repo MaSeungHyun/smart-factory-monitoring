@@ -1,7 +1,7 @@
 import { Bell } from 'lucide-react'
 
 import { playbackStore, useDashboardView } from '@/features/playback'
-import { useUi } from '@/shared/hooks/useUi'
+import { useUi } from '@/shared/stores/useUiStore'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 import { cn } from '@/shared/lib/cn'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
@@ -42,7 +42,7 @@ export default function AlertPanel() {
         {alarms && alarms.length > 0 && (
           <button
             type="button"
-            onClick={() => playbackStore.ackAll(alarms.map((alarm) => alarm.key))}
+            onClick={() => playbackStore.getState().ackAll(alarms.map((alarm) => alarm.key))}
             className="ml-auto rounded px-1 text-caption text-primary-on-dark hover:underline"
           >
             모두 확인
@@ -58,7 +58,7 @@ export default function AlertPanel() {
                 alert={{ id: alarm.key, severity: alarm.severity, message: alarm.message, time: formatClock(alarm.at, true) }}
                 selected={selectedId === alarm.equipmentId}
                 onOpen={() => flyToEquipment(alarm.equipmentId)}
-                onAck={() => playbackStore.ack(alarm.key)}
+                onAck={() => playbackStore.getState().ack(alarm.key)}
               />
             ))
           : ALERTS.map((alert) => <AlertItemRow key={alert.id} alert={alert} />)}

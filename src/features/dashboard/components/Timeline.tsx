@@ -32,7 +32,7 @@ export default function Timeline() {
 
     const at = range.timeAt((event.clientX - box.left) / box.width)
 
-    playbackStore.seek((at - origin) / 1000)
+    playbackStore.getState().seek((at - origin) / 1000)
   }
 
   const spanLeft = range.position(origin)

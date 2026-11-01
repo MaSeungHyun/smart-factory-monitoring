@@ -9,7 +9,7 @@ export default function DockModel({ entity }: { entity: SceneEquipment }) {
 
   return (
     <>
-      <mesh position={[0, DOCK.y, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh position={[0, DOCK.y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[DOCK.size, DOCK.size]} />
 
         <meshStandardMaterial color={DOCK.color} transparent opacity={DOCK.opacity} />

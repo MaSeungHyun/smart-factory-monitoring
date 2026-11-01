@@ -14,7 +14,7 @@ export default function RejectZones({ boxes }: { boxes: DecodedBox[] }) {
 
         return (
           <group key={id} position={[at[0], 0, at[2]]}>
-            <mesh position={[0, top / 2, 0]} castShadow receiveShadow>
+            <mesh position={[0, top / 2, 0]}>
               <boxGeometry args={[0.9, top, 0.9]} />
 
               <meshStandardMaterial color='#3a3f47' metalness={0.4} roughness={0.6} />

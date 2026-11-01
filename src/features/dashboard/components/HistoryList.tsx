@@ -1,7 +1,7 @@
 import { STATE_LABEL, usePlayback } from '@/features/playback'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 import { cn } from '@/shared/lib/cn'
-import { uiStore } from '@/shared/stores/uiStore'
+import { uiStore } from '@/shared/stores/useUiStore'
 
 const LIMIT = 40
 
@@ -23,7 +23,7 @@ export default function HistoryList({ selectedId }: { selectedId: string | null 
         <li key={`${event.t}-${event.equipmentId}`}>
           <button
             type="button"
-            onClick={() => uiStore.toggleSelect(event.equipmentId)}
+            onClick={() => uiStore.getState().toggleSelect(event.equipmentId)}
             className={cn(
               'flex h-9 w-full items-center gap-3 rounded px-3 text-left text-caption hover:bg-bg-surface-2',
               selectedId === event.equipmentId ? 'bg-primary-fill/16 text-text-primary' : 'text-text-secondary',

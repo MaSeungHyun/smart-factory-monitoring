@@ -2,8 +2,7 @@ import { Pause, Play } from 'lucide-react'
 
 import { cn } from '@/shared/lib/cn'
 
-import { usePlayback } from '../hooks/usePlayback'
-import { playbackStore } from '../lib/playbackStore'
+import { playbackStore, usePlayback } from '../lib/usePlaybackStore'
 
 const SPEEDS = [1, 2, 4]
 
@@ -28,7 +27,7 @@ export default function PlaybackControls() {
       <button
         type="button"
         aria-label={playing ? '일시정지' : '재생'}
-        onClick={playbackStore.toggle}
+        onClick={() => playbackStore.getState().toggle()}
         className="flex size-7 items-center justify-center rounded bg-primary-fill text-text-primary"
       >
         <PlayIcon size={14} />
@@ -40,7 +39,7 @@ export default function PlaybackControls() {
         max={duration}
         step={0.1}
         value={time}
-        onChange={(event) => playbackStore.seek(Number(event.target.value))}
+        onChange={(event) => playbackStore.getState().seek(Number(event.target.value))}
         className="h-1 min-w-0 flex-1 accent-primary-on-dark"
       />
 
@@ -53,7 +52,7 @@ export default function PlaybackControls() {
           <button
             key={value}
             type="button"
-            onClick={() => playbackStore.setSpeed(value)}
+            onClick={() => playbackStore.getState().setSpeed(value)}
             className={cn(
               'h-6 rounded px-1.5 text-caption tabular-nums',
               speed === value ? 'bg-primary-fill text-text-primary' : 'text-text-tertiary',

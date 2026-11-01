@@ -17,10 +17,9 @@ import Panel from "@/shared/components/Panel";
 import SegmentBar from "@/shared/components/SegmentBar";
 import { useDashboardView } from "@/features/playback";
 import { useScrollToSelected } from "@/shared/hooks/useScrollToSelected";
-import { useUi } from "@/shared/hooks/useUi";
 import { cn } from "@/shared/lib/cn";
 import { formatNumber } from "@/shared/lib/format";
-import { statusVisible } from "@/shared/stores/uiStore";
+import { statusVisible, useUi } from "@/shared/stores/useUiStore";
 
 import {
   ALARM_TOTAL,

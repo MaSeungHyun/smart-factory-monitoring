@@ -75,6 +75,8 @@ export function buildFactoryLights(scene: Object3D) {
 
     const sun = new DirectionalLight(source.color, rule.intensity)
 
+    sun.name = 'factory-sun'
+
     sun.position.subVectors(from, to).normalize().multiplyScalar(SUN_BACK)
 
     sun.target = target

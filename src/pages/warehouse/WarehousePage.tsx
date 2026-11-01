@@ -1,16 +1,15 @@
 import WarehouseLayout from '@/app/layouts/WarehouseLayout'
 import { Header, IconRail } from '@/features/dashboard'
-import { useUi } from '@/shared/hooks/useUi'
-import { uiStore } from '@/shared/stores/uiStore'
 import { useWarehouse, VehiclePanel, WarehouseKpiStrip, WarehouseScene, WarehouseTitleRow } from '@/features/warehouse'
+import { uiStore, useUi } from '@/shared/stores/useUiStore'
 
 /** 04_창고AMR: 레일 창고 탭 */
 export default function WarehousePage() {
   const data = useWarehouse()
 
-  const { selectedId: selected } = useUi()
+  const { sceneExpanded, selectedId: selected } = useUi()
 
-  const onSelect = (id: string) => uiStore.toggleSelect(id)
+  const onSelect = (id: string) => uiStore.getState().toggleSelect(id)
 
   return (
     <WarehouseLayout
@@ -19,7 +18,9 @@ export default function WarehousePage() {
       aside={<VehiclePanel vehicles={data?.vehicles ?? []} selected={selected} onSelect={onSelect} />}
       main={
         <div className="flex h-full min-h-0 min-w-0 flex-col">
-          <WarehouseTitleRow counts={data?.counts ?? { running: 0, idle: 0, error: 0 }} />
+          {!sceneExpanded && (
+            <WarehouseTitleRow counts={data?.counts ?? { running: 0, idle: 0, error: 0 }} />
+          )}
 
           <WarehouseScene data={data} selected={selected} />
         </div>

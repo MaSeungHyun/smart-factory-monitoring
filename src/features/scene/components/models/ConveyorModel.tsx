@@ -3,7 +3,7 @@ import { Group, type Object3D } from 'three'
 
 import { FACTORY_GLB_URL } from '@/features/template'
 import { findGlbNode, stripLights } from '@/shared/lib/three/glbNode'
-import { centerOnFloor, enableShadows } from '@/shared/lib/three/modelBounds'
+import { centerOnFloor } from '@/shared/lib/three/modelBounds'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import type { SceneEquipment } from '@/shared/types'
 
@@ -49,7 +49,7 @@ function Rail001Path() {
 
     if (!found) return group
 
-    const node = enableShadows(stripLights(found.clone(true)))
+    const node = stripLights(found.clone(true))
 
     node.position.set(0, RAIL_001_Y, 0)
 

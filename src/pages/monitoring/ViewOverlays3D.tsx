@@ -1,7 +1,7 @@
 import { RobotMarker3D, robotCalloutRef } from '@/features/equipment-detail'
 import { ScanMarker3D, scanCalloutRef } from '@/features/scan'
 import { VehicleTags3D } from '@/features/warehouse'
-import { useMonitorView } from '@/shared/hooks/useMonitorView'
+import { useMonitorView } from '@/shared/stores/useMonitorViewStore'
 
 /** 화면별 3D 오버레이 (상주 Canvas 안, 화면이 바뀌면 이것만 교체) */
 export default function ViewOverlays3D() {

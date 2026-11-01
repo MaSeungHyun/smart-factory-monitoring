@@ -11,10 +11,20 @@ export function centerOnFloor(model: Object3D) {
   return model
 }
 
-/** 모든 메시에 그림자 플래그 설정 */
-export function enableShadows(model: Object3D) {
+/** 그림자 맵에는 이 모델만 넣는다 */
+export function castShadows(model: Object3D) {
   model.traverse((object) => {
     object.castShadow = true
+  })
+
+  return model
+}
+
+/** 로봇 그림자를 받을 면. 그림자 맵에는 넣지 않는다 */
+export function receiveShadows(model: Object3D) {
+  model.traverse((object) => {
+    object.castShadow = false
+
     object.receiveShadow = true
   })
 

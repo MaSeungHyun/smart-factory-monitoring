@@ -3,10 +3,16 @@ import { Group, Mesh, type Material } from 'three'
 
 import { FACTORY_GLB_URL } from '@/features/template'
 import { findGlbNode, stripLights } from '@/shared/lib/three/glbNode'
+import { receiveShadows } from '@/shared/lib/three/modelBounds'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import type { TemplateProp } from '@/shared/types'
 
 const FLOOR_MARKING = 'FloorMarking'
+
+/** factory.glb Enviroment 의 바닥 재질 */
+const GROUND = 'BG_Floor'
+
+const GROUND_OPACITY = 0.45
 
 const withOffset = (material: Material) => {
   const clone = material.clone()
@@ -16,6 +22,31 @@ const withOffset = (material: Material) => {
   clone.polygonOffsetUnits = -4
 
   return clone
+}
+
+/** 바닥(BG_Floor)만 반투명. 벽·표식은 그대로 둔다 */
+function fadeGround(node: Group) {
+  node.traverse((object) => {
+    if (!(object instanceof Mesh)) return
+
+    const materials = Array.isArray(object.material) ? object.material : [object.material]
+
+    const next = materials.map((material) => {
+      if (material.name !== GROUND) return material
+
+      const clone = material.clone()
+
+      clone.transparent = true
+
+      clone.opacity = GROUND_OPACITY
+
+      clone.depthWrite = false
+
+      return clone
+    })
+
+    object.material = Array.isArray(object.material) ? next : next[0]
+  })
 }
 
 /** 바닥 표시는 바닥과 겹치므로 polygonOffset 으로 z-fighting 방지 */
@@ -41,12 +72,12 @@ function cloneProp(scene: Group, prop: TemplateProp) {
 
   if (prop.yaw !== undefined) node.rotation.set(0, prop.yaw, 0)
 
-  node.traverse((object) => {
-    object.castShadow = true
-    object.receiveShadow = true
-  })
+  // 공장 구조물은 그림자 맵에 넣지 않고, 로봇 그림자만 받는다
+  receiveShadows(node)
 
   if (prop.node === FLOOR_MARKING) liftFloorMarking(node)
+
+  fadeGround(node)
 
   return node
 }
@@ -67,3 +98,4 @@ export default function FactoryProps({ props }: { props: TemplateProp[] }) {
     </group>
   )
 }
+

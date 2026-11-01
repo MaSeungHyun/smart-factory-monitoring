@@ -16,5 +16,5 @@ export default function SceneSlot() {
     return () => sceneHost.detach(element)
   }, [])
 
-  return <div ref={ref} className="absolute inset-0" />
+  return <div ref={ref} className="absolute inset-0 z-0" />
 }

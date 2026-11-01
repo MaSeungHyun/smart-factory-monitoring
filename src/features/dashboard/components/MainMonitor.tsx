@@ -1,21 +1,25 @@
 import { AlertPanel } from '@/features/alerts'
 import { PlaybackControls } from '@/features/playback'
 import { SceneControls, SceneLegend, SceneSlot } from '@/features/scene'
+import { useUi } from '@/shared/stores/useUiStore'
+import { cn } from '@/shared/lib/cn'
 
 import MonitorToolbar from './MonitorToolbar'
 import Timeline from './Timeline'
 
 export default function MainMonitor() {
+  const { sceneExpanded } = useUi()
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      <MonitorToolbar />
+      {!sceneExpanded && <MonitorToolbar />}
 
-      <Timeline />
+      {!sceneExpanded && <Timeline />}
 
-      <div className="relative mt-2.5 min-h-0 flex-1 overflow-hidden rounded bg-bg-base">
+      <div className={cn('relative min-h-0 flex-1 overflow-hidden rounded bg-bg-base', !sceneExpanded && 'mt-2.5')}>
         <SceneSlot />
 
-        <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-none absolute inset-0 z-30">
           <div className="absolute top-[18px] right-3.5">
             <AlertPanel />
           </div>

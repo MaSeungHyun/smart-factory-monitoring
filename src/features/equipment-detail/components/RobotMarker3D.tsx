@@ -1,15 +1,20 @@
 import { useFrame, useThree } from '@react-three/fiber'
-import { useRef, type RefObject } from 'react'
+import { useRef, useState, type RefObject } from 'react'
 import { Box3, Vector3, type Group } from 'three'
 
-import { useMonitorState } from '@/shared/hooks/useMonitorView'
+import { decodeBoxes, robotWorkSpots, type WorkSpot } from '@/features/boxes'
+import { dashboardAt, playbackStore } from '@/features/playback'
+import { useMonitorState } from '@/shared/stores/useMonitorViewStore'
 import { screenBounds, type ScreenRect } from '@/shared/lib/three/screenBounds'
 import { surfaceBelow } from '@/shared/lib/three/surfaceBelow'
+import type { PlaybackRun } from '@/shared/types/playback'
 
-import { useRobotDetail } from '../hooks/useRobotDetail'
-import { useRobotWorkSpot } from '../hooks/useRobotWorkSpot'
+import { detailKind } from '../lib/detailKind'
+import { robotDetail } from '../lib/robotDetail'
 import { ROBOT_STATUS_COLOR } from '../lib/robotStatusColor'
+import { vehicleDetail } from '../lib/vehicleDetail'
 import type { CalloutLayout } from './RobotCalloutOverlay'
+import FadeSpotMarker from './FadeSpotMarker'
 import WorkSpotMarker from './WorkSpotMarker'
 
 /** 바닥 마커를 표면 위로 살짝 띄움 (z-fighting 방지) */
@@ -32,13 +37,31 @@ interface Props {
   layout: RefObject<CalloutLayout | null>
 }
 
-/** 선택 로봇의 작업 지점 (박스 집는 곳) 바닥 마커 + 로봇/마커를 가리지 않는 콜아웃 카드 */
+function colorOf(robotId: string, fade: boolean) {
+  const snap = playbackStore.getState()
+
+  const view = dashboardAt(snap)
+
+  if (!snap.run || !view) return null
+
+  const origin = snap.origins[snap.origins.length - 1] ?? 0
+
+  if (fade) {
+    const kind = detailKind(robotId)
+
+    if (!kind || kind === 'robot') return null
+
+    return ROBOT_STATUS_COLOR[vehicleDetail(snap.run, snap.time, origin, view.alarms, robotId, kind).status]
+  }
+
+  return ROBOT_STATUS_COLOR[robotDetail(snap.run, snap.time, origin, view.alarms, robotId).status]
+}
+
+/** 선택 로봇의 작업 지점 (박스 집는 곳) 바닥 마커. 상태 색은 바뀔 때만 다시 그린다 */
 export default function RobotMarker3D({ layout }: Props) {
   const { robotId } = useMonitorState()
 
-  const detail = useRobotDetail()
-
-  const workSpot = useRobotWorkSpot()
+  const fade = detailKind(robotId) !== null && detailKind(robotId) !== 'robot'
 
   const scene = useThree((state) => state.scene)
 
@@ -46,16 +69,56 @@ export default function RobotMarker3D({ layout }: Props) {
 
   const surface = useRef<{ key: string; y: number | null }>({ key: '', y: null })
 
+  const spotsRun = useRef<PlaybackRun | null>(null)
+
+  const spots = useRef(new Map<string, WorkSpot>())
+
+  const [color, setColor] = useState<string | null>(() => colorOf(robotId, fade))
+
+  const colorKey = useRef('')
+
+  const viewSeen = useRef<ReturnType<typeof dashboardAt> | undefined>(undefined)
+
+  const idSeen = useRef<string | null>(null)
+
   useFrame(({ camera, size }) => {
+    const snap = playbackStore.getState()
+
+    if (snap.run !== spotsRun.current) {
+      spotsRun.current = snap.run
+
+      spots.current = snap.run ? robotWorkSpots(decodeBoxes(snap.run)) : new Map()
+    }
+
+    const view = dashboardAt(snap)
+
+    if (view !== viewSeen.current || robotId !== idSeen.current) {
+      viewSeen.current = view
+
+      idSeen.current = robotId
+
+      const next = colorOf(robotId, fade)
+
+      const key = `${robotId}:${next ?? ''}`
+
+      if (key !== colorKey.current) {
+        colorKey.current = key
+
+        setColor(next)
+      }
+    }
+
     const robot = scene.getObjectByName(robotId)
+
+    const workSpot = spots.current.get(robotId)
 
     if (!robot || !group.current) return
 
-    if (workSpot) {
-      const key = `${robotId}:${workSpot.join(',')}`
+    if (workSpot && !fade) {
+      const surfaceKey = `${robotId}:${workSpot.join(',')}`
 
-      if (surface.current.key !== key || surface.current.y === null) {
-        surface.current = { key, y: surfaceBelow(scene, workSpot[0], workSpot[1] + 0.05, workSpot[2], group.current) }
+      if (surface.current.key !== surfaceKey || surface.current.y === null) {
+        surface.current = { key: surfaceKey, y: surfaceBelow(scene, workSpot[0], workSpot[1] + 0.05, workSpot[2], group.current) }
       }
 
       spot.set(workSpot[0], (surface.current.y ?? workSpot[1] - FALLBACK_DROP) + LIFT, workSpot[2])
@@ -90,11 +153,11 @@ export default function RobotMarker3D({ layout }: Props) {
     layout.current?.update(bounds ? { rect: bounds, anchor: visible ? [((anchor.x + 1) / 2) * size.width, ((1 - anchor.y) / 2) * size.height] : null, size: [size.width, size.height] } : null)
   })
 
-  if (!detail) return null
+  if (!color) return null
 
   return (
     <group ref={group}>
-      <WorkSpotMarker color={ROBOT_STATUS_COLOR[detail.status]} />
+      {fade ? <FadeSpotMarker color={color} /> : <WorkSpotMarker color={color} />}
     </group>
   )
 }
