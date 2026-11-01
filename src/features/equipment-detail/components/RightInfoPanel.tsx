@@ -47,7 +47,7 @@ export default function RightInfoPanel() {
 
       <DetailTabs tab={tab} alarmCount={detail.alarms.length} onChange={setTab} />
 
-      {tab === 'trend' && <CycleBarChart bars={detail.bars} average={detail.cycle} label={(t) => formatClock(origin + t * 1000)} />}
+      {tab === 'trend' && <CycleBarChart bars={detail.bars} average={detail.average} label={(t) => formatClock(origin + t * 1000)} />}
 
       <EventList events={events} />
 

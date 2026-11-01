@@ -7,9 +7,9 @@ import type { RobotDetail } from '../lib/robotDetail'
 /** 로봇 콜아웃 카드 254x136 */
 export default function RobotCallout({ detail }: { detail: RobotDetail }) {
   const rows = [
-    ['사이클', `${detail.cycle.toFixed(1)}초`],
-    ['성공률', `${detail.success.toFixed(1)}%`],
-    ['부하', `${detail.load}%`],
+    ['사이클', detail.cycle === null ? '—' : `${detail.cycle.toFixed(1)}초`],
+    ['성공률', detail.success === null ? '—' : `${detail.success.toFixed(1)}%`],
+    ['부하', detail.load === null ? '—' : `${detail.load}%`],
   ]
 
   return (

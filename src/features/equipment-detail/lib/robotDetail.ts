@@ -27,10 +27,15 @@ export interface RobotDetail {
   count: number
   target: number
   percent: number
-  cycle: number
+  /** 마지막 완료 사이클 (s), 첫 사이클 전 null */
+  cycle: number | null
+  /** 완료 사이클 평균 (s) */
+  average: number
   cycleDelta: number
-  success: number
-  load: number
+  /** 완료 / 시도 (%), 시도 전 null */
+  success: number | null
+  /** 최근 60초 비대기 비율 (%) */
+  load: number | null
   bars: CycleBar[]
   events: RobotEvent[]
   alarms: ActiveAlarm[]
@@ -47,6 +52,8 @@ const STATE_TEXT: Record<PlaybackState, string> = {
 }
 
 const MAX_BARS = 16
+
+const LOAD_WINDOW = 60
 
 const round1 = (value: number) => Math.round(value * 10) / 10
 
@@ -92,7 +99,15 @@ export function robotDetail(run: PlaybackRun, time: number, origin: number, alar
 
   const cycles = bars.filter((bar) => !bar.paused)
 
-  const cycle = cycles.length ? round1(cycles.reduce((sum, bar) => sum + bar.seconds, 0) / cycles.length) : 0
+  const average = cycles.length ? round1(cycles.reduce((sum, bar) => sum + bar.seconds, 0) / cycles.length) : 0
+
+  const cycle = cycles.length ? cycles[cycles.length - 1].seconds : null
+
+  const recent = frames.filter((frame) => frame.t > time - LOAD_WINDOW).map((frame) => frame.equipment[id]).filter(Boolean)
+
+  const busy = recent.filter((sample) => sample.state !== 'idle').length
+
+  const load = recent.length ? Math.round((busy / recent.length) * 100) : null
 
   const cycleDelta = cycles.length > 1 ? round1(cycles[cycles.length - 1].seconds - cycles[cycles.length - 2].seconds) : 0
 
@@ -133,9 +148,10 @@ export function robotDetail(run: PlaybackRun, time: number, origin: number, alar
     target: ROBOT_TARGET,
     percent: Math.round((count / ROBOT_TARGET) * 100),
     cycle,
+    average,
     cycleDelta,
-    success: count + faults.length ? round1((count / (count + faults.length)) * 100) : 0,
-    load: Math.round(latest?.utilization ?? 0),
+    success: count + faults.length ? round1((count / (count + faults.length)) * 100) : null,
+    load,
     bars: bars.slice(-MAX_BARS),
     events: [...alarmEvents, ...transitions].sort((a, b) => b.at - a.at),
     alarms: open,
