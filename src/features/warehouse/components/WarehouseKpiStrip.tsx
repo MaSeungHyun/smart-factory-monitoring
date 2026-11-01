@@ -1,19 +1,24 @@
-import Panel from '@/shared/components/Panel'
+import { ProcessStageCard } from "@/features/process-flow";
+import Panel from "@/shared/components/Panel";
+import type { ProcessStage } from "@/shared/types";
 
-import type { WarehouseKpi } from '../lib/warehouseKpis'
-import WarehouseKpiCard from './WarehouseKpiCard'
-
-/** 하단: 입고 · 출고 · 주문 6카드 */
-export default function WarehouseKpiStrip({ kpis }: { kpis: WarehouseKpi[] }) {
+/** 하단: 입고 · 출고 · 주문. 카드는 공정 흐름과 같은 ProcessStageCard */
+export default function WarehouseKpiStrip({ kpis }: { kpis: ProcessStage[] }) {
   return (
-    <Panel className="flex h-full flex-col gap-2 p-4">
-      <h2 className="text-title text-text-primary">입고 · 출고 · 주문</h2>
+    <Panel className="flex h-full min-h-0 flex-col p-3.5">
+      <div className="flex items-center gap-3">
+        <h2 className="text-title text-text-primary">입고 · 출고 · 주문</h2>
 
-      <div className="grid min-h-0 flex-1 grid-cols-6 gap-3">
-        {kpis.map((kpi) => (
-          <WarehouseKpiCard key={kpi.id} kpi={kpi} />
+        <span className="text-caption text-text-tertiary">
+          {kpis.length}항목 · 실시간
+        </span>
+      </div>
+
+      <div className="mt-3 grid min-h-0 flex-1 grid-cols-6 gap-3">
+        {kpis.map((stage) => (
+          <ProcessStageCard key={stage.id} stage={stage} />
         ))}
       </div>
     </Panel>
-  )
+  );
 }

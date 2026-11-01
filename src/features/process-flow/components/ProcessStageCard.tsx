@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowUpFromLine, Layers, ScanLine, Truck, Workflow } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine, ClipboardList, Layers, ScanLine, Truck, Workflow } from 'lucide-react'
 
 import SegmentBar from '@/shared/components/SegmentBar'
 import StatusBadge from '@/shared/components/StatusBadge'
@@ -13,6 +13,7 @@ const STAGE_ICON = {
   pallet: Layers,
   amr: Truck,
   outbound: ArrowUpFromLine,
+  order: ClipboardList,
 }
 
 export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
@@ -47,7 +48,7 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
         <span className="text-caption text-text-secondary tabular-nums">{stage.percent}%</span>
       </div>
 
-      <SegmentBar percent={stage.percent} tone={stage.status} segments={38} className="mt-2" />
+      <SegmentBar percent={stage.percent} tone={stage.status} segments={35} className="mt-2" />
     </div>
   )
 }

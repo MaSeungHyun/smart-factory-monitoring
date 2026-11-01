@@ -13,7 +13,7 @@ export default function AlarmList({ alarms }: { alarms: ActiveAlarm[] }) {
   }
 
   return (
-    <ul className="flex shrink-0 flex-col gap-2">
+    <ul className="flex flex-col gap-2">
       {alarms.map((alarm) => (
         <AlertItemRow
           key={alarm.key}

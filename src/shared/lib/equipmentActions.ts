@@ -31,3 +31,10 @@ export function flyToEquipment(id: string) {
 
   cameraBus.request({ kind: 'focus', id })
 }
+
+/** 선택 + 그 장비를 계속 추적 (팬 · Esc 로 해제) */
+export function followEquipment(id: string) {
+  uiStore.select(id)
+
+  cameraBus.request({ kind: 'follow', id })
+}

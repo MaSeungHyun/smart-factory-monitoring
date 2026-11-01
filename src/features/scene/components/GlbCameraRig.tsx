@@ -42,6 +42,67 @@ function placeCamera(camera: PerspectiveCamera, position: Vector3, fov: number) 
   camera.updateProjectionMatrix()
 }
 
+interface Chase {
+  id: string | null
+  ready: boolean
+  anchor: Vector3
+  world: Vector3
+  shift: Vector3
+}
+
+function createChase(): Chase {
+  return { id: null, ready: false, anchor: new Vector3(), world: new Vector3(), shift: new Vector3() }
+}
+
+function stopChase(chase: Chase, flight: { current: Flight | null }, cancelFlight: boolean) {
+  chase.id = null
+
+  chase.ready = false
+
+  if (cancelFlight) flight.current = null
+}
+
+/** 따라가는 장비가 움직인 만큼 카메라 · 비행 경로를 같이 옮긴다 */
+function applyFollow(chase: Chase, scene: Object3D, camera: PerspectiveCamera, orbit: { target: Vector3; update: () => void }, flight: Flight | null) {
+  const object = chase.id ? scene.getObjectByName(chase.id) : null
+
+  if (!object) return
+
+  object.getWorldPosition(chase.world)
+
+  if (!chase.ready) {
+    chase.anchor.copy(chase.world)
+
+    chase.ready = true
+
+    return
+  }
+
+  chase.shift.subVectors(chase.world, chase.anchor)
+
+  if (chase.shift.lengthSq() === 0) return
+
+  chase.anchor.copy(chase.world)
+
+  if (flight) {
+    flight.from.position.add(chase.shift)
+
+    flight.to.position.add(chase.shift)
+
+    flight.from.target.add(chase.shift)
+
+    flight.to.target.add(chase.shift)
+
+    return
+  }
+
+  camera.position.add(chase.shift)
+
+  orbit.target.add(chase.shift)
+
+  orbit.update()
+}
+
 function goalPose(state: MonitorViewState, main: CameraPose | null, robotCam: CameraPose | null, scene: Object3D) {
   if (state.view === 'main') return main
 
@@ -66,7 +127,8 @@ function goalPose(state: MonitorViewState, main: CameraPose | null, robotCam: Ca
 
 /**
  * 카메라: 시작은 항상 main_cam 위치/fov. 화면 상태가 바뀌면(레일 탭, 로봇 선택, 시점 버튼)
- * 목표 시점으로 위치 + OrbitControls 타깃 + fov 를 부드럽게 보간. Esc 는 메인으로.
+ * 목표 시점으로 위치 + OrbitControls 타깃 + fov 를 부드럽게 보간.
+ * follow 는 장비 이동량만큼 카메라와 타깃을 같이 옮긴다. 팬 또는 Esc 로 해제. 그 외 Esc 는 메인으로.
  */
 export default function GlbCameraRig() {
   const { scene: glb } = useGLTF(FACTORY_GLB_URL)
@@ -79,7 +141,11 @@ export default function GlbCameraRig() {
 
   const placed = useRef(false)
 
+  const chase = useMemo(createChase, [])
+
   const state = useMonitorState()
+
+  const seenView = useRef(state)
 
   const fly = useCallback(
     (goal: CameraPose, duration = DURATION) => {
@@ -118,6 +184,12 @@ export default function GlbCameraRig() {
       orbit.update()
     }
 
+    if (seenView.current !== state) {
+      seenView.current = state
+
+      stopChase(chase, flight, false)
+    }
+
     const goal = goalPose(state, poses.main, poses.robot, scene)
 
     if (!goal) return
@@ -132,6 +204,22 @@ export default function GlbCameraRig() {
       const orbit = controls.current
 
       if (!orbit) return
+
+      if (command.kind === 'follow') {
+        const object = scene.getObjectByName(command.id)
+
+        if (!object || !(camera instanceof PerspectiveCamera)) return
+
+        chase.id = command.id
+
+        chase.ready = false
+
+        fly(focusPose(object, camera.position, orbit.target))
+
+        return
+      }
+
+      if (command.kind !== 'zoom') stopChase(chase, flight, false)
 
       if (command.kind === 'zoom') {
         fly(zoomPose(camera.position, orbit.target, command.factor), ZOOM_DURATION)
@@ -169,6 +257,12 @@ export default function GlbCameraRig() {
 
       if (event.target instanceof HTMLInputElement) return
 
+      if (chase.id) {
+        stopChase(chase, flight, true)
+
+        return
+      }
+
       if (uiStore.get().selectedId) uiStore.select(null)
       else monitorView.set('main')
     }
@@ -180,12 +274,36 @@ export default function GlbCameraRig() {
 
   const point = useMemo(() => new Vector3(), [])
 
-  useFrame(({ camera }, delta) => {
-    const active = flight.current
+  useEffect(() => {
+    const { gl } = get()
 
+    const onPointerDown = (event: PointerEvent) => {
+      if (!chase.id) return
+
+      const modified = event.ctrlKey || event.metaKey || event.shiftKey
+
+      const pan = (event.button === 2 && !modified) || (event.button === 0 && modified) || (event.pointerType === 'touch' && !event.isPrimary)
+
+      if (!pan) return
+
+      stopChase(chase, flight, true)
+    }
+
+    gl.domElement.addEventListener('pointerdown', onPointerDown)
+
+    return () => gl.domElement.removeEventListener('pointerdown', onPointerDown)
+  }, [get])
+
+  useFrame(({ camera, scene }, delta) => {
     const orbit = controls.current
 
-    if (!active || !orbit || !(camera instanceof PerspectiveCamera)) return
+    if (!orbit || !(camera instanceof PerspectiveCamera)) return
+
+    applyFollow(chase, scene, camera, orbit, flight.current)
+
+    const active = flight.current
+
+    if (!active) return
 
     active.elapsed = Math.min(active.elapsed + delta, active.duration)
 

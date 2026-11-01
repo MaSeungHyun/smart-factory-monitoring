@@ -5,7 +5,7 @@ interface SegmentBarProps {
   percent: number
   tone?: Tone | 'primary'
   segments?: number
-  /** 칸 너비 / 간격 / 높이 (px, XD 기준 4 · 3 · 8) */
+  /** 칸 너비 / 간격 / 높이 (px). XD 칸은 4 · 간격 3. 높이는 화면마다 다름 */
   segmentWidth?: number
   gap?: number
   height?: number

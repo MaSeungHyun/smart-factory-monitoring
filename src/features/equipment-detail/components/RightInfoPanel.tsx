@@ -32,26 +32,36 @@ export default function RightInfoPanel() {
       : detail.events
 
   return (
-    <Panel className="flex h-full flex-col gap-3 overflow-y-auto p-3.5">
-      <div className="flex items-center">
+    <Panel className="flex h-full min-h-0 flex-col gap-3 overflow-hidden p-3.5">
+      <div className="flex shrink-0 items-center">
         <h2 className="text-body font-semibold text-text-primary">장비 정보</h2>
 
         <MoreHorizontal size={18} className="ml-auto text-text-secondary" />
       </div>
 
-      <EquipmentSelector robotId={detail.id} status={detail.status} statusLabel={detail.statusLabel} />
+      <div className="shrink-0">
+        <EquipmentSelector robotId={detail.id} status={detail.status} statusLabel={detail.statusLabel} />
+      </div>
 
-      <HeroKpi count={detail.count} target={detail.target} percent={detail.percent} />
+      <div className="shrink-0">
+        <HeroKpi count={detail.count} target={detail.target} percent={detail.percent} />
+      </div>
 
-      <DetailKpiGrid detail={detail} />
+      <div className="shrink-0">
+        <DetailKpiGrid detail={detail} />
+      </div>
 
-      <DetailTabs tab={tab} alarmCount={detail.alarms.length} onChange={setTab} />
+      <div className="shrink-0">
+        <DetailTabs tab={tab} alarmCount={detail.alarms.length} onChange={setTab} />
+      </div>
 
-      {tab === 'trend' && <CycleBarChart bars={detail.bars} average={detail.average} label={(t) => formatClock(origin + t * 1000)} />}
+      <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+        {tab === 'trend' && <CycleBarChart bars={detail.bars} average={detail.average} label={(t) => formatClock(origin + t * 1000)} />}
 
-      <EventList events={events} />
+        <EventList events={events} />
+      </div>
 
-      <div className="mt-auto">
+      <div className="shrink-0">
         <RunButtons />
       </div>
     </Panel>

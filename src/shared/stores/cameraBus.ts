@@ -1,5 +1,10 @@
-/** 카메라 명령 (GlbCameraRig 가 구독): 장비로 비행 · 확대/축소 · 맞춤 · main_cam */
-export type CameraCommand = { kind: 'focus'; id: string } | { kind: 'zoom'; factor: number } | { kind: 'fit' } | { kind: 'home' }
+/** 카메라 명령 (GlbCameraRig 가 구독): 장비로 비행 · 따라가기 · 확대/축소 · 맞춤 · main_cam */
+export type CameraCommand =
+  | { kind: 'focus'; id: string }
+  | { kind: 'follow'; id: string }
+  | { kind: 'zoom'; factor: number }
+  | { kind: 'fit' }
+  | { kind: 'home' }
 
 type Listener = (command: CameraCommand) => void
 

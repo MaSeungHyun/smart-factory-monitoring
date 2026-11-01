@@ -49,7 +49,6 @@ export function useWarehouse() {
       },
       grid,
       loading: new Map([...targets].map(([id, cell]) => [cell.id, vehicles.find((vehicle) => vehicle.id === id)?.code ?? id])),
-      alarms: view.alarms,
       kpis: warehouseKpis(frame?.counts, frame),
     }
   }, [run, view, roster, time])

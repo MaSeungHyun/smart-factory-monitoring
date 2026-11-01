@@ -1,23 +1,37 @@
-import { BarChart3, Box, Cpu, LayoutGrid, ScanLine, Settings, Warehouse } from 'lucide-react'
+import {
+  BarChart3,
+  Box,
+  Cpu,
+  LayoutGrid,
+  ScanLine,
+  Settings,
+  Warehouse,
+} from "lucide-react";
 
-import { useMonitorView } from '@/shared/hooks/useMonitorView'
-import { cn } from '@/shared/lib/cn'
-import { monitorView, type MonitorView } from '@/shared/stores/monitorView'
+import { useMonitorView } from "@/shared/hooks/useMonitorView";
+import { cn } from "@/shared/lib/cn";
+import { monitorView, type MonitorView } from "@/shared/stores/monitorView";
 
 const NAV_ITEMS: { id: string; icon: typeof Box; view?: MonitorView }[] = [
-  { id: 'dashboard', icon: LayoutGrid, view: 'main' },
-  { id: 'equipment', icon: Cpu, view: 'robot' },
-  { id: 'scan', icon: ScanLine, view: 'scan' },
-  { id: 'storage', icon: Warehouse, view: 'warehouse' },
-  { id: 'report', icon: BarChart3 },
-]
+  { id: "dashboard", icon: LayoutGrid, view: "main" },
+  { id: "equipment", icon: Cpu, view: "robot" },
+  { id: "scan", icon: ScanLine, view: "scan" },
+  { id: "storage", icon: Warehouse, view: "warehouse" },
+  { id: "report", icon: BarChart3 },
+];
 
 export default function IconRail() {
-  const current = useMonitorView()
+  const current = useMonitorView();
 
   return (
     <nav className="flex h-full w-full flex-col items-center gap-4 border-r border-border-default bg-bg-surface pb-6">
-      <img src="/images/logo_symbol.svg" alt="GRAPICAR" width={44} height={44} className="mt-2.5 mb-3.5 size-11" />
+      <img
+        src="/images/logo_symbol.svg"
+        alt="GRAPICAR"
+        width={44}
+        height={44}
+        className="mt-2.5 mb-3.5 size-11"
+      />
 
       {NAV_ITEMS.map(({ id, icon: Icon, view }) => (
         <button
@@ -26,17 +40,22 @@ export default function IconRail() {
           aria-pressed={view === current}
           onClick={() => view && monitorView.set(view)}
           className={cn(
-            'flex size-10 items-center justify-center rounded',
-            view === current ? 'bg-primary-fill/16 text-primary-on-dark' : 'text-text-tertiary hover:text-text-secondary',
+            "flex size-10 items-center justify-center rounded",
+            view === current
+              ? "bg-primary-fill/16 text-primary-on-dark"
+              : "text-text-tertiary hover:text-text-secondary",
           )}
         >
           <Icon size={24} />
         </button>
       ))}
 
-      <button type="button" className="mt-auto flex size-10 items-center justify-center text-text-tertiary">
+      <button
+        type="button"
+        className="mt-auto flex size-10 items-center justify-center text-text-tertiary"
+      >
         <Settings size={24} />
       </button>
     </nav>
-  )
+  );
 }

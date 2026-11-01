@@ -18,7 +18,7 @@ export default function HistoryList({ selectedId }: { selectedId: string | null 
   }
 
   return (
-    <ul className="flex shrink-0 flex-col gap-1">
+    <ul className="flex flex-col gap-1">
       {events.map((event) => (
         <li key={`${event.t}-${event.equipmentId}`}>
           <button

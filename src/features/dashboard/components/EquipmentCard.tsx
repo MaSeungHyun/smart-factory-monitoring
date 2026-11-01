@@ -59,7 +59,7 @@ export default function EquipmentCard({ item, selected }: EquipmentCardProps) {
 
         <span className="w-16">{item.metricRight}</span>
 
-        <SegmentBar percent={item.percent} tone={item.status} segments={22} className="ml-auto" />
+        <SegmentBar percent={item.percent} tone={item.status} segments={22} height={12} className="ml-auto" />
 
         <span className="w-8 text-right text-text-primary">{item.percent}%</span>
       </div>

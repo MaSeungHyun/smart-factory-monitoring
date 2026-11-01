@@ -26,34 +26,44 @@ export default function ScanInfoPanel() {
   const events = tab === 'alarm' ? detail.events.filter((event) => event.tone === 'error' || event.tone === 'warning') : detail.events
 
   return (
-    <Panel className="flex h-full flex-col gap-3 overflow-y-auto p-3.5">
-      <div className="flex items-center">
+    <Panel className="flex h-full min-h-0 flex-col gap-3 overflow-hidden p-3.5">
+      <div className="flex shrink-0 items-center">
         <h2 className="text-body font-semibold text-text-primary">장비 정보</h2>
 
         <MoreHorizontal size={18} className="ml-auto text-text-secondary" />
       </div>
 
-      <ScanSelector scannerId={detail.id} status={detail.status} statusLabel={detail.statusLabel} />
+      <div className="shrink-0">
+        <ScanSelector scannerId={detail.id} status={detail.status} statusLabel={detail.statusLabel} />
+      </div>
 
-      <HeroKpi label="오늘 검사" unit="박스" count={detail.scans} target={detail.target} percent={detail.percent} />
+      <div className="shrink-0">
+        <HeroKpi label="오늘 검사" unit="박스" count={detail.scans} target={detail.target} percent={detail.percent} />
+      </div>
 
-      <ScanKpiGrid detail={detail} />
+      <div className="shrink-0">
+        <ScanKpiGrid detail={detail} />
+      </div>
 
-      <DetailTabs tab={tab} alarmCount={detail.alarms.length} onChange={setTab} logLabel="작동 기록" />
+      <div className="shrink-0">
+        <DetailTabs tab={tab} alarmCount={detail.alarms.length} onChange={setTab} logLabel="작동 기록" />
+      </div>
 
-      {tab === 'trend' && (
-        <DefectRateChart
-          buckets={detail.buckets}
-          average={detail.defectRate}
-          bucketSeconds={detail.bucketSeconds}
-          lastDefect={detail.lastDefect}
-          label={(t) => formatClock(origin + t * 1000)}
-        />
-      )}
+      <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+        {tab === 'trend' && (
+          <DefectRateChart
+            buckets={detail.buckets}
+            average={detail.defectRate}
+            bucketSeconds={detail.bucketSeconds}
+            lastDefect={detail.lastDefect}
+            label={(t) => formatClock(origin + t * 1000)}
+          />
+        )}
 
-      <EventList events={events} />
+        <EventList events={events} />
+      </div>
 
-      <div className="mt-auto">
+      <div className="shrink-0">
         <RunButtons stopLabel="멈춤" />
 
         <p className="mt-1.5 text-[10px] text-text-tertiary">* 시연용 버튼 · 실제 장비 제어와 연동되지 않음</p>

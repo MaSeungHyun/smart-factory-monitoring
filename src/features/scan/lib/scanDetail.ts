@@ -1,8 +1,16 @@
+import { FACTORY_TEMPLATE, parseTemplate } from '@/features/template'
 import type { ActiveAlarm } from '@/features/playback'
 import type { EquipmentStatus } from '@/shared/types'
-import type { PlaybackRun } from '@/shared/types/playback'
+import type { BoxTrack, PlaybackRun } from '@/shared/types/playback'
 
 import { DEFECT_BUCKETS, PASS_TARGET, SCAN_TARGET } from '../config/scan.config'
+
+/** 스캐너 중심에서 이 거리 안을 지나면 판정이 난 것으로 본다 (m) */
+const SCAN_REACH = 1.5
+
+const SCANNERS = new Map(
+  parseTemplate(FACTORY_TEMPLATE).equipment.filter((entry) => entry.kind === 'scanner').map((entry) => [entry.id, { x: entry.x, z: entry.z }]),
+)
 
 export type ScanVerdict = 'pass' | 'defect' | 'pending'
 
@@ -13,7 +21,7 @@ export interface ScanRecord {
   enter: number
   /** 스캔 벨트 이탈 (s, 기록 끝까지 남으면 Infinity) */
   leave: number
-  /** 판정 시각 (s): 정상 = 진입, 불량 = 불량 감지 알람 */
+  /** 판정 시각 (s): 정상 = 스캐너 도달, 불량 = 불량 감지 알람. 그 전에는 판독 중 */
   at: number
   defect: boolean
   reason: string | null
@@ -76,9 +84,82 @@ const round2 = (value: number) => Math.round(value * 100) / 100
 
 const reasonOf = (message: string | undefined) => message?.match(/\(([^)]+)\)/)?.[1] ?? '판독 실패'
 
+/**
+ * 정상 판정 시각. 벨트 진입이 아니라, 박스 포즈가 스캐너에 가장 가까워지는 시각.
+ * 포즈 트랙이 이미 시계열이므로 판정용 트랙을 따로 두지 않는다.
+ * 스캐너에 닿기 전에 구간이 끝나면 이탈 시각을 돌려 그때까지 판독 중으로 남긴다.
+ */
+function passAt(box: BoxTrack, frameTimes: number[], enter: number, leave: number, scanner: { x: number; z: number } | undefined) {
+  const end = Number.isFinite(leave) ? leave : frameTimes[frameTimes.length - 1] ?? enter
+
+  if (!scanner || frameTimes.length === 0) return end
+
+  let frame = box.f0
+
+  let bestT = end
+
+  let bestD = Infinity
+
+  let previous: { t: number; x: number; z: number } | null = null
+
+  for (let index = 0; index < box.k.length; index++) {
+    frame += box.k[index]
+
+    const sample = {
+      t: frameTimes[Math.min(frame, frameTimes.length - 1)],
+      x: box.p[index * 4] / 100,
+      z: box.p[index * 4 + 2] / 100,
+    }
+
+    const from = previous
+
+    previous = sample
+
+    if (!from || sample.t < enter || from.t > end) continue
+
+    const t0 = Math.max(from.t, enter)
+
+    const t1 = Math.min(sample.t, end)
+
+    if (t1 < t0 || sample.t === from.t) continue
+
+    const span = sample.t - from.t
+
+    const ax = from.x + ((sample.x - from.x) * (t0 - from.t)) / span
+
+    const az = from.z + ((sample.z - from.z) * (t0 - from.t)) / span
+
+    const bx = from.x + ((sample.x - from.x) * (t1 - from.t)) / span
+
+    const bz = from.z + ((sample.z - from.z) * (t1 - from.t)) / span
+
+    const abx = bx - ax
+
+    const abz = bz - az
+
+    const len2 = abx * abx + abz * abz
+
+    const raw = len2 === 0 ? 0 : ((scanner.x - ax) * abx + (scanner.z - az) * abz) / len2
+
+    const k = Math.min(Math.max(raw, 0), 1)
+
+    const distance = Math.hypot(ax + abx * k - scanner.x, az + abz * k - scanner.z)
+
+    if (distance < bestD) {
+      bestD = distance
+
+      bestT = t0 + (t1 - t0) * k
+    }
+  }
+
+  return bestD <= SCAN_REACH ? bestT : end
+}
+
 /** 재생 기록 전체에서 이 스캐너를 지난 박스 (시간순) */
 export function scanRecords(run: PlaybackRun, id: string): ScanRecord[] {
   const belt = `scanbelt:${id}`
+
+  const scanner = SCANNERS.get(id)
 
   const records: ScanRecord[] = []
 
@@ -90,11 +171,15 @@ export function scanRecords(run: PlaybackRun, id: string): ScanRecord[] {
 
       const alarm = defect ? run.alarms.find((entry) => entry.id === box.defect?.alarm) : undefined
 
+      const enter = segment[0]
+
+      const leave = box.own[index + 1]?.[0] ?? Infinity
+
       records.push({
         boxId: box.id,
-        enter: segment[0],
-        leave: box.own[index + 1]?.[0] ?? Infinity,
-        at: defect ? (box.defect?.t ?? segment[0]) : segment[0],
+        enter,
+        leave,
+        at: defect ? (box.defect?.t ?? enter) : passAt(box, run.tracks.t, enter, leave, scanner),
         defect,
         reason: defect ? reasonOf(alarm?.message) : null,
         rejectBy: defect ? (box.reject?.robot ?? null) : null,

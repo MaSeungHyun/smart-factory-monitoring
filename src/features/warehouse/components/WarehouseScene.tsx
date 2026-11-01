@@ -1,8 +1,8 @@
+import { AlertPanel } from '@/features/alerts'
 import { SceneControls, SceneLegend, SceneSlot } from '@/features/scene'
 import { useUi } from '@/shared/hooks/useUi'
 
 import type { WarehouseView } from '../hooks/useWarehouse'
-import LiveAlertPanel from './LiveAlertPanel'
 import RackMapPanel from './RackMapPanel'
 import VehicleTagOverlay from './VehicleTagOverlay'
 
@@ -11,17 +11,15 @@ export default function WarehouseScene({ data, selected }: { data: WarehouseView
   const { labelsVisible } = useUi()
 
   return (
-    <div className="relative min-h-0 flex-1 overflow-hidden rounded border border-border-default bg-bg-base">
+    <div className="relative mt-2.5 min-h-0 flex-1 overflow-hidden rounded bg-bg-base">
       <SceneSlot />
 
       <div className="pointer-events-none absolute inset-0">
         {data && labelsVisible && <VehicleTagOverlay vehicles={data.vehicles} selected={selected} />}
 
-        {data && (
-          <div className="absolute top-4 right-4">
-            <LiveAlertPanel alarms={data.alarms} />
-          </div>
-        )}
+        <div className="absolute top-[18px] right-3.5">
+          <AlertPanel />
+        </div>
 
         {data && (
           <div className="absolute bottom-[72px] left-4">

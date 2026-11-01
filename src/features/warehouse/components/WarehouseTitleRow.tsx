@@ -1,40 +1,98 @@
-import { Timeline } from '@/features/dashboard'
-import { TONE_BG } from '@/shared/constants/status'
-import { cn } from '@/shared/lib/cn'
+import { AlertCircle, CheckCircle2, Clock, Layers } from "lucide-react";
+
+import { Timeline } from "@/features/dashboard";
+import { playbackStore, usePlayback } from "@/features/playback";
+import { useUi } from "@/shared/hooks/useUi";
+import { cn } from "@/shared/lib/cn";
+import { uiStore, type StatusFilter } from "@/shared/stores/uiStore";
 
 interface Props {
-  counts: { running: number; idle: number; error: number }
+  counts: { running: number; idle: number; error: number };
 }
 
-const CHIPS = [
-  { key: 'running', label: '작동', tone: 'success' },
-  { key: 'idle', label: '대기', tone: 'warning' },
-  { key: 'error', label: '고장', tone: 'error' },
-] as const
-
-/** 제목 · 층 · 상태 칩(운반 장비 수, 재생 데이터) · LIVE + 타임라인 */
+/** 제목 · 층 · 오른쪽 상태 칩(작동 · 대기 · 고장) · LIVE + 타임라인 */
 export default function WarehouseTitleRow({ counts }: Props) {
+  const { playing } = usePlayback();
+
+  const { statusFilter } = useUi();
+
+  const counters = [
+    {
+      id: "running" as StatusFilter,
+      label: "작동",
+      value: counts.running,
+      icon: CheckCircle2,
+      className: "text-status-success border-status-success/40",
+    },
+    {
+      id: "idle" as StatusFilter,
+      label: "대기",
+      value: counts.idle,
+      icon: Clock,
+      className: "text-status-warning border-status-warning/40",
+    },
+    {
+      id: "error" as StatusFilter,
+      label: "고장",
+      value: counts.error,
+      icon: AlertCircle,
+      className: "text-status-error border-status-error",
+    },
+  ];
+
   return (
-    <div className="flex shrink-0 flex-col gap-2">
-      <div className="flex items-center gap-3">
-        <h1 className="text-h2 font-semibold text-text-primary">창고 · AMR</h1>
+    <div className="flex shrink-0 flex-col">
+      <div className="flex h-9 items-center gap-3">
+        <h1 className="text-h1 text-text-primary">창고 · AMR</h1>
 
-        <span className="rounded border border-border-default px-2 text-caption text-text-secondary">1F</span>
-
-        {CHIPS.map(({ key, label, tone }) => (
-          <span key={key} className="flex items-center gap-1.5 rounded border border-border-default px-2 py-0.5 text-caption text-text-secondary">
-            <span className={cn('size-2 rounded-full', TONE_BG[tone])} />
-            {label} <b className="text-text-primary tabular-nums">{counts[key]}</b>
-          </span>
-        ))}
-
-        <span className="ml-auto flex items-center gap-1.5 text-caption font-semibold text-status-error">
-          <span className="size-2 animate-pulse rounded-full bg-status-error" />
-          LIVE
+        <span className="flex h-9 w-[68px] items-center justify-center gap-1 rounded border border-border-default text-label font-medium text-text-secondary gap-1">
+          <Layers size={14} />
+          <span>1F</span>
         </span>
+
+        <div className="ml-auto flex items-center gap-2">
+          {counters.map(({ id, label, value, icon: Icon, className }) => (
+            <button
+              key={id}
+              type="button"
+              data-status-chip={id}
+              aria-pressed={statusFilter === id}
+              title={statusFilter === id ? "필터 해제" : `${label} 장비만 보기`}
+              onClick={() => uiStore.toggleFilter(id)}
+              className={cn(
+                "flex h-8 w-[88px] items-center justify-center gap-2 rounded border text-label hover:brightness-125",
+                statusFilter === id
+                  ? "bg-bg-surface-2 ring-1 ring-current"
+                  : "bg-bg-surface",
+                statusFilter && statusFilter !== id && "opacity-50",
+                className,
+              )}
+            >
+              <Icon size={14} />
+
+              <span className="text-text-secondary">{label}</span>
+
+              <span className="font-semibold text-text-primary tabular-nums">
+                {value}
+              </span>
+            </button>
+          ))}
+
+          <button
+            type="button"
+            title={playing ? "일시정지" : "재생"}
+            onClick={() => playbackStore.toggle()}
+            className="flex h-9 w-20 items-center justify-center gap-1 rounded bg-primary-fill text-label font-semibold text-text-primary hover:brightness-110"
+          >
+            <span
+              className={`size-1.5 rounded-full bg-text-primary ${playing ? "animate-pulse" : "opacity-40"}`}
+            />
+            {playing ? "LIVE" : "PAUSE"}
+          </button>
+        </div>
       </div>
 
       <Timeline />
     </div>
-  )
+  );
 }

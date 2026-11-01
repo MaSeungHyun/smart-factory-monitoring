@@ -18,11 +18,11 @@ export default function WarehousePage() {
       header={<Header />}
       aside={<VehiclePanel vehicles={data?.vehicles ?? []} selected={selected} onSelect={onSelect} />}
       main={
-        <>
+        <div className="flex h-full min-h-0 min-w-0 flex-col">
           <WarehouseTitleRow counts={data?.counts ?? { running: 0, idle: 0, error: 0 }} />
 
           <WarehouseScene data={data} selected={selected} />
-        </>
+        </div>
       }
       bottom={<WarehouseKpiStrip kpis={data?.kpis ?? []} />}
     />

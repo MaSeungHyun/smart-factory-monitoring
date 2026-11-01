@@ -15,6 +15,11 @@ export default function LoadingScreen() {
 
   const [done, setDone] = useState(false)
 
+  const [peak, setPeak] = useState(0)
+
+  // 항목이 바뀌면 drei 진행률이 잠시 내려간다. 이미 찬 칸은 유지한다.
+  if (progress > peak) setPeak(progress)
+
   const finished = !active && progress >= 100
 
   /** 첫 로딩 완료 후엔 다시 띄우지 않음 (렌더 중 상태 갱신 패턴) */
@@ -22,7 +27,7 @@ export default function LoadingScreen() {
 
   if (done || finished) return null
 
-  const percent = Math.round(progress)
+  const percent = Math.round(peak)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base">
