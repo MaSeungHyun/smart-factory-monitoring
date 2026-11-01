@@ -76,3 +76,27 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* 상호작용 피드백: 키보드 포커스 링 · 150ms 전환 · 누름 */
+@layer base {
+  button,
+  [role='option'],
+  input,
+  select {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-duration: 150ms;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary-on-dark);
+    outline-offset: 2px;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+}

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 
 import { useDashboardView } from '@/features/playback'
+import { useUi } from '@/shared/hooks/useUi'
 
 import { faultLabels } from '../lib/faultTargets'
 import SceneLabel3D from './SceneLabel3D'
@@ -9,7 +10,11 @@ import SceneLabel3D from './SceneLabel3D'
 export default function SceneLabels() {
   const view = useDashboardView()
 
+  const { labelsVisible } = useUi()
+
   const labels = useMemo(() => (view ? faultLabels(view.alarms, view.equipment) : []), [view])
+
+  if (!labelsVisible) return null
 
   return (
     <>

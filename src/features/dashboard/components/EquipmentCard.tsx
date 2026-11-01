@@ -1,8 +1,12 @@
+import type { KeyboardEvent } from 'react'
+
 import { Bot, ScanLine, Truck } from 'lucide-react'
 
 import Card from '@/shared/components/Card'
 import SegmentBar from '@/shared/components/SegmentBar'
 import StatusBadge from '@/shared/components/StatusBadge'
+import { openEquipment } from '@/shared/lib/equipmentActions'
+import { uiStore } from '@/shared/stores/uiStore'
 import type { EquipmentItem } from '@/shared/types'
 
 const TYPE_ICON = { robot: Bot, amr: Truck, scanner: ScanLine }
@@ -12,14 +16,33 @@ interface EquipmentCardProps {
   selected?: boolean
 }
 
+/** 클릭: 선택 (3D 외곽 · 콜아웃), 더블클릭 / Enter: 그 장비로 이동 */
 export default function EquipmentCard({ item, selected }: EquipmentCardProps) {
   const Icon = TYPE_ICON[item.type]
 
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Enter') openEquipment(item.id)
+
+    if (event.key === ' ') {
+      event.preventDefault()
+
+      uiStore.toggleSelect(item.id)
+    }
+  }
+
   return (
-    <Card selected={selected} className="h-20 shrink-0 px-3.5 py-2.5">
+    <Card
+      interactive
+      selected={selected}
+      data-equipment-id={item.id}
+      onClick={() => uiStore.toggleSelect(item.id)}
+      onDoubleClick={() => openEquipment(item.id)}
+      onKeyDown={onKeyDown}
+      className="h-20 shrink-0 px-3.5 py-2.5"
+    >
       <div className="flex items-start gap-3">
         <div className="flex size-8 items-center justify-center rounded-md bg-bg-surface text-text-secondary">
-          <Icon size={16} />
+          <Icon size={16} className={selected ? 'text-primary-on-dark' : undefined} />
         </div>
 
         <div className="min-w-0 flex-1">

@@ -13,6 +13,8 @@ import FactoryProps from "./FactoryProps";
 import FaultHighlight from "./FaultHighlight";
 import GlbCameraRig from "./GlbCameraRig";
 import SceneLabels from "./SceneLabels";
+import SelectionLayer from "./SelectionLayer";
+import { uiStore } from "@/shared/stores/uiStore";
 
 const CAMERA = { fov: 45, near: 0.5, far: 2000 };
 
@@ -27,6 +29,7 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
       camera={CAMERA}
       gl={{ toneMapping: AgXToneMapping }}
       onCreated={({ gl }) => configureKTX2(gl)}
+      onPointerMissed={(event) => event.type === "click" && uiStore.select(null)}
     >
       <color attach="background" args={["#0a0b0d"]} />
 
@@ -46,6 +49,8 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
         <FaultHighlight />
 
         <SceneLabels />
+
+        <SelectionLayer />
 
         {children}
       </Suspense>

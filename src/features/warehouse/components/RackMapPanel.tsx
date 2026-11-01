@@ -1,7 +1,8 @@
-import { cn } from '@/shared/lib/cn'
+import { useUi } from '@/shared/hooks/useUi'
 
 import type { RackCell } from '../lib/rackMap'
 import MockBadge from './MockBadge'
+import RackCellButton from './RackCellButton'
 
 interface Props {
   grid: RackCell[][]
@@ -11,6 +12,8 @@ interface Props {
 
 /** 랙 적재 현황 A~C × 1~7 (적재율은 목업, 적재 중 하이라이트는 실데이터) */
 export default function RackMapPanel({ grid, loading }: Props) {
+  const { selectedId } = useUi()
+
   return (
     <div className="pointer-events-auto flex w-[300px] flex-col gap-2 rounded border border-border-default bg-bg-surface/95 p-3">
       <div className="flex items-center gap-2">
@@ -30,21 +33,7 @@ export default function RackMapPanel({ grid, loading }: Props) {
             const busy = loading.get(cell.id)
 
             return (
-              <span
-                key={cell.id}
-                title={busy ? `${cell.name} · ${busy} 적재 중` : cell.name}
-                className={cn(
-                  'flex h-9 flex-col items-center justify-center rounded-sm border text-[10px] leading-3 tabular-nums',
-                  busy
-                    ? 'animate-pulse border-status-success bg-status-success/25 text-text-primary'
-                    : cell.load >= 90
-                      ? 'border-status-warning/60 bg-status-warning/20 text-status-warning'
-                      : 'border-border-default bg-bg-surface-2 text-text-secondary',
-                )}
-              >
-                <span className="text-text-tertiary">{cell.name}</span>
-                {cell.load}%
-              </span>
+              <RackCellButton key={cell.id} cell={cell} busy={busy} selected={selectedId === cell.id} />
             )
           })}
         </div>

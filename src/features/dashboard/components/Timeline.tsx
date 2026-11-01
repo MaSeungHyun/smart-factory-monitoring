@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react'
+import type { PointerEvent } from 'react'
 
 import { playbackStore, usePlayback } from '@/features/playback'
 import { useNow } from '@/shared/hooks/useNow'
@@ -23,8 +23,10 @@ export default function Timeline() {
 
   const clamp = (value: number) => `${Math.min(Math.max(value, 0), 1) * 100}%`
 
-  const onSeek = (event: MouseEvent<HTMLDivElement>) => {
+  const onSeek = (event: PointerEvent<HTMLDivElement>) => {
     if (!run) return
+
+    if (event.type === 'pointermove' && !event.currentTarget.hasPointerCapture(event.pointerId)) return
 
     const box = event.currentTarget.getBoundingClientRect()
 
@@ -48,7 +50,16 @@ export default function Timeline() {
       <div className="absolute inset-x-0 bottom-2 h-px bg-border-default" />
 
       {run && (
-        <div onClick={onSeek} className="absolute inset-x-0 bottom-0 h-5 cursor-pointer">
+        <div
+          data-timeline
+          onPointerDown={(event) => {
+            event.currentTarget.setPointerCapture(event.pointerId)
+
+            onSeek(event)
+          }}
+          onPointerMove={onSeek}
+          className="group absolute inset-x-0 bottom-0 h-5 cursor-pointer touch-none"
+        >
           <div
             style={{ left: clamp(spanLeft), width: `${Math.max(spanWidth, 0.004) * 100}%` }}
             className="absolute bottom-1.5 h-1 rounded-full bg-primary-on-dark/40"
@@ -64,7 +75,7 @@ export default function Timeline() {
 
           <span
             style={{ left: clamp(range.position(origin + time * 1000)) }}
-            className="absolute bottom-0 h-3 w-0.5 -translate-x-1/2 bg-text-primary"
+            className="absolute bottom-0 h-3 w-0.5 -translate-x-1/2 bg-text-primary transition-[height] duration-150 group-hover:h-4"
           />
         </div>
       )}

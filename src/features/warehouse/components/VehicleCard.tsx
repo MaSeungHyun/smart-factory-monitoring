@@ -1,6 +1,7 @@
 import SegmentProgressBar from '@/shared/components/SegmentProgressBar'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { cn } from '@/shared/lib/cn'
+import { flyToEquipment } from '@/shared/lib/equipmentActions'
 
 import { LOW_BATTERY } from '../config/warehouse.config'
 import type { Vehicle } from '../lib/vehicles'
@@ -26,10 +27,13 @@ export default function VehicleCard({ vehicle, selected, onSelect }: Props) {
   return (
     <button
       type="button"
+      data-equipment-id={vehicle.id}
+      aria-pressed={selected}
       onClick={() => onSelect(vehicle.id)}
+      onDoubleClick={() => flyToEquipment(vehicle.id)}
       className={cn(
         'flex h-[84px] w-full shrink-0 flex-col justify-between rounded border bg-bg-surface-2 px-3 py-2.5 text-left',
-        selected ? 'border-primary-on-dark' : 'border-transparent hover:border-border-default',
+        selected ? 'border-primary-on-dark bg-primary-fill/16' : 'border-transparent hover:border-border-default hover:bg-bg-surface',
       )}
     >
       <div className="flex items-center gap-2.5">

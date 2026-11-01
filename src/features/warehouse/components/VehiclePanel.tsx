@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import Panel from '@/shared/components/Panel'
+import { useScrollToSelected } from '@/shared/hooks/useScrollToSelected'
+import { useUi } from '@/shared/hooks/useUi'
+import { statusVisible } from '@/shared/stores/uiStore'
 
 import type { Vehicle } from '../lib/vehicles'
 import DockSection from './DockSection'
@@ -25,6 +28,14 @@ const countOf = (vehicles: Vehicle[], category: Vehicle['category']) => vehicles
 export default function VehiclePanel({ vehicles, selected, onSelect }: Props) {
   const [filter, setFilter] = useState<VehicleFilter>('all')
 
+  const ui = useUi()
+
+  const list = useRef<HTMLDivElement>(null)
+
+  useScrollToSelected(list, selected)
+
+  const shown = vehicles.filter((vehicle) => MATCH[filter](vehicle) && statusVisible(vehicle.tone, ui))
+
   const counts = {
     all: vehicles.length,
     vehicle: vehicles.filter(MATCH.vehicle).length,
@@ -43,8 +54,8 @@ export default function VehiclePanel({ vehicles, selected, onSelect }: Props) {
 
       <VehicleTabs value={filter} counts={counts} onChange={setFilter} />
 
-      <div className="-mr-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-2">
-        {vehicles.filter(MATCH[filter]).map((vehicle) => (
+      <div ref={list} className="-mr-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-2">
+        {shown.map((vehicle) => (
           <VehicleCard key={vehicle.id} vehicle={vehicle} selected={vehicle.id === selected} onSelect={onSelect} />
         ))}
       </div>

@@ -17,7 +17,7 @@ export const RUN_TARGET = 40
 /** 이 배터리 미만이면 경고 (post-processing 조건 알람과 같은 값) */
 const LOW_BATTERY = 60
 
-const STATE_LABEL: Record<PlaybackState, string> = {
+export const STATE_LABEL: Record<PlaybackState, string> = {
   idle: '대기',
   moving: '작동',
   picking: '집기',

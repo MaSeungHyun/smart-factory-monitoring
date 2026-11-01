@@ -1,16 +1,16 @@
-import { useState } from 'react'
-
 import WarehouseLayout from '@/app/layouts/WarehouseLayout'
 import { Header, IconRail } from '@/features/dashboard'
+import { useUi } from '@/shared/hooks/useUi'
+import { uiStore } from '@/shared/stores/uiStore'
 import { useWarehouse, VehiclePanel, WarehouseKpiStrip, WarehouseScene, WarehouseTitleRow } from '@/features/warehouse'
 
 /** 04_창고AMR: 레일 창고 탭 */
 export default function WarehousePage() {
   const data = useWarehouse()
 
-  const [selected, setSelected] = useState<string | null>(null)
+  const { selectedId: selected } = useUi()
 
-  const onSelect = (id: string) => setSelected((current) => (current === id ? null : id))
+  const onSelect = (id: string) => uiStore.toggleSelect(id)
 
   return (
     <WarehouseLayout

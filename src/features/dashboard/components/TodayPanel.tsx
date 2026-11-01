@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, ChevronDown, Gauge, MapPin, MoreHorizontal, Package } from 'lucide-react'
 
@@ -7,11 +7,16 @@ import KpiCard from '@/shared/components/KpiCard'
 import Panel from '@/shared/components/Panel'
 import SegmentBar from '@/shared/components/SegmentBar'
 import { useDashboardView } from '@/features/playback'
+import { useScrollToSelected } from '@/shared/hooks/useScrollToSelected'
+import { useUi } from '@/shared/hooks/useUi'
 import { cn } from '@/shared/lib/cn'
 import { formatNumber } from '@/shared/lib/format'
+import { statusVisible } from '@/shared/stores/uiStore'
 
 import { ALARM_TOTAL, EQUIPMENT, EQUIPMENT_TOTAL, KPIS, SITE, THROUGHPUT } from '../data/dashboard.mock'
+import AlarmList from './AlarmList'
 import EquipmentCard from './EquipmentCard'
+import HistoryList from './HistoryList'
 
 const KPI_ICONS = {
   oee: <Gauge size={14} />,
@@ -27,11 +32,17 @@ export default function TodayPanel() {
 
   const view = useDashboardView()
 
+  const ui = useUi()
+
+  const list = useRef<HTMLDivElement>(null)
+
+  useScrollToSelected(list, tab === 'equipment' ? ui.selectedId : null)
+
   const throughput = view?.throughput ?? THROUGHPUT
 
   const kpis = view?.kpis ?? KPIS
 
-  const equipment = view?.equipment ?? EQUIPMENT
+  const equipment = (view?.equipment ?? EQUIPMENT).filter((item) => statusVisible(item.status, ui))
 
   const equipmentTotal = view?.equipmentTotal ?? EQUIPMENT_TOTAL
 
@@ -109,10 +120,12 @@ export default function TodayPanel() {
           <button
             key={id}
             type="button"
+            data-tab={id}
+            aria-pressed={tab === id}
             onClick={() => setTab(id)}
             className={cn(
               'flex items-center justify-center gap-1 rounded text-label font-semibold',
-              tab === id ? 'bg-primary-fill text-text-primary' : 'text-text-secondary',
+              tab === id ? 'bg-primary-fill text-text-primary' : 'text-text-secondary hover:bg-bg-surface hover:text-text-primary',
             )}
           >
             {label}
@@ -127,12 +140,20 @@ export default function TodayPanel() {
         ))}
       </div>
 
-      {/* Equipment list */}
-      <div className="flex shrink-0 flex-col gap-2.5">
-        {equipment.map((item, index) => (
-          <EquipmentCard key={item.id} item={item} selected={index === 0} />
-        ))}
-      </div>
+      {/* Tab content */}
+      {tab === 'equipment' && (
+        <div ref={list} role="listbox" aria-label="장비 목록" className="flex shrink-0 flex-col gap-2.5">
+          {equipment.map((item) => (
+            <EquipmentCard key={item.id} item={item} selected={item.id === ui.selectedId} />
+          ))}
+
+          {equipment.length === 0 && <p className="py-6 text-center text-caption text-text-tertiary">필터에 맞는 장비가 없습니다</p>}
+        </div>
+      )}
+
+      {tab === 'alarm' && <AlarmList alarms={view?.alarms ?? []} />}
+
+      {tab === 'history' && <HistoryList selectedId={ui.selectedId} />}
     </Panel>
   )
 }
