@@ -1,4 +1,4 @@
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import { Color, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Vector3 } from 'three'
 
@@ -9,6 +9,7 @@ import boxUrl from '@/assets/models/box.glb?url'
 
 import { boxGeometry } from '../lib/boxGeometry'
 import { boxOwnerAt, boxPoseAt } from '../lib/boxPoseAt'
+import { createGripSync } from '../lib/gripSync'
 import type { DecodedBox } from '../lib/decodeBoxes'
 
 const NORMAL = new Color('#ffffff')
@@ -43,6 +44,10 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
   const mesh = useRef<InstancedMesh>(null)
 
+  const world = useThree((state) => state.scene)
+
+  const gripSync = useMemo(() => createGripSync(world), [world])
+
   const scratch = useMemo(
     () => ({ pose: [0, 0, 0, 0], matrix: new Matrix4(), rotation: new Quaternion(), position: new Vector3(), scale: new Vector3(1, 1, 1) }),
     [],
@@ -68,9 +73,13 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
       rotation.setFromAxisAngle(UP, pose[3])
 
-      target.setMatrixAt(count, matrix.compose(position, rotation, scale))
+      matrix.compose(position, rotation, scale)
 
-      const color = time >= box.defectAt ? DEFECT : boxOwnerAt(box, time) === 'robot' ? CARRIED : NORMAL
+      const carried = gripSync(box, time, matrix)
+
+      target.setMatrixAt(count, matrix)
+
+      const color = time >= box.defectAt ? DEFECT : carried || boxOwnerAt(box, time) === 'robot' ? CARRIED : NORMAL
 
       target.setColorAt(count, color)
 

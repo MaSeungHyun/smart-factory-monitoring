@@ -116,6 +116,16 @@ export interface BoxDefect {
  * k = 프레임 index 증분 (첫 값은 f0 기준 0), p = [x, y, z (cm), yaw (centirad)] 반복.
  * 키프레임 사이 선형 보간 (보간 오차 1cm 이하 샘플은 제거됨).
  */
+/** [잡은 시각, 놓은 시각, 로봇 id, 합성 여부(1 = 후처리로 만든 리젝트 동작)] — 그리퍼 동기화 구간 */
+export type BoxGrip = [number, number, string, 0 | 1]
+
+/** 불량 박스 리젝트 (후처리 합성) */
+export interface BoxReject {
+  robot: string
+  /** 리젝트 존에 내려놓은 위치 (m, 박스 윗면 중앙) */
+  at: [number, number, number]
+}
+
 export interface BoxTrack {
   id: string
   /** 입고 (등장) 시각 s */
@@ -130,6 +140,8 @@ export interface BoxTrack {
   state: 'normal' | 'defect'
   defect?: BoxDefect
   own: BoxOwnerSegment[]
+  grip?: BoxGrip[]
+  reject?: BoxReject
   f0: number
   k: number[]
   p: number[]

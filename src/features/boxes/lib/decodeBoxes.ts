@@ -1,4 +1,11 @@
-import type { BoxOwnerSegment, PlaybackRun } from '@/shared/types/playback'
+import type { BoxOwnerSegment, BoxReject, PlaybackRun } from '@/shared/types/playback'
+
+export interface DecodedGrip {
+  start: number
+  end: number
+  robot: string
+  synthetic: boolean
+}
 
 /** 재생용으로 풀어 둔 박스 트랙 (단위 m, rad) */
 export interface DecodedBox {
@@ -8,6 +15,8 @@ export interface DecodedBox {
   src: string | null
   defectAt: number
   own: BoxOwnerSegment[]
+  grips: DecodedGrip[]
+  reject: BoxReject | null
   /** 키프레임 시각 s */
   times: Float32Array
   /** 키프레임마다 x, y, z, yaw */
@@ -45,6 +54,8 @@ export function decodeBoxes(run: PlaybackRun): DecodedBox[] {
       src: box.src,
       defectAt: box.defect?.t ?? Infinity,
       own: box.own,
+      grips: (box.grip ?? []).map(([start, end, robot, synthetic]) => ({ start, end, robot, synthetic: synthetic === 1 })),
+      reject: box.reject ?? null,
       times,
       poses,
     }
