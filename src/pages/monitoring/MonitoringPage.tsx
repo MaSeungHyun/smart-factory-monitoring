@@ -7,6 +7,7 @@ import LoadingScreen from '@/shared/components/LoadingScreen'
 import { useMonitorView } from '@/shared/hooks/useMonitorView'
 import EquipmentDetailPage from '@/pages/equipment-detail/EquipmentDetailPage'
 import ScanPage from '@/pages/scan/ScanPage'
+import WarehousePage from '@/pages/warehouse/WarehousePage'
 
 import ViewOverlays3D from './ViewOverlays3D'
 
@@ -16,6 +17,8 @@ function ViewPage() {
   if (view === 'robot') return <EquipmentDetailPage />
 
   if (view === 'scan') return <ScanPage />
+
+  if (view === 'warehouse') return <WarehousePage />
 
   return (
     <DashboardLayout

@@ -1,5 +1,5 @@
-/** 왼쪽 레일 탭이 고르는 화면 상태: 메인 관제 / 장비(로봇) 상세 / 스캔 검사 */
-export type MonitorView = 'main' | 'robot' | 'scan'
+/** 왼쪽 레일 탭이 고르는 화면 상태: 메인 관제 / 장비(로봇) 상세 / 스캔 검사 / 창고 · AMR */
+export type MonitorView = 'main' | 'robot' | 'scan' | 'warehouse'
 
 /** 장비 상세 3D 시점 */
 export type ViewAngle = 'front' | 'side' | 'top'

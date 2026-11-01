@@ -11,6 +11,7 @@ import { DEFAULT_ROBOT_ID, monitorView, type MonitorViewState } from '@/shared/s
 import { glbCameraPose, type CameraPose } from '../lib/glbCameraPose'
 import { robotCameraPose } from '../lib/robotCameraPose'
 import { scanCameraPose } from '../lib/scanCameraPose'
+import { warehouseCameraPose } from '../lib/warehouseCameraPose'
 
 /** factory.glb 카메라 노드 (대소문자 무시) */
 const MAIN_CAM = 'main_cam'
@@ -37,6 +38,8 @@ function placeCamera(camera: PerspectiveCamera, position: Vector3, fov: number) 
 
 function goalPose(state: MonitorViewState, main: CameraPose | null, robotCam: CameraPose | null, scene: Object3D) {
   if (state.view === 'main') return main
+
+  if (state.view === 'warehouse') return warehouseCameraPose(main?.fov)
 
   if (state.view === 'scan') {
     const scanner = scene.getObjectByName(state.scannerId)
