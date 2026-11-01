@@ -5,14 +5,14 @@ import type { Object3D } from 'three'
 import type { PlaybackRun } from '@/shared/types/playback'
 
 import { indexAt } from '../lib/frameAt'
-import { lerp, lerpAngle } from '../lib/interpolate'
+import { sampleJoint, samplePose } from '../lib/samplePose'
 import { getExactTime, playbackStore } from '../lib/usePlaybackStore'
 import { createJointControl, setJointDegrees, type JointControl } from '../lib/robotJoints'
 
 /**
- * Canvas 안에서 매 프레임 재생 시각의 포즈를 장비 그룹(name = id)에 적용.
- * 위치 x/z · yaw 는 10Hz 샘플을 선형 보간, 높이는 템플릿 배치 값을 유지.
- * 재생 시각은 getState() 로만 읽어 시계 틱이 이 컴포넌트를 다시 그리지 않는다.
+ * Canvas 안에서 재생 시각의 포즈를 장비 그룹(name = id)에 적용.
+ * 한 프레임에 재생 시각은 최대 40ms 만 진행하고, 샘플 사이 위치·관절은 곡선으로 잇는다.
+ * 높이는 템플릿 배치 값을 유지한다.
  */
 export default function PlaybackDriver() {
   const scene = useThree((state) => state.scene)
@@ -67,17 +67,15 @@ export default function PlaybackDriver() {
     for (const [id, track] of Object.entries(poses)) {
       const object = find(id)
 
-      const a = track[index]
+      const pose = samplePose(track, t, time)
 
-      const b = track[next] ?? a
+      if (!object || !pose) continue
 
-      if (!object || !a || !b) continue
+      object.position.x = pose.x
 
-      object.position.x = lerp(a[0], b[0], k)
+      object.position.z = pose.z
 
-      object.position.z = lerp(a[2], b[2], k)
-
-      object.rotation.y = lerpAngle(a[3], b[3], k)
+      object.rotation.y = pose.yaw
     }
 
     for (const [id, track] of Object.entries(tracks)) {
@@ -99,7 +97,7 @@ export default function PlaybackDriver() {
 
       if (!controls || !a || !b) continue
 
-      controls.forEach((control, joint) => setJointDegrees(control, lerp(a[joint], b[joint], k)))
+      controls.forEach((control, joint) => setJointDegrees(control, sampleJoint(track, index, next, k, joint)))
     }
   })
 

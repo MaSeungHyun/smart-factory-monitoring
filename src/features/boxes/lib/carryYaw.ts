@@ -1,7 +1,5 @@
-import { indexAt } from '@/features/playback/lib/frameAt'
-import { lerp, lerpAngle } from '@/features/playback/lib/interpolate'
+import { samplePose } from '@/features/playback/lib/samplePose'
 import { playbackStore } from '@/features/playback/lib/usePlaybackStore'
-import type { PoseSample } from '@/shared/types/playback'
 
 /** 박스·팔레트 중심이 이 거리 안이면 그 AMR 위에 실린 것으로 본다 */
 const REACH = 1.05
@@ -12,29 +10,6 @@ const REACH = 1.05
  * 화면에서는 그 회전을 빼고, AMR이 이후 돈 각도만 더한다.
  */
 const INBOUND_YAW = -Math.PI / 2
-
-/** PlaybackDriver 와 같은 10Hz 보간. 샘플이 없으면 그 프레임은 건너뛴다 */
-function amrPose(track: PoseSample[], times: number[], time: number) {
-  const index = indexAt(times, time)
-
-  const next = Math.min(index + 1, times.length - 1)
-
-  const a = track[index]
-
-  const b = track[next] ?? a
-
-  if (!a || !b) return null
-
-  const span = times[next] - times[index]
-
-  const k = span > 0 ? Math.min(Math.max((time - times[index]) / span, 0), 1) : 0
-
-  return {
-    x: lerp(a[0], b[0], k),
-    z: lerp(a[2], b[2], k),
-    yaw: lerpAngle(a[3], b[3], k),
-  }
-}
 
 interface AmrPose {
   x: number
@@ -67,7 +42,7 @@ function amrPoses(time: number) {
   for (const [id, track] of Object.entries(poses)) {
     if (!id.startsWith('amr-')) continue
 
-    const pose = amrPose(track, t, time)
+    const pose = samplePose(track, t, time)
 
     if (pose) cachedPoses.push(pose)
   }

@@ -33,15 +33,22 @@ export type PlaybackState = PlaybackSnapshot & PlaybackActions
 
 const UI_INTERVAL_MS = 250
 
-/** 씬 보간용 정밀 시각. 스토어에 넣지 않아 매 프레임 setState 가 없다 */
-let exactTime = 0
+/** 한 프레임에 재생 시각은 최대 40ms. 25fps 가 보장된다고 보고 그 이상은 다음 프레임으로 넘긴다 */
+const STEP_MS = 40
+
+/** 씬이 그릴 재생 시각 (s). 스토어에 넣지 않는다 */
+let simTime = 0
+
+/** 아직 재생에 반영하지 않은 실제 시간 (ms) */
+let pendingMs = 0
 
 let lastFrame = 0
 
 let lastPublish = 0
 
+/** 씬이 그릴 시각. 시계 틱마다 스토어를 갱신하지 않는다 */
 export function getExactTime() {
-  return exactTime
+  return simTime
 }
 
 function publish(patch: Partial<PlaybackSnapshot>) {
@@ -63,14 +70,22 @@ function frame(now: number) {
     return
   }
 
-  exactTime += (Math.min(now - lastFrame, 250) / 1000) * speed
+  pendingMs += Math.min(now - lastFrame, 250)
 
   lastFrame = now
 
+  const step = Math.min(pendingMs, STEP_MS)
+
+  pendingMs -= step
+
+  simTime += (step / 1000) * speed
+
   let patch: Partial<PlaybackSnapshot> = {}
 
-  if (exactTime >= run.meta.duration) {
-    exactTime = 0
+  if (simTime >= run.meta.duration) {
+    simTime = 0
+
+    pendingMs = 0
 
     patch = { origins: [...origins, Date.now()], reached: 0 }
   }
@@ -78,7 +93,7 @@ function frame(now: number) {
   if (now - lastPublish >= UI_INTERVAL_MS || patch.origins !== undefined) {
     lastPublish = now
 
-    publish({ ...patch, time: exactTime })
+    publish({ ...patch, time: simTime })
   }
 }
 
@@ -93,7 +108,9 @@ export const playbackStore = createStore<PlaybackState>((set, get) => ({
   acked: new Set(),
 
   setRun(run) {
-    exactTime = 0
+    simTime = 0
+
+    pendingMs = 0
 
     lastPublish = 0
 
@@ -123,11 +140,13 @@ export const playbackStore = createStore<PlaybackState>((set, get) => ({
   seek(time) {
     const duration = get().run?.meta.duration ?? 0
 
-    exactTime = Math.min(Math.max(time, 0), duration)
+    simTime = Math.min(Math.max(time, 0), duration)
+
+    pendingMs = 0
 
     lastPublish = 0
 
-    publish({ time: exactTime })
+    publish({ time: simTime })
   },
 
   ack(id) {
