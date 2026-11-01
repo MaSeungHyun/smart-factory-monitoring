@@ -1,0 +1,144 @@
+import type { ActiveAlarm } from '@/features/playback'
+import type { EquipmentStatus } from '@/shared/types'
+import type { PlaybackRun, PlaybackState } from '@/shared/types/playback'
+
+import { ROBOT_TARGET } from '../data/robotDetail.mock'
+
+export interface CycleBar {
+  /** 재생 시각 (s) */
+  t: number
+  seconds: number
+  paused: boolean
+}
+
+export interface RobotEvent {
+  key: string
+  text: string
+  /** epoch ms */
+  at: number
+  tone: EquipmentStatus
+}
+
+export interface RobotDetail {
+  id: string
+  name: string
+  status: EquipmentStatus
+  statusLabel: string
+  count: number
+  target: number
+  percent: number
+  cycle: number
+  cycleDelta: number
+  success: number
+  load: number
+  bars: CycleBar[]
+  events: RobotEvent[]
+  alarms: ActiveAlarm[]
+  running: boolean
+}
+
+const STATE_TEXT: Record<PlaybackState, string> = {
+  idle: '대기',
+  moving: '이동',
+  picking: '집기',
+  placing: '적재',
+  charging: '충전',
+  error: '고장',
+}
+
+const MAX_BARS = 16
+
+const round1 = (value: number) => Math.round(value * 10) / 10
+
+/**
+ * 선택 로봇의 상세 값 (재생 시각 기준).
+ * 사이클 = 이송 완료(count 증가) 간격, 알람 구간은 0초 '일시 정지' 막대.
+ * 성공률 = 완료 / (완료 + 이 로봇 고장 알람) — 완료와 알람이 모두 0 이면 0.
+ */
+export function robotDetail(run: PlaybackRun, time: number, origin: number, alarms: ActiveAlarm[], id: string): RobotDetail {
+  const frames = run.status.filter((frame) => frame.t <= time)
+
+  const latest = frames[frames.length - 1]?.equipment[id]
+
+  const bars: CycleBar[] = []
+
+  let lastCount = 0
+
+  let since: number | null = null
+
+  for (const frame of frames) {
+    const sample = frame.equipment[id]
+
+    if (!sample) continue
+
+    if (since === null && sample.state !== 'idle') since = frame.t
+
+    const count = sample.count ?? 0
+
+    if (count > lastCount && since !== null) {
+      bars.push({ t: frame.t, seconds: round1(frame.t - since), paused: false })
+
+      since = frame.t
+    }
+
+    lastCount = count
+  }
+
+  const faults = run.alarms.filter((alarm) => alarm.equipmentId === id && alarm.t <= time)
+
+  faults.forEach((alarm) => bars.push({ t: alarm.t, seconds: 0, paused: true }))
+
+  bars.sort((a, b) => a.t - b.t)
+
+  const cycles = bars.filter((bar) => !bar.paused)
+
+  const cycle = cycles.length ? round1(cycles.reduce((sum, bar) => sum + bar.seconds, 0) / cycles.length) : 0
+
+  const cycleDelta = cycles.length > 1 ? round1(cycles[cycles.length - 1].seconds - cycles[cycles.length - 2].seconds) : 0
+
+  const open = alarms.filter((alarm) => alarm.equipmentId === id)
+
+  const state = latest?.state ?? 'idle'
+
+  const status: EquipmentStatus = open.some((alarm) => alarm.severity === 'error') || state === 'error'
+    ? 'error'
+    : state === 'idle'
+      ? 'idle'
+      : 'running'
+
+  const transitions = run.events
+    .filter((event) => event.equipmentId === id && event.t <= time)
+    .map((event, index): RobotEvent => ({
+      key: `e${index}`,
+      text: `${STATE_TEXT[event.from]} → ${STATE_TEXT[event.to]}`,
+      at: origin + event.t * 1000,
+      tone: event.to === 'error' ? 'error' : event.to === 'idle' ? 'idle' : 'running',
+    }))
+
+  const alarmEvents = faults.map((alarm): RobotEvent => ({
+    key: alarm.id,
+    text: alarm.until ? `${alarm.message} → ${Math.round(alarm.until - alarm.t)}초 후 재기동` : alarm.message,
+    at: origin + alarm.t * 1000,
+    tone: alarm.severity === 'error' ? 'error' : 'warning',
+  }))
+
+  const count = latest?.count ?? 0
+
+  return {
+    id,
+    name: run.equipment.find((entry) => entry.id === id)?.name ?? id,
+    status,
+    statusLabel: status === 'error' ? '고장' : status === 'idle' ? '대기' : '작동',
+    count,
+    target: ROBOT_TARGET,
+    percent: Math.round((count / ROBOT_TARGET) * 100),
+    cycle,
+    cycleDelta,
+    success: count + faults.length ? round1((count / (count + faults.length)) * 100) : 0,
+    load: Math.round(latest?.utilization ?? 0),
+    bars: bars.slice(-MAX_BARS),
+    events: [...alarmEvents, ...transitions].sort((a, b) => b.at - a.at),
+    alarms: open,
+    running: status !== 'error' && state !== 'idle',
+  }
+}

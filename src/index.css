@@ -1,0 +1,78 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens (GRAPICAR)
+ * Tint rule: 선택 행 · 상태 배지 · 알림 배경은 같은 색을 16% 불투명도로 사용
+ *   e.g. bg-status-error/16, bg-primary-fill/16
+ * Idle(대기 · 오프라인) = text-tertiary
+ * Spacing: 4의 배수 (Tailwind 기본 spacing 단위 = 4px)
+ */
+@theme {
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* Background · Surface */
+  --color-bg-base: #0a0b0d;
+  --color-bg-surface: #121417;
+  --color-bg-surface-2: #1a1d21;
+  --color-border-default: #28343a;
+
+  /* Text */
+  --color-text-primary: #f2f5f6;
+  --color-text-secondary: #a6b0b5;
+  --color-text-tertiary: #65747c;
+
+  /* Primary */
+  --color-primary-fill: #2478a0;
+  --color-primary-on-dark: #4fa8d4;
+
+  /* Status */
+  --color-status-success: #34c77b;
+  --color-status-warning: #d99718;
+  --color-status-error: #d94845;
+  --color-status-idle: #65747c;
+
+  /* Typography scale */
+  --text-display: 40px;
+  --text-display--line-height: 48px;
+  --text-display--font-weight: 700;
+
+  --text-h1: 24px;
+  --text-h1--line-height: 29px;
+  --text-h1--font-weight: 700;
+
+  --text-h2: 18px;
+  --text-h2--line-height: 21px;
+  --text-h2--font-weight: 600;
+
+  /* SemiBold 16 (섹션 제목) */
+  --text-title: 16px;
+  --text-title--line-height: 19px;
+  --text-title--font-weight: 600;
+
+  --text-body: 14px;
+  --text-body--line-height: 16px;
+  --text-body--font-weight: 400;
+
+  /* Regular / Medium 13 */
+  --text-label: 13px;
+  --text-label--line-height: 15px;
+  --text-label--font-weight: 400;
+
+  --text-caption: 12px;
+  --text-caption--line-height: 14px;
+  --text-caption--font-weight: 400;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
