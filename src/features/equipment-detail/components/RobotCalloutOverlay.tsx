@@ -21,13 +21,13 @@ interface Props {
   ref: Ref<CalloutLayout>
 }
 
-/** 3D 뷰 위 DOM 레이어 (캔버스 픽셀 좌표): 카드 + 로봇 윗면 앵커까지 리더선 (매 프레임 DOM 직접 갱신) */
+/** 3D 뷰 위 DOM 레이어 (캔버스 픽셀 좌표): 카드 + 작업 지점 점에서 꺾인 리더선 (매 프레임 DOM 직접 갱신) */
 export default function RobotCalloutOverlay({ ref }: Props) {
   const detail = useRobotDetail()
 
   const card = useRef<HTMLDivElement>(null)
 
-  const line = useRef<SVGLineElement>(null)
+  const line = useRef<SVGPolylineElement>(null)
 
   const dot = useRef<SVGCircleElement>(null)
 
@@ -59,17 +59,14 @@ export default function RobotCalloutOverlay({ ref }: Props) {
 
       const [ax, ay] = frame.anchor
 
+      const inside = ax >= x && ax <= x + CALLOUT_WIDTH
+
+      const ey = inside ? (ay > y ? y + CALLOUT_HEIGHT : y) : y + CALLOUT_HEIGHT / 2
+
       const ex = ax < x ? x : x + CALLOUT_WIDTH
 
-      const ey = Math.min(Math.max(ay, y + 16), y + CALLOUT_HEIGHT - 16)
-
-      line.current.setAttribute('x1', String(ax))
-
-      line.current.setAttribute('y1', String(ay))
-
-      line.current.setAttribute('x2', String(ex))
-
-      line.current.setAttribute('y2', String(ey))
+      // 점에서 위(또는 아래)로 꺾여 카드 옆면으로 들어가는 리더선
+      line.current.setAttribute('points', inside ? `${ax},${ay} ${ax},${ey}` : `${ax},${ay} ${ax},${ey} ${ex},${ey}`)
 
       dot.current.setAttribute('cx', String(ax))
 
@@ -82,7 +79,7 @@ export default function RobotCalloutOverlay({ ref }: Props) {
   return (
     <div ref={root} className="pointer-events-none absolute top-0 left-0" style={{ visibility: 'hidden' }}>
       <svg className="absolute inset-0 size-full overflow-visible">
-        <line ref={line} stroke={color} strokeWidth={1.5} strokeOpacity={0.9} />
+        <polyline ref={line} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.95} />
 
         <circle ref={dot} r={4} fill={color} />
       </svg>

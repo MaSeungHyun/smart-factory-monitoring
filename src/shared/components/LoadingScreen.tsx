@@ -21,7 +21,14 @@ export default function LoadingScreen() {
       <div className="flex w-[487px] flex-col items-center">
         <p className="text-h2 font-normal text-text-tertiary">Smart Logistics Digital Twin</p>
 
-        <h1 className="mt-1 text-[84px] leading-[117px] font-black tracking-wide text-text-primary">GRAPICAR</h1>
+        <img
+          src="/images/logo_grapicar.png"
+          srcSet="/images/logo_grapicar.png 1x, /images/logo_grapicar@2x.png 2x"
+          alt="GRAPICAR"
+          width={532}
+          height={117}
+          className="mt-1 h-[117px] w-[532px] max-w-none"
+        />
 
         <SegmentProgressBar
           value={percent}
