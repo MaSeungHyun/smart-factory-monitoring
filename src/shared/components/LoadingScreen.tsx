@@ -1,4 +1,5 @@
 import { useProgress } from '@react-three/drei'
+import { useState } from 'react'
 
 import SegmentProgressBar from './SegmentProgressBar'
 
@@ -12,7 +13,14 @@ const SEGMENT_GAP = 3
 export default function LoadingScreen() {
   const { active, progress } = useProgress()
 
-  if (!active && progress >= 100) return null
+  const [done, setDone] = useState(false)
+
+  const finished = !active && progress >= 100
+
+  /** 첫 로딩 완료 후엔 다시 띄우지 않음 (렌더 중 상태 갱신 패턴) */
+  if (finished && !done) setDone(true)
+
+  if (done || finished) return null
 
   const percent = Math.round(progress)
 

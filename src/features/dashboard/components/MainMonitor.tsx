@@ -1,6 +1,6 @@
 import { AlertPanel } from '@/features/alerts'
 import { PlaybackControls } from '@/features/playback'
-import { FactoryScene, SceneControls, SceneLegend } from '@/features/scene'
+import { SceneControls, SceneLegend, SceneSlot } from '@/features/scene'
 
 import MonitorToolbar from './MonitorToolbar'
 import Timeline from './Timeline'
@@ -13,7 +13,7 @@ export default function MainMonitor() {
       <Timeline />
 
       <div className="relative mt-2.5 min-h-0 flex-1 overflow-hidden rounded bg-bg-base">
-        <FactoryScene />
+        <SceneSlot />
 
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-[18px] right-3.5">

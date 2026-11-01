@@ -1,25 +1,20 @@
 import { ScanLine } from 'lucide-react'
-import { useRef } from 'react'
 
-import { ViewAngleButtons, type CalloutLayout } from '@/features/equipment-detail'
-import { FactoryScene, SceneControls } from '@/features/scene'
+import { ViewAngleButtons } from '@/features/equipment-detail'
+import { SceneControls, SceneSlot } from '@/features/scene'
 
+import { scanCalloutRef } from '../lib/scanCalloutRef'
 import ScanCalloutOverlay from './ScanCalloutOverlay'
 import ScanCameraInset from './ScanCameraInset'
-import ScanMarker3D from './ScanMarker3D'
 
 /** 스캔 검사 3D 확대 뷰 + 오버레이 */
 export default function ScanScene() {
-  const layout = useRef<CalloutLayout | null>(null)
-
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden rounded border border-primary-on-dark/40 bg-bg-base">
-      <FactoryScene>
-        <ScanMarker3D layout={layout} />
-      </FactoryScene>
+      <SceneSlot />
 
       <div className="pointer-events-none absolute inset-0">
-        <ScanCalloutOverlay ref={layout} />
+        <ScanCalloutOverlay ref={scanCalloutRef} />
 
         <span className="absolute top-4 left-4 flex h-9 items-center gap-1.5 rounded border border-border-default bg-bg-surface/90 px-3 text-caption text-text-primary">
           <ScanLine size={14} />

@@ -1,3 +1,5 @@
 export { default as ScanInfoPanel } from './components/ScanInfoPanel'
 export { default as ScanScene } from './components/ScanScene'
 export { useScanDetail, useScannerOptions } from './hooks/useScanDetail'
+export { default as ScanMarker3D } from './components/ScanMarker3D'
+export { scanCalloutRef } from './lib/scanCalloutRef'
