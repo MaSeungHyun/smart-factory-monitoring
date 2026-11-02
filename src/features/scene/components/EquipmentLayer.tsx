@@ -1,6 +1,6 @@
 import type { SceneEquipment } from '@/shared/types'
 
-import { equipmentElevation } from '../lib/equipmentPose'
+import { equipmentPosition } from '../lib/equipmentPose'
 import EquipmentNode from './EquipmentNode'
 
 export default function EquipmentLayer({ equipment }: { equipment: SceneEquipment[] }) {
@@ -10,7 +10,7 @@ export default function EquipmentLayer({ equipment }: { equipment: SceneEquipmen
         <EquipmentNode
           key={entity.id}
           entity={entity}
-          elevation={equipmentElevation(entity, equipment)}
+          position={equipmentPosition(entity, equipment)}
         />
       ))}
     </group>

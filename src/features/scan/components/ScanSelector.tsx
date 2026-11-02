@@ -1,4 +1,4 @@
-import Select from '@/shared/components/Select'
+import Select from '@/shared/components/ui/Select'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { monitorView } from '@/shared/stores/useMonitorViewStore'
 

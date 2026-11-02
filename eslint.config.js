@@ -19,4 +19,11 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // r3f: three.js 객체(scene, renderer, 버퍼)는 프레임마다 직접 바꾸는 것이 정상이다
+    files: ['src/features/scene/**/*.tsx', 'src/features/boxes/**/*.tsx'],
+    rules: {
+      'react-hooks/immutability': 'off',
+    },
+  },
 ])

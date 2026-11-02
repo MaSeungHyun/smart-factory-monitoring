@@ -350,12 +350,13 @@ function collect(scene: Scene, kind: VisionKind, id: string, cssWidth: number, c
       ...rect,
       dist,
       held,
-      defect: defect || record?.defect === true,
+      // 불량은 감지 시각부터만, 정상은 스캐너 도달 시각부터만
+      defect: defect || (record?.defect === true && record.at <= time),
     }
 
     if (kind === 'scan') {
       if (record && record.at > time) {
-        hit.label = `판독 중 · ${boxId}`
+        hit.label = `판독 전 · ${boxId}`
       } else if (hit.defect) {
         hit.label = `제거 · ${boxId}`
 

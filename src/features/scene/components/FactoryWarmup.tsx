@@ -1,6 +1,6 @@
 import { useThree } from '@react-three/fiber'
 import { useEffect, useLayoutEffect } from 'react'
-import { Group, Mesh, MeshStandardMaterial, Texture, WebGLRenderer } from 'three'
+import { Group, Mesh, type Object3D, MeshStandardMaterial, Texture, WebGLRenderer } from 'three'
 
 import { initTexturesInBatches } from '@/shared/lib/three/compileInBatches'
 
@@ -9,11 +9,11 @@ import { sceneWarm } from '../lib/sceneWarm'
 
 const keptMaterials: MeshStandardMaterial[] = []
 
-function isMesh(object: { isMesh?: boolean }): object is Mesh {
-  return object.isMesh === true
+function isMesh(object: Object3D): object is Mesh {
+  return (object as Mesh).isMesh === true
 }
 
-function collectMeshes(scene: { traverse: (callback: (object: Mesh) => void) => void }) {
+function collectMeshes(scene: Object3D) {
   const meshes: Mesh[] = []
 
   scene.traverse((object) => {

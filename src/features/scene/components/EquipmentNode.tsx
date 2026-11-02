@@ -11,7 +11,7 @@ import EquipmentModel from './EquipmentModel'
 
 type Props = {
   entity: SceneEquipment
-  elevation: number
+  position: [number, number, number]
 }
 
 /** 드래그(카메라 회전) 뒤 클릭은 선택으로 보지 않음 (px) */
@@ -33,7 +33,7 @@ const setCursor = (value: string) => {
  * 픽킹은 모델 삼각형이 아니라 자식 그룹의 바운딩 박스만 본다.
  * 장비 상세 탭에서는 클릭한 로봇·AMR 계열로 오른쪽 정보도 바꾼다. 더블클릭: 카메라 비행
  */
-export default function EquipmentNode({ entity, elevation }: Props) {
+export default function EquipmentNode({ entity, position }: Props) {
   const groupRef = useRef<Group>(null)
 
   useLayoutEffect(() => {
@@ -85,7 +85,7 @@ export default function EquipmentNode({ entity, elevation }: Props) {
       ref={groupRef}
       name={entity.id}
       userData={{ equipmentId: entity.id, kind: entity.kind }}
-      position={[entity.x, elevation, entity.z]}
+      position={position}
       rotation={[0, entity.yaw, 0]}
     >
       <group

@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib/cn'
 import type { ScanBox } from '../lib/scanDetail'
 import { VERDICT_BADGE, VERDICT_TONE } from '../lib/scanTone'
 
-const READ_TEXT = { pass: '성공', defect: '실패', pending: '판독 중' }
+const READ_TEXT = { pass: '성공', defect: '실패', pending: '대기' }
 
 const actionOf = (box: ScanBox) => {
   if (box.verdict === 'pending') return '판독 대기'

@@ -17,7 +17,7 @@ import Panel from "@/shared/components/Panel";
 import SegmentBar from "@/shared/components/SegmentBar";
 import { useDashboardView } from "@/features/playback";
 import { useScrollToSelected } from "@/shared/hooks/useScrollToSelected";
-import { cn } from "@/shared/lib/cn";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/Tabs";
 import { formatNumber } from "@/shared/lib/format";
 import { statusVisible, useUi } from "@/shared/stores/useUiStore";
 
@@ -155,64 +155,61 @@ export default function TodayPanel() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="grid h-10 shrink-0 grid-cols-3 gap-1 rounded border border-border-default bg-bg-surface-2 p-1">
-        {tabs.map(({ id, label, count }) => (
-          <button
-            key={id}
-            type="button"
-            data-tab={id}
-            aria-pressed={tab === id}
-            onClick={() => setTab(id)}
-            className={cn(
-              "flex items-center justify-center gap-1 rounded text-label font-semibold",
-              tab === id
-                ? "bg-primary-fill text-text-primary"
-                : "text-text-secondary hover:bg-bg-surface hover:text-text-primary",
-            )}
-          >
-            {label}
+      <Tabs
+        value={tab}
+        onValueChange={(value) => setTab(value as TabId)}
+        className="flex min-h-0 flex-1 flex-col gap-3"
+      >
+        <TabsList aria-label="오늘 현황 목록">
+          {tabs.map(({ id, label, count }) => (
+            <TabsTrigger key={id} value={id} data-tab={id}>
+              {label}
 
-            {count !== undefined &&
-              (id === "alarm" ? (
-                <span className="rounded bg-status-error/16 px-1 text-status-error tabular-nums">
-                  {count}
-                </span>
-              ) : (
-                <span className="tabular-nums">{count}</span>
+              {count !== undefined &&
+                (id === "alarm" ? (
+                  <span className="rounded bg-status-error/16 px-1 text-status-error tabular-nums">
+                    {count}
+                  </span>
+                ) : (
+                  <span className="tabular-nums">{count}</span>
+                ))}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {/* 장비 · 알람 · 기록만 이 영역에서 스크롤 */}
+        <div ref={list} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+          <TabsContent value="equipment" className="outline-none">
+            <div
+              role="listbox"
+              aria-label="장비 목록"
+              className="flex flex-col gap-2.5"
+            >
+              {equipment.map((item) => (
+                <EquipmentCard
+                  key={item.id}
+                  item={item}
+                  selected={item.id === ui.selectedId}
+                />
               ))}
-          </button>
-        ))}
-      </div>
 
-      {/* 장비 · 알람 · 기록만 이 영역에서 스크롤 */}
-      <div ref={list} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
-        {tab === "equipment" && (
-          <div
-            role="listbox"
-            aria-label="장비 목록"
-            className="flex flex-col gap-2.5"
-          >
-            {equipment.map((item) => (
-              <EquipmentCard
-                key={item.id}
-                item={item}
-                selected={item.id === ui.selectedId}
-              />
-            ))}
+              {equipment.length === 0 && (
+                <p className="py-6 text-center text-caption text-text-tertiary">
+                  필터에 맞는 장비가 없습니다
+                </p>
+              )}
+            </div>
+          </TabsContent>
 
-            {equipment.length === 0 && (
-              <p className="py-6 text-center text-caption text-text-tertiary">
-                필터에 맞는 장비가 없습니다
-              </p>
-            )}
-          </div>
-        )}
+          <TabsContent value="alarm" className="outline-none">
+            <AlarmList alarms={view?.alarms ?? []} />
+          </TabsContent>
 
-        {tab === "alarm" && <AlarmList alarms={view?.alarms ?? []} />}
-
-        {tab === "history" && <HistoryList selectedId={ui.selectedId} />}
-      </div>
+          <TabsContent value="history" className="outline-none">
+            <HistoryList selectedId={ui.selectedId} />
+          </TabsContent>
+        </div>
+      </Tabs>
     </Panel>
   );
 }

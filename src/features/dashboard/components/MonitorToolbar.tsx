@@ -5,6 +5,8 @@ import {
   useDashboardView,
   usePlaybackPick,
 } from "@/features/playback";
+import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/ToggleGroup";
+import Tooltip from "@/shared/components/ui/Tooltip";
 import { cn } from "@/shared/lib/cn";
 import { uiStore, useUi, type StatusFilter } from "@/shared/stores/useUiStore";
 
@@ -53,14 +55,19 @@ export default function MonitorToolbar() {
       </span>
 
       <div className="ml-auto flex items-center gap-2">
+        <ToggleGroup
+          type="single"
+          aria-label="상태 필터"
+          value={statusFilter ?? ""}
+          onValueChange={(value) =>
+            uiStore.getState().toggleFilter((value || statusFilter) as StatusFilter)
+          }
+        >
         {counters.map(({ id, label, value, icon: Icon, className }) => (
-          <button
-            key={id}
-            type="button"
+          <Tooltip key={id} content={statusFilter === id ? "필터 해제" : `${label} 장비만 보기`}>
+          <ToggleGroupItem
+            value={id as string}
             data-status-chip={id}
-            aria-pressed={statusFilter === id}
-            title={statusFilter === id ? "필터 해제" : `${label} 장비만 보기`}
-            onClick={() => uiStore.getState().toggleFilter(id)}
             className={cn(
               "flex h-8 w-[88px] items-center justify-center gap-2 rounded border text-label hover:brightness-125",
               statusFilter === id
@@ -77,12 +84,14 @@ export default function MonitorToolbar() {
             <span className="font-semibold text-text-primary tabular-nums">
               {value}
             </span>
-          </button>
+          </ToggleGroupItem>
+          </Tooltip>
         ))}
+        </ToggleGroup>
 
+        <Tooltip content={playing ? "일시정지" : "재생"}>
         <button
           type="button"
-          title={playing ? "일시정지" : "재생"}
           onClick={() => playbackStore.getState().toggle()}
           className="flex h-9 w-20 items-center justify-center gap-1 rounded bg-primary-fill text-label font-semibold text-text-primary hover:brightness-110"
         >
@@ -91,6 +100,7 @@ export default function MonitorToolbar() {
           />
           {playing ? "LIVE" : "PAUSE"}
         </button>
+        </Tooltip>
       </div>
     </div>
   );

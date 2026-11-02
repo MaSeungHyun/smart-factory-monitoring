@@ -182,7 +182,7 @@ export default function GlbCameraRig() {
 
   const placed = useRef(false)
 
-  const chase = useMemo(createChase, [])
+  const chase = useMemo(() => createChase(), [])
 
   const state = useMonitorState()
 

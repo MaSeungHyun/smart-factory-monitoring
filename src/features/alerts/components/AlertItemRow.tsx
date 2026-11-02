@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  Check,
   CheckCircle2,
   Info,
   XCircle,
