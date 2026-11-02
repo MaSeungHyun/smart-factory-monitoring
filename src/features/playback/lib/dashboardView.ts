@@ -12,8 +12,8 @@ import { openAlarms, raisedAlarms, type ActiveAlarm } from './alarms'
 import { inspectionBoxMessage, isInspectionAlarm, isInspectionLabel } from './inspection'
 import { statusAt } from './frameAt'
 
-/** 재생 데이터 한 회차(약 3분) 기준 처리 목표 (박스) — 실제 목표치가 없어 고정값 */
-export const RUN_TARGET = 40
+/** 재생 데이터 한 회차(10분) 기준 처리 목표 (박스) — 실제 목표치가 없어 고정값 */
+export const RUN_TARGET = 120
 
 /** 이 배터리 미만이면 경고 (post-processing 조건 알람과 같은 값) */
 const LOW_BATTERY = 60
