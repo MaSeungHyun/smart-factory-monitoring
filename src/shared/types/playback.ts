@@ -1,4 +1,6 @@
 import type { AlertSeverity, EquipmentKind } from './'
+import type { RunAggregates } from './runChunk'
+import type { SimRecording } from './runEvents'
 
 /** 재생 장비 상태 (robot_IK 상태를 단순화) */
 export type PlaybackState = 'idle' | 'moving' | 'picking' | 'placing' | 'charging' | 'error'
@@ -86,6 +88,8 @@ export interface RunMeta {
 }
 
 export interface PlaybackRun {
+  /** PROVISIONAL: robot_IK 헤드리스 녹화 (result.recording). 없으면 기존 경로 */
+  recording?: SimRecording
   meta: RunMeta
   equipment: PlaybackEquipment[]
   tracks: PoseTracks
@@ -94,6 +98,8 @@ export interface PlaybackRun {
   alarms: RunAlarm[]
   /** 박스 트랙 (없는 예전 기록 호환) */
   boxes?: BoxTrack[]
+  /** manifest 런의 aggregates.json (없으면 목업 유지) */
+  aggregates?: RunAggregates
 }
 
 /** 박스 담당 장비 종류 */

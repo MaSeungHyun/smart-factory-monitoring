@@ -1,6 +1,6 @@
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
-import { Color, InstancedMesh, Matrix4, MeshStandardMaterial, Quaternion, Vector3 } from 'three'
+import { Color, InstancedMesh, Matrix4, MeshStandardMaterial } from 'three'
 
 import { getExactTime } from '@/features/playback'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
@@ -8,9 +8,8 @@ import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import boxUrl from '@/assets/models/box.glb?url'
 
 import { boxGeometry } from '../lib/boxGeometry'
-import { boxOwnerAt, boxPoseAt } from '../lib/boxPoseAt'
-import { holdBoxesOnPallet, type CarryPoint } from '../lib/carryYaw'
-import { createGripSync } from '../lib/gripSync'
+import { boxOwnerAt } from '../lib/boxPoseAt'
+import type { BoxSync } from '../lib/boxSync'
 import type { DecodedBox } from '../lib/decodeBoxes'
 
 const NORMAL = new Color('#ffffff')
@@ -20,10 +19,8 @@ const DEFECT = new Color('#ff3b30')
 /** 로봇이 들고 있는 박스: 살짝 밝게 */
 const CARRIED = new Color('#fff3c4').multiplyScalar(1.35)
 
-const UP = new Vector3(0, 1, 0)
-
 /** 모든 박스를 InstancedMesh 하나로 그린다 (매 프레임 재생 시각으로 갱신) */
-export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
+export default function BoxInstances({ boxes, sync }: { boxes: DecodedBox[]; sync: BoxSync }) {
   const { scene } = useGLTF(boxUrl)
 
   const { geometry, material } = useMemo(() => {
@@ -47,24 +44,7 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
   const applied = useRef(Number.NaN)
 
-  const world = useThree((state) => state.scene)
-
-  const gripSync = useMemo(() => createGripSync(world), [world])
-
-
-  const scratch = useMemo(
-    () => ({
-      pose: [0, 0, 0, 0],
-      matrix: new Matrix4(),
-      rotation: new Quaternion(),
-      position: new Vector3(),
-      scale: new Vector3(1, 1, 1),
-      points: [] as CarryPoint[],
-      piled: [] as CarryPoint[],
-      order: [] as number[],
-    }),
-    [],
-  )
+  const matrix = useMemo(() => new Matrix4(), [])
 
   useFrame(() => {
     const target = mesh.current
@@ -77,64 +57,25 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
     applied.current = time
 
-    const { pose, matrix, rotation, position, scale, points, piled, order } = scratch
-
     const visionIds = (target.userData.visionIds ??= []) as string[]
 
     let count = 0
 
-    let pileCount = 0
-
-    for (let index = 0; index < boxes.length; index++) {
-      const box = boxes[index]
-
+    for (const box of boxes) {
       if (time < box.start || time >= box.end) continue
 
-      boxPoseAt(box, time, pose)
+      const mode = sync.world(box, time, matrix)
 
-      const mode = gripSync.place(box, time, pose)
+      visionIds[count] = box.id
 
-      const point = points[count] ?? (points[count] = { x: 0, y: 0, z: 0, yaw: 0 })
+      target.setMatrixAt(count, matrix)
 
-      point.x = pose[0]
+      const color = time >= box.defectAt ? DEFECT : mode === 'arm' || boxOwnerAt(box, time) === 'robot' ? CARRIED : NORMAL
 
-      point.y = pose[1]
-
-      point.z = pose[2]
-
-      point.yaw = pose[3]
-
-      order[count] = index
-
-      if (mode === 'rest' || mode === 'free') piled[pileCount++] = point
+      target.setColorAt(count, color)
 
       count++
     }
-
-    holdBoxesOnPallet(piled, pileCount, time)
-
-    for (let index = 0; index < count; index++) {
-      const point = points[index]
-
-      const box = boxes[order[index]]
-
-      position.set(point.x, point.y, point.z)
-
-      rotation.setFromAxisAngle(UP, point.yaw)
-
-      matrix.compose(position, rotation, scale)
-
-      const carried = gripSync.apply(box, time, matrix)
-
-      visionIds[index] = box.id
-
-      target.setMatrixAt(index, matrix)
-
-      const color = time >= box.defectAt ? DEFECT : carried || boxOwnerAt(box, time) === 'robot' ? CARRIED : NORMAL
-
-      target.setColorAt(index, color)
-    }
-
     visionIds.length = count
 
     target.count = count

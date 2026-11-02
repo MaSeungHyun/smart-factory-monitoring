@@ -2,6 +2,7 @@ import type { PoseSample } from '@/shared/types/playback'
 
 import { indexAt } from './frameAt'
 import { catmull, lerpAngle } from './interpolate'
+import { JOINT_INTERPOLATION } from './playbackConfig'
 
 function axis(track: PoseSample[], index: number, channel: number, fallback: number) {
   const sample = track[Math.min(Math.max(index, 0), track.length - 1)]
@@ -35,6 +36,8 @@ export function samplePose(track: PoseSample[], times: number[], time: number) {
 /** 관절 각(deg)도 같은 곡선 */
 export function sampleJoint(track: number[][], index: number, next: number, k: number, joint: number) {
   const at = (frame: number) => track[Math.min(Math.max(frame, 0), track.length - 1)]?.[joint] ?? 0
+
+  if (!JOINT_INTERPOLATION) return at(index)
 
   return catmull(at(index - 1), at(index), at(next), at(next + 1), k)
 }

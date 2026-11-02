@@ -1,7 +1,11 @@
 import type { BoxOwnerSegment, BoxReject, BoxTrack, PlaybackRun } from '@/shared/types/playback'
 
+import { createContactFinder } from './gripContact'
+
 export interface DecodedGrip {
   start: number
+  /** 기록상 그립 시작 (접촉 탐색 시작점). start 는 상태 기반 접촉 시각 */
+  claimed: number
   end: number
   robot: string
   synthetic: boolean
@@ -40,6 +44,8 @@ function defectReason(run: PlaybackRun, box: BoxTrack) {
 export function decodeBoxes(run: PlaybackRun): DecodedBox[] {
   const frameTimes = run.tracks.t
 
+  const contactAfter = createContactFinder(run)
+
   return (run.boxes ?? []).map((box) => {
     const times = new Float32Array(box.k.length)
 
@@ -69,7 +75,13 @@ export function decodeBoxes(run: PlaybackRun): DecodedBox[] {
       defectAt: box.defect?.t ?? Infinity,
       defectReason: defectReason(run, box),
       own: box.own,
-      grips: (box.grip ?? []).map(([start, end, robot, synthetic]) => ({ start, end, robot, synthetic: synthetic === 1 })),
+      grips: (box.grip ?? []).map(([start, end, robot, synthetic]) => ({
+        start: synthetic === 1 ? start : contactAfter(robot, start, end),
+        claimed: start,
+        end,
+        robot,
+        synthetic: synthetic === 1,
+      })),
       reject: box.reject ?? null,
       times,
       poses,

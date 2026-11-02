@@ -1,15 +1,15 @@
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
-import { Group } from 'three'
+import { Group, Matrix4 } from 'three'
 
 import { getExactTime } from '@/features/playback'
 import PalletModel from '@/features/scene/components/models/PalletModel'
 import { PALLET_HEIGHT } from '@/features/scene/constants/modelPlacement'
 
-import { boxOwnerAt, boxPoseAt } from '../lib/boxPoseAt'
-import { holdBoxesOnPallet, nearestAmrYaw } from '../lib/carryYaw'
+import { boxOwnerAt } from '../lib/boxPoseAt'
+import { nearestAmrYaw } from '../lib/carryYaw'
+import type { BoxSync } from '../lib/boxSync'
 import type { DecodedBox } from '../lib/decodeBoxes'
-import { createGripSync } from '../lib/gripSync'
 
 /** 박스 원점은 윗면 */
 const BOX_HEIGHT = 0.36
@@ -132,18 +132,14 @@ function keepsPallet(box: DecodedBox, time: number) {
   return !box.grips.some((grip) => !grip.synthetic && time >= grip.end && time < grip.end + PLACED)
 }
 
-export default function RailPallets({ boxes }: { boxes: DecodedBox[] }) {
+export default function RailPallets({ boxes, sync }: { boxes: DecodedBox[]; sync: BoxSync }) {
   const slots = useRef<Array<Group | null>>([])
 
   const applied = useRef(Number.NaN)
 
-  const pose = useMemo(() => [0, 0, 0, 0], [])
+  const matrix = useMemo(() => new Matrix4(), [])
 
   const points = useMemo(() => [] as Point[], [])
-
-  const world = useThree((state) => state.scene)
-
-  const gripSync = useMemo(() => createGripSync(world), [world])
 
   useFrame(() => {
     const time = getExactTime()
@@ -157,16 +153,14 @@ export default function RailPallets({ boxes }: { boxes: DecodedBox[] }) {
     for (const box of boxes) {
       if (time < box.start || time >= box.end) continue
 
-      boxPoseAt(box, time, pose)
+      const mode = sync.world(box, time, matrix)
 
-      const mode = gripSync.place(box, time, pose)
+      if (mode === 'arm' || mode === 'synthetic') continue
 
-      if (mode === 'attach' || mode === 'omit') continue
+      const e = matrix.elements
 
-      points.push({ x: pose[0], y: pose[1], z: pose[2], yaw: pose[3], keep: keepsPallet(box, time) })
+      points.push({ x: e[12], y: e[13], z: e[14], yaw: Math.atan2(e[8], e[10]), keep: keepsPallet(box, time) })
     }
-
-    holdBoxesOnPallet(points, points.length, time)
 
     const loads = loadsOf(points, time)
 
