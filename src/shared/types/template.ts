@@ -21,7 +21,18 @@ export interface EquipmentSettings {
   robotPedestalYaw?: number
   mountedOn?: string
   dockRole?: string
+  /** robot_IK 와 같게 === true 일 때만 열림 */
   doorOpen?: boolean
+  /** m/s. robot_IK placementDefaults: 역할 없음 0.25, inbound/outbound/ship 1 */
+  beltSpeed?: number
+  conveyorRole?: string
+  /** 로봇 속도 배율 / 집기 반경 (robot_IK 기본 1 / 2.5) */
+  speed?: number
+  reach?: number
+  /** 미검수 박스도 집기 (robot_IK 기본 false) */
+  pickUnscanned?: boolean
+  pickFilter?: string
+  robotRole?: string
   [key: string]: unknown
 }
 

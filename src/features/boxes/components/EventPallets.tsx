@@ -7,17 +7,7 @@ import PalletModel from '@/features/scene/components/models/PalletModel'
 import type { PalletEvent } from '@/shared/types/runEvents'
 
 import { localMatrix } from '../lib/boxParenting'
-import { palletEventAt, palletNodeName, palletTracks } from '../lib/palletTracks'
-
-function lerpAngle(a: number, b: number, k: number) {
-  let delta = b - a
-
-  if (delta > Math.PI) delta -= Math.PI * 2
-
-  if (delta < -Math.PI) delta += Math.PI * 2
-
-  return a + delta * k
-}
+import { palletEventAt, palletNodeName, palletPoseAt, palletTracks } from '../lib/palletTracks'
 
 /**
  * PROVISIONAL: palletEvents 가 있는 run 의 팔레트. 그룹 이름 pallet:<id> 로
@@ -32,7 +22,7 @@ export default function EventPallets({ events }: { events: PalletEvent[] }) {
 
   const slots = useRef(new Map<string, Group | null>())
 
-  const scratch = useMemo(() => ({ parent: new Matrix4(), world: new Matrix4(), locals: new Map<PalletEvent, Matrix4>() }), [])
+  const scratch = useMemo(() => ({ parent: new Matrix4(), world: new Matrix4(), locals: new Map<PalletEvent, Matrix4>(), pose: [0, 0, 0, 0] }), [])
 
   const applied = useRef(Number.NaN)
 
@@ -72,21 +62,13 @@ export default function EventPallets({ events }: { events: PalletEvent[] }) {
         continue
       }
 
-      const from = event.pose
+      if (!palletPoseAt(list, time, scratch.pose)) continue
 
-      if (!from) continue
+      const [x, y, z, yaw] = scratch.pose
 
-      const next = list[index + 1]
+      slot.position.set(x, y, z)
 
-      const to = next?.kind === 'move' && next.pose ? next.pose : from
-
-      const span = next ? next.t - event.t : 0
-
-      const k = to !== from && span > 0 ? Math.min((time - event.t) / span, 1) : 0
-
-      slot.position.set(from[0] + (to[0] - from[0]) * k, from[1] + (to[1] - from[1]) * k, from[2] + (to[2] - from[2]) * k)
-
-      slot.rotation.set(0, lerpAngle(from[3], to[3], k), 0)
+      slot.rotation.set(0, yaw, 0)
     }
   })
 

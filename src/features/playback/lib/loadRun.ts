@@ -4,7 +4,7 @@ import type { RunAggregates, RunChunk, RunManifest } from '@/shared/types/runChu
 
 import { chunkToRun } from './chunkRun'
 
-export const RUN_URL = '/data/run-2026-11-03-t06-10m-w7200-s12345/manifest.json'
+export const RUN_URL = '/data/run-2026-11-03-t06-10m-w7200-s12345-v2/manifest.json'
 
 const isManifest = (url: string) => url.endsWith('manifest.json')
 

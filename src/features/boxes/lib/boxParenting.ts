@@ -39,6 +39,7 @@ const KIND: Record<BoxParentKind, SpanKind> = {
   none: 'track',
   arm: 'arm',
   amr: 'amr',
+  // v2 recordings: pallet local is relative to the pallet stream pose. Old runs (no local, ids mismatched) follow keyframes
   pallet: 'pallet',
 }
 
@@ -60,6 +61,10 @@ export function insertSpan(spans: Map<string, ParentSpan[]>, id: string, span: P
   spans.set(id, list)
 }
 
+/**
+ * 기록 local 은 robot_IK three.js 부모(팔레트 그룹 등) 기준이라 모니터링 노드와 원점이 다르다.
+ * 스냅샷 박스는 local 자리에 월드 좌표가 들어 있다. 그래서 local 은 버리고 붙는 순간 월드 키프레임으로 다시 구한다.
+ */
 function fromParentEvents(boxes: DecodedBox[], events: BoxParentEvent[]) {
   const ends = new Map(boxes.map((box) => [box.id, box.end]))
 
@@ -72,7 +77,9 @@ function fromParentEvents(boxes: DecodedBox[], events: BoxParentEvent[]) {
 
     if (previous) previous.end = t
 
-    list.push({ start: t, end: ends.get(id) ?? Infinity, kind: KIND[kind] ?? 'track', parentId, local: local ? localMatrix(local) : null, window: null })
+    const spanKind = kind === 'pallet' && !local ? 'track' : (KIND[kind] ?? 'track')
+
+    list.push({ start: t, end: ends.get(id) ?? Infinity, kind: spanKind, parentId, local: local ? localMatrix(local) : null, window: null })
 
     spans.set(id, list)
   }

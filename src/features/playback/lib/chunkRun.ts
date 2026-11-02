@@ -1,7 +1,8 @@
 import { unwrapDegrees } from '@/shared/lib/angles'
 import type { EquipmentStateSample, PlaybackRun, PoseSample, RunCounts, StatusFrame } from '@/shared/types/playback'
 import type { RunAggregates, RunChunk, RunManifest } from '@/shared/types/runChunk'
-import type { SimBoxParentEvent, SimPalletEvent, SimRecording, SimSuctionEvent } from '@/shared/types/runEvents'
+import type { ChunkSnapshotBox } from '@/shared/types/runChunk'
+import type { SimBoxKeyframe, SimBoxParentEvent, SimPalletEvent, SimQuat, SimRecording, SimSuctionEvent, SimVec3 } from '@/shared/types/runEvents'
 
 import { boxesFromRecording } from './chunkBoxes'
 
@@ -17,7 +18,16 @@ function snapshotParents(chunk: RunChunk, events: SimBoxParentEvent[]): SimBoxPa
 
   for (const event of events) if (!later.has(event[1])) later.set(event[1], event)
 
-  return chunk.snapshot.boxes.map(([id, kind, parentId, x, y, z]) => {
+  return chunk.snapshot.boxes.map((row) => {
+    const [id, kind, parentId, x, y, z] = row
+
+    // v2: 팔레트 위 박스는 팔레트 포즈 기준 local (cm) + local 쿼터니언이 붙어 있다
+    if (kind === 'pallet' && row.length >= 17) {
+      const local = row.slice(10, 17) as number[]
+
+      return [0, id, 'pallet', parentId, local.slice(0, 3).map((v) => v / 100) as SimVec3, local.slice(3, 7) as SimQuat]
+    }
+
     const next = later.get(id)
 
     const quat = next && next[3] === parentId ? next[5] : ([0, 0, 0, 1] as SimBoxParentEvent[5])
@@ -26,9 +36,19 @@ function snapshotParents(chunk: RunChunk, events: SimBoxParentEvent[]): SimBoxPa
   })
 }
 
+/** 스냅샷 박스 -> t=0 키프레임 행 (v2 는 world 쿼터니언 포함) */
+function snapshotKeyRow(row: ChunkSnapshotBox): SimBoxKeyframe['boxes'][number] {
+  const [id, , , x, y, z] = row
+
+  if (row.length >= 10) return [id, x / 100, y / 100, z / 100, row[6] as number, row[7] as number, row[8] as number, row[9] as number]
+
+  return [id, x / 100, y / 100, z / 100]
+}
+
 function snapshotPallets(chunk: RunChunk): SimPalletEvent[] {
   return chunk.snapshot.pallets.map(([id, state, , , pos, yaw, carrierKey]) => {
-    const [kind, carrier] = carrierKey.split('|')
+    // inbound (IN-xxxx) pallets have no carrier key
+    const [kind, carrier] = (carrierKey ?? '').split('|')
 
     const carried = kind && kind !== 'null'
 
@@ -54,7 +74,7 @@ function shiftRecording(chunk: RunChunk, offset: number, duration: number): SimR
     contacts: source.contacts.map((contact) => ({ ...contact, t: at(contact.t) })),
     boxParents: [...snapshotParents(chunk, boxParents), ...boxParents],
     boxKeyframes: [
-      { t: 0, boxes: chunk.snapshot.boxes.map(([id, , , x, y, z]) => [id, x / 100, y / 100, z / 100] as [string, number, number, number]) },
+      { t: 0, boxes: chunk.snapshot.boxes.map(snapshotKeyRow) },
       ...source.boxKeyframes.map((frame) => ({ ...frame, t: at(frame.t) })),
     ],
     pallets: [...snapshotPallets(chunk), ...source.pallets.map((event) => [at(event[0]), ...event.slice(1)] as SimPalletEvent)],

@@ -45,10 +45,12 @@ export interface RunManifest {
 // [2] chunk-NNN.json
 
 /** [boxId, parentKind, parentId, x, y, z (cm)] */
-export type ChunkSnapshotBox = [id: string, parentKind: string, parentId: string | null, x: number, y: number, z: number]
+export type ChunkSnapshotBox =
+  | [id: string, parentKind: string, parentId: string | null, x: number, y: number, z: number]
+  | [id: string, parentKind: string, parentId: string | null, x: number, y: number, z: number, qx: number, qy: number, qz: number, qw: number, ...local: number[]]
 
 /** [palletId, state, grade, boxes, [x, y, z] m, yaw rad, "carrierKind|carrierId|uuid"] */
-export type ChunkSnapshotPallet = [id: string, state: string, grade: string, boxes: number, pos: [number, number, number], yaw: number, carrierKey: string]
+export type ChunkSnapshotPallet = [id: string, state: string, grade: string, boxes: number, pos: [number, number, number], yaw: number, carrierKey: string | null]
 
 /** [occupied 0/1, palletId, grade, boxes] */
 export type ChunkRackSlot = [occupied: number, palletId: string | null, grade: string | null, boxes: number]

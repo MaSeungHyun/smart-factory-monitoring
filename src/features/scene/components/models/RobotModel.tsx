@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo } from 'react'
-import { Group, Vector3, type Object3D } from 'three'
+import { Group, Matrix4, type Object3D } from 'three'
 
 import { findGlbNode } from '@/shared/lib/three/glbNode'
 import { castShadows } from '@/shared/lib/three/modelBounds'
@@ -30,7 +30,8 @@ function Pedestal({ kind }: { kind: keyof typeof PEDESTAL_URL }) {
 
     wrapper.add(clone)
 
-    if (point) clone.position.sub(point.getWorldPosition(new Vector3()))
+    // robot_IK RobotPedestal: point 의 월드 행렬 역행렬 전체(이동+회전)를 적용
+    if (point) clone.applyMatrix4(new Matrix4().copy(point.matrixWorld).invert())
 
     return wrapper as Object3D
   }, [scene, kind])

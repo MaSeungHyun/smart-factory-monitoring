@@ -4,11 +4,12 @@ import { findGripPoint } from '@/shared/lib/three/findGripPoint'
 import type { PlaybackRun } from '@/shared/types/playback'
 
 import { createArmReach } from './armReach'
-import { createDriftResync, keyPoseAt } from './boxKeyframes'
+import { nearestAmrYaw } from './carryYaw'
+import { createDriftResync, keyPoseAt, keyQuatAt } from './boxKeyframes'
 import { buildParentSpans, insertSpan, spanAt, type ParentSpan, type SpanKind, type SpanLookup } from './boxParenting'
 import { boxPoseAt } from './boxPoseAt'
 import type { DecodedBox } from './decodeBoxes'
-import { palletNodeName } from './palletTracks'
+import { palletNodeName, palletPoseAt, palletTracks } from './palletTracks'
 import { readStreams } from './runStreams'
 
 /** 레거시 접촉 판정: 그리퍼 끝과 박스(윗면 중심) 거리 (y=0 팔 기준 34/34 검증) */
@@ -53,6 +54,11 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
 
   const resync = createDriftResync()
 
+  // v2: 팔레트 부모 = 스트림 포즈 T(pos) * Ry(yaw) (EventPallets 그룹과 같음). 씬 노드 대신 스트림에서 바로 계산
+  const pallets = streams.palletLocal && streams.palletEvents ? palletTracks(streams.palletEvents) : null
+
+  const palletPose = [0, 0, 0, 0]
+
   const objects = new Map<string, Object3D>()
 
   const cache = new Map<string, { time: number; mode: BoxMode; matrix: Matrix4 }>()
@@ -93,15 +99,90 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
 
   // ---- 기록 월드 / 부모 월드
 
+  /**
+   * robot_IK 은 놓을 때 Object3D.attach 로 월드 자세를 그대로 둔다. 기록은 위치(1 Hz)만 있어서
+   * 마지막 그립이 끝난 순간의 회전을 그대로 들고 간다 (AMR 위에 있으면 그 AMR 이 돈 만큼만 더한다).
+   */
+  const releasedRotations = new Map<ParentSpan, { rotation: Quaternion; x: number; z: number; amrYaw: number | null } | null>()
+
+  function lastArm(box: DecodedBox, time: number) {
+    let found: ParentSpan | null = null
+
+    for (const span of parenting.spans.get(box.id) ?? []) {
+      if (span.start > time) break
+
+      if (span.kind === 'arm' && span.end <= time + 1e-6) found = span
+    }
+
+    return found
+  }
+
+  function releasedRotation(box: DecodedBox, span: ParentSpan) {
+    if (releasedRotations.has(span)) return releasedRotations.get(span) ?? null
+
+    releasedRotations.set(span, null)
+
+    const matrix = new Matrix4()
+
+    if (!rigidWorld(box, span, span.end, matrix)) {
+      releasedRotations.delete(span)
+
+      return null
+    }
+
+    const at = new Vector3()
+
+    const held = { rotation: new Quaternion(), x: 0, z: 0, amrYaw: null as number | null }
+
+    matrix.decompose(at, held.rotation, new Vector3())
+
+    held.x = at.x
+
+    held.z = at.z
+
+    held.amrYaw = nearestAmrYaw(at.x, at.z, span.end)
+
+    releasedRotations.set(span, held)
+
+    return held
+  }
+
+  const carried = new Quaternion()
+
+  function heldRotation(box: DecodedBox, time: number, x: number, z: number, out: Quaternion) {
+    const span = lastArm(box, time)
+
+    const held = span ? releasedRotation(box, span) : null
+
+    if (!held) return false
+
+    out.copy(held.rotation)
+
+    const now = held.amrYaw === null ? null : nearestAmrYaw(x, z, time)
+
+    if (held.amrYaw !== null && now !== null) out.premultiply(carried.setFromAxisAngle(UP, now - held.amrYaw))
+
+    return true
+  }
+
   function trackWorld(box: DecodedBox, time: number, out: Matrix4) {
     const keys = streams.boxKeys?.[box.id]
+
+    // 놓인 회전을 먼저 캐시한다 (재귀 계산이 아래 pose/position 스크래치를 덮지 않게)
+    const recorded = !!keys?.length && keyQuatAt(keys, time, targetRotation)
+
+    const arm = recorded ? null : lastArm(box, time)
+
+    const holding = !!arm && !!releasedRotation(box, arm)
 
     if (box.times.length) boxPoseAt(box, time, pose)
     else if (keys?.length) keyPoseAt(keys, time, pose)
 
     position.set(pose[0], pose[1], pose[2])
 
-    rotation.setFromAxisAngle(UP, pose[3])
+    if (recorded) rotation.copy(targetRotation)
+    else if (holding) heldRotation(box, time, pose[0], pose[2], rotation)
+    else rotation.setFromAxisAngle(UP, pose[3])
 
     return out.compose(position, rotation, ONE)
   }
@@ -123,6 +204,20 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
       point.updateWorldMatrix(true, false)
 
       out.copy(point.matrixWorld)
+
+      return true
+    }
+
+    if (span.kind === 'pallet' && pallets) {
+      const list = pallets.get(span.parentId)
+
+      if (!list || !palletPoseAt(list, time, palletPose)) return false
+
+      position.set(palletPose[0], palletPose[1], palletPose[2])
+
+      rotation.setFromAxisAngle(UP, palletPose[3])
+
+      out.compose(position, rotation, ONE)
 
       return true
     }

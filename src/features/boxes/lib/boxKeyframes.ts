@@ -1,4 +1,4 @@
-import { Vector3, type Matrix4 } from 'three'
+import { Quaternion, Vector3, type Matrix4 } from 'three'
 
 import type { BoxKeyframe } from '@/shared/types/runEvents'
 
@@ -46,6 +46,29 @@ export function keyPoseAt(keys: BoxKeyframe[], time: number, out: number[]) {
   out[3] = a[4] + delta * k
 
   return out
+}
+
+const quatB = new Quaternion()
+
+/** v2 기록 쿼터니언 보간 (world). 쿼터니언이 없는 키프레임이면 false */
+export function keyQuatAt(keys: BoxKeyframe[], time: number, out: Quaternion) {
+  const index = keyIndexAt(keys, time)
+
+  const a = keys[index]
+
+  const b = keys[Math.min(index + 1, keys.length - 1)]
+
+  if (a?.length !== 9 || b.length !== 9) return false
+
+  const span = b[0] - a[0]
+
+  const k = span > 0 ? Math.min(Math.max((time - a[0]) / span, 0), 1) : 0
+
+  out.set(a[5], a[6], a[7], a[8]).normalize()
+
+  if (k > 0) out.slerp(quatB.set(b[5], b[6], b[7], b[8]).normalize(), k)
+
+  return true
 }
 
 interface DriftState {

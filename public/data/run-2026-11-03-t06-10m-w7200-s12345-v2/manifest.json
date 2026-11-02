@@ -1,0 +1,1191 @@
+{
+ "version": 1,
+ "runId": "run-2026-11-03-t06-10m-w7200-s12345-v2",
+ "template": "factory-glb-v2",
+ "seed": 12345,
+ "duration": 600,
+ "simTimeOffset": 7200,
+ "rackOccupancyAtStart": {
+  "stored": 84,
+  "slots": 450,
+  "ratio": 0.187
+ },
+ "countsAtStart": {
+  "inbound": 440,
+  "scanned": 0,
+  "defects": 0,
+  "placed": 368,
+  "passed": 0,
+  "depalletized": 391,
+  "palletsShipped": 0,
+  "outbound": 10,
+  "storedToRack": 90,
+  "shippedPallets": 5,
+  "carrierTrips": 0,
+  "forkliftStored": 90,
+  "wip": 44
+ },
+ "statusEncoding": "status[].equipment holds only entries changed since previous row (first row per chunk is full)",
+ "timeBase": "all t are absolute sim seconds; subtract simTimeOffset for playback time",
+ "sampleHz": {
+  "joints": 10,
+  "amrs": 10,
+  "status": 2,
+  "boxKeyframes": 1
+ },
+ "jointNames": [
+  "hand00",
+  "hand01",
+  "hand02",
+  "hand03",
+  "hand04"
+ ],
+ "armMount": "pedestal",
+ "chunkSeconds": 600,
+ "equipment": [
+  {
+   "id": "robot-1",
+   "kind": "robot",
+   "name": "로봇 1",
+   "pos": [
+    -20.9,
+    20.44
+   ],
+   "yaw": 3.1416,
+   "elevation": 1.193
+  },
+  {
+   "id": "dock-2",
+   "kind": "dock",
+   "name": "출고 구역 2",
+   "pos": [
+    13.5,
+    -17.4
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-3",
+   "kind": "amr",
+   "name": "AMR 3",
+   "pos": [
+    -9.9,
+    -2.1
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-4",
+   "kind": "conveyor",
+   "name": "컨베이어 4",
+   "pos": [
+    1.232,
+    11.223
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "robot-5",
+   "kind": "robot",
+   "name": "로봇 5",
+   "pos": [
+    3,
+    20.438
+   ],
+   "yaw": 0,
+   "elevation": 1.193
+  },
+  {
+   "id": "robot-6",
+   "kind": "robot",
+   "name": "로봇 6",
+   "pos": [
+    22.9,
+    20.438
+   ],
+   "yaw": 0,
+   "elevation": 1.193
+  },
+  {
+   "id": "robot-7",
+   "kind": "robot",
+   "name": "로봇 7",
+   "pos": [
+    -18.678,
+    37.135
+   ],
+   "yaw": 0,
+   "elevation": 1.192
+  },
+  {
+   "id": "robot-8",
+   "kind": "robot",
+   "name": "로봇 8",
+   "pos": [
+    1.254,
+    37.135
+   ],
+   "yaw": 0,
+   "elevation": 1.192
+  },
+  {
+   "id": "robot-9",
+   "kind": "robot",
+   "name": "로봇 9",
+   "pos": [
+    21.26,
+    37.135
+   ],
+   "yaw": 0,
+   "elevation": 1.192
+  },
+  {
+   "id": "amr-10",
+   "kind": "amr",
+   "name": "AMR 10",
+   "pos": [
+    3.1,
+    -1.86
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-11",
+   "kind": "amr",
+   "name": "AMR 11",
+   "pos": [
+    12.3,
+    -1.6
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-12",
+   "kind": "amr",
+   "name": "AMR 12",
+   "pos": [
+    -22.5,
+    56.802
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-13",
+   "kind": "amr",
+   "name": "AMR 13",
+   "pos": [
+    -8.956,
+    56.802
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-14",
+   "kind": "amr",
+   "name": "AMR 14",
+   "pos": [
+    11.109,
+    56.802
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-15",
+   "kind": "amr",
+   "name": "AMR 15",
+   "pos": [
+    24.653,
+    56.802
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "scanner-16",
+   "kind": "scanner",
+   "name": "스캐너 16",
+   "pos": [
+    -18.677,
+    30.088
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "scanner-17",
+   "kind": "scanner",
+   "name": "스캐너 17",
+   "pos": [
+    1.214,
+    30.088
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "scanner-18",
+   "kind": "scanner",
+   "name": "스캐너 18",
+   "pos": [
+    21.105,
+    30.088
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-19",
+   "kind": "rack",
+   "name": "랙 19",
+   "pos": [
+    4.219,
+    -9.689
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-20",
+   "kind": "rack",
+   "name": "랙 20",
+   "pos": [
+    34.9,
+    -4.351
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-21",
+   "kind": "rack",
+   "name": "랙 21",
+   "pos": [
+    34.9,
+    -9.151
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-22",
+   "kind": "rack",
+   "name": "랙 22",
+   "pos": [
+    34.9,
+    -13.95
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-23",
+   "kind": "rack",
+   "name": "랙 23",
+   "pos": [
+    34.9,
+    -18.75
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-24",
+   "kind": "rack",
+   "name": "랙 24",
+   "pos": [
+    34.9,
+    -23.549
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-25",
+   "kind": "rack",
+   "name": "랙 25",
+   "pos": [
+    34.9,
+    -28.349
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-26",
+   "kind": "rack",
+   "name": "랙 26",
+   "pos": [
+    34.9,
+    -33.148
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-27",
+   "kind": "rack",
+   "name": "랙 27",
+   "pos": [
+    34.9,
+    -37.948
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-28",
+   "kind": "rack",
+   "name": "랙 28",
+   "pos": [
+    34.9,
+    -42.748
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-29",
+   "kind": "rack",
+   "name": "랙 29",
+   "pos": [
+    4.184,
+    -14.623
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-30",
+   "kind": "rack",
+   "name": "랙 30",
+   "pos": [
+    4.184,
+    -19.422
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-31",
+   "kind": "rack",
+   "name": "랙 31",
+   "pos": [
+    4.184,
+    -24.222
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-32",
+   "kind": "rack",
+   "name": "랙 32",
+   "pos": [
+    4.184,
+    -29.021
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-33",
+   "kind": "rack",
+   "name": "랙 33",
+   "pos": [
+    4.184,
+    -33.821
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-34",
+   "kind": "rack",
+   "name": "랙 34",
+   "pos": [
+    4.184,
+    -38.62
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-35",
+   "kind": "rack",
+   "name": "랙 35",
+   "pos": [
+    -3.82,
+    -9.823
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-36",
+   "kind": "rack",
+   "name": "랙 36",
+   "pos": [
+    -3.82,
+    -14.623
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-37",
+   "kind": "rack",
+   "name": "랙 37",
+   "pos": [
+    -3.82,
+    -19.422
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-38",
+   "kind": "rack",
+   "name": "랙 38",
+   "pos": [
+    -3.82,
+    -24.222
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-39",
+   "kind": "rack",
+   "name": "랙 39",
+   "pos": [
+    -3.82,
+    -29.021
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-40",
+   "kind": "rack",
+   "name": "랙 40",
+   "pos": [
+    -3.82,
+    -33.821
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-41",
+   "kind": "rack",
+   "name": "랙 41",
+   "pos": [
+    -3.82,
+    -38.62
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-42",
+   "kind": "rack",
+   "name": "랙 42",
+   "pos": [
+    -11.824,
+    -9.823
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-43",
+   "kind": "rack",
+   "name": "랙 43",
+   "pos": [
+    -11.824,
+    -14.623
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-44",
+   "kind": "rack",
+   "name": "랙 44",
+   "pos": [
+    -11.824,
+    -19.422
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-45",
+   "kind": "rack",
+   "name": "랙 45",
+   "pos": [
+    -11.824,
+    -24.222
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-46",
+   "kind": "rack",
+   "name": "랙 46",
+   "pos": [
+    -11.824,
+    -29.021
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-47",
+   "kind": "rack",
+   "name": "랙 47",
+   "pos": [
+    -11.824,
+    -33.821
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-48",
+   "kind": "rack",
+   "name": "랙 48",
+   "pos": [
+    -11.824,
+    -38.62
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "floor-49",
+   "kind": "floor",
+   "name": "바닥/벽 49",
+   "pos": [
+    1.5,
+    0
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-50",
+   "kind": "conveyor",
+   "name": "컨베이어 50",
+   "pos": [
+    -13.24,
+    11.793
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-51",
+   "kind": "conveyor",
+   "name": "컨베이어 51",
+   "pos": [
+    14.041,
+    15.603
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-52",
+   "kind": "conveyor",
+   "name": "컨베이어 52",
+   "pos": [
+    -22.492,
+    63.688
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-53",
+   "kind": "conveyor",
+   "name": "컨베이어 53",
+   "pos": [
+    -8.986,
+    63.688
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-54",
+   "kind": "conveyor",
+   "name": "컨베이어 54",
+   "pos": [
+    11.169,
+    63.688
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-55",
+   "kind": "conveyor",
+   "name": "컨베이어 55",
+   "pos": [
+    24.674,
+    63.658
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-56",
+   "kind": "conveyor",
+   "name": "컨베이어 56",
+   "pos": [
+    -22.492,
+    -64.053
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-57",
+   "kind": "conveyor",
+   "name": "컨베이어 57",
+   "pos": [
+    -8.986,
+    -64.053
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-58",
+   "kind": "conveyor",
+   "name": "컨베이어 58",
+   "pos": [
+    11.169,
+    -64.053
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-59",
+   "kind": "conveyor",
+   "name": "컨베이어 59",
+   "pos": [
+    24.674,
+    -64.082
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-60",
+   "kind": "pallet",
+   "name": "팔레트 60",
+   "pos": [
+    12.3,
+    -1.6
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-61",
+   "kind": "pallet",
+   "name": "팔레트 61",
+   "pos": [
+    3.1,
+    -1.86
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-62",
+   "kind": "pallet",
+   "name": "팔레트 62",
+   "pos": [
+    -9.9,
+    -2.1
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "dock-63",
+   "kind": "dock",
+   "name": "출고 구역 63",
+   "pos": [
+    -2.3,
+    52
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "dock-64",
+   "kind": "dock",
+   "name": "출고 구역 64",
+   "pos": [
+    4.6,
+    52
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-65",
+   "kind": "amr",
+   "name": "AMR 65",
+   "pos": [
+    4.3,
+    56.6
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-66",
+   "kind": "amr",
+   "name": "AMR 66",
+   "pos": [
+    -2.4,
+    56.6
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "robot-67",
+   "kind": "robot",
+   "name": "로봇 67",
+   "pos": [
+    -9.8,
+    -0.2
+   ],
+   "yaw": -3.1416,
+   "elevation": 1.193
+  },
+  {
+   "id": "robot-68",
+   "kind": "robot",
+   "name": "로봇 68",
+   "pos": [
+    2.8,
+    -0.05
+   ],
+   "yaw": 0,
+   "elevation": 1.193
+  },
+  {
+   "id": "robot-69",
+   "kind": "robot",
+   "name": "로봇 69",
+   "pos": [
+    12.07,
+    0.1
+   ],
+   "yaw": 0,
+   "elevation": 1.193
+  },
+  {
+   "id": "pallet-70",
+   "kind": "pallet",
+   "name": "팔레트 70",
+   "pos": [
+    2.9,
+    18.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-71",
+   "kind": "pallet",
+   "name": "팔레트 71",
+   "pos": [
+    22.8,
+    18.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-72",
+   "kind": "pallet",
+   "name": "팔레트 72",
+   "pos": [
+    -21,
+    18.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "door-73",
+   "kind": "door",
+   "name": "문 73",
+   "pos": [
+    24.8,
+    69
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "door-74",
+   "kind": "door",
+   "name": "문 74",
+   "pos": [
+    11.2,
+    69
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "door-75",
+   "kind": "door",
+   "name": "문 75",
+   "pos": [
+    -8.9,
+    69
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "door-76",
+   "kind": "door",
+   "name": "문 76",
+   "pos": [
+    -22.5,
+    69
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "door-77",
+   "kind": "door",
+   "name": "문 77",
+   "pos": [
+    -22.4,
+    -69
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "door-78",
+   "kind": "door",
+   "name": "문 78",
+   "pos": [
+    -8.9,
+    -69
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "door-79",
+   "kind": "door",
+   "name": "문 79",
+   "pos": [
+    11.3,
+    -69
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "door-80",
+   "kind": "door",
+   "name": "문 80",
+   "pos": [
+    24.8,
+    -69
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rail-81",
+   "kind": "rail",
+   "name": "팔레트 분배 레일 81",
+   "pos": [
+    -8.661,
+    36.986
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rail-82",
+   "kind": "rail",
+   "name": "팔레트 분배 레일 82",
+   "pos": [
+    11.304,
+    36.986
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "transfer-83",
+   "kind": "transfer",
+   "name": "트랜스퍼 리프트 83",
+   "pos": [
+    -16.523,
+    35.324
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "transfer-84",
+   "kind": "transfer",
+   "name": "트랜스퍼 리프트 84",
+   "pos": [
+    -0.694,
+    35.324
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "transfer-85",
+   "kind": "transfer",
+   "name": "트랜스퍼 리프트 85",
+   "pos": [
+    3.442,
+    35.324
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "transfer-86",
+   "kind": "transfer",
+   "name": "트랜스퍼 리프트 86",
+   "pos": [
+    19.271,
+    35.324
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-87",
+   "kind": "rack",
+   "name": "랙 87",
+   "pos": [
+    -15.652,
+    -67.665
+   ],
+   "yaw": -1.5708,
+   "elevation": 0
+  },
+  {
+   "id": "rack-88",
+   "kind": "rack",
+   "name": "랙 88",
+   "pos": [
+    -15.652,
+    -64.413
+   ],
+   "yaw": -1.754,
+   "elevation": 0
+  },
+  {
+   "id": "rack-89",
+   "kind": "rack",
+   "name": "랙 89",
+   "pos": [
+    -2.234,
+    -57.313
+   ],
+   "yaw": -3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-90",
+   "kind": "amr",
+   "name": "AMR 90",
+   "pos": [
+    6,
+    -50
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-91",
+   "kind": "amr",
+   "name": "AMR 91",
+   "pos": [
+    -21.138,
+    -28.287
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-92",
+   "kind": "amr",
+   "name": "AMR 92",
+   "pos": [
+    -21.142,
+    -15.146
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-93",
+   "kind": "amr",
+   "name": "AMR 93",
+   "pos": [
+    -21.142,
+    -19.534
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-94",
+   "kind": "amr",
+   "name": "AMR 94",
+   "pos": [
+    -21.142,
+    -23.923
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-95",
+   "kind": "amr",
+   "name": "AMR 95",
+   "pos": [
+    -29.657,
+    -28.106
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-96",
+   "kind": "amr",
+   "name": "AMR 96",
+   "pos": [
+    13.5,
+    -12.3
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-97",
+   "kind": "amr",
+   "name": "AMR 97",
+   "pos": [
+    -17.8,
+    -11.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-98",
+   "kind": "amr",
+   "name": "AMR 98",
+   "pos": [
+    -22.492,
+    -55.106
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-99",
+   "kind": "amr",
+   "name": "AMR 99",
+   "pos": [
+    -8.986,
+    -55.106
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-100",
+   "kind": "amr",
+   "name": "AMR 100",
+   "pos": [
+    11.169,
+    -55.106
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-101",
+   "kind": "amr",
+   "name": "AMR 101",
+   "pos": [
+    24.674,
+    -55.135
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "dock-102",
+   "kind": "dock",
+   "name": "출고 구역 102",
+   "pos": [
+    -19.2,
+    -1.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-103",
+   "kind": "amr",
+   "name": "AMR 103",
+   "pos": [
+    -21.01,
+    12.3
+   ],
+   "yaw": 0,
+   "elevation": 0
+  }
+ ],
+ "chunks": [
+  {
+   "i": 0,
+   "t0": 7200,
+   "t1": 7800,
+   "file": "chunk-000.json",
+   "bytes": 4690479
+  }
+ ],
+ "aggregates": "aggregates.json",
+ "createdAt": "2026-11-02T21:12:10.889Z"
+}

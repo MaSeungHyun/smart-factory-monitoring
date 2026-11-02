@@ -34,7 +34,7 @@ export type SimBoxParentEvent = [t: number, boxId: string, kind: SimBoxParentKin
 /** 1 Hz 박스 월드 위치 */
 export interface SimBoxKeyframe {
   t: number
-  boxes: [boxId: string, x: number, y: number, z: number][]
+  boxes: ([boxId: string, x: number, y: number, z: number] | [boxId: string, x: number, y: number, z: number, qx: number, qy: number, qz: number, qw: number])[]
 }
 
 export type SimPalletEventKind = 'create' | 'move' | 'ship'
@@ -69,6 +69,8 @@ export interface SimRecording {
   boxKeyframes: SimBoxKeyframe[]
   pallets: SimPalletEvent[]
   palletParents?: SimPalletParentEvent[]
+  /** v2 (robot_IK 864dbfe~): keyframe rows carry a world quaternion, pallet parent local is relative to the pallet stream pose */
+  boxKeyframeEncoding?: string
 }
 
 // [2] 모니터링 내부 형식 (runStreams.ts 가 [1] 에서 만든다)
@@ -85,7 +87,7 @@ export type LocalTransform = [x: number, y: number, z: number, qx: number, qy: n
 export type BoxParentEvent = [t: number, boxId: string, kind: BoxParentKind, parentId: string | null, local: LocalTransform | null]
 
 /** 박스 월드 키프레임 [t, x, y, z, yaw] (녹화에 yaw 가 없으면 0) */
-export type BoxKeyframe = [t: number, x: number, y: number, z: number, yaw: number]
+export type BoxKeyframe = [t: number, x: number, y: number, z: number, yaw: number] | [t: number, x: number, y: number, z: number, yaw: number, qx: number, qy: number, qz: number, qw: number]
 
 export interface PalletEvent {
   t: number
@@ -106,4 +108,6 @@ export interface RunEventStreams {
   palletEvents?: PalletEvent[]
   /** true: 관절이 robotElevation 높이의 팔 기준으로 기록됨. 없으면 기존 캡처(팔 y=0) */
   armElevated?: boolean
+  /** true: boxParents 'pallet' local is relative to the pallet stream pose (world = pos + rotY(yaw) * local) */
+  palletLocal?: boolean
 }

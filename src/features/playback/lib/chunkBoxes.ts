@@ -10,7 +10,8 @@ const OWNER: Record<string, BoxOwnerKind> = { conveyor: 'conveyor', arm: 'robot'
 
 const quatYaw = ([x, y, z, w]: SimQuat) => Math.atan2(2 * (w * y + x * z), 1 - 2 * (x * x + y * y))
 
-type Key = [t: number, x: number, y: number, z: number]
+/** yaw: v2 기록 world 쿼터니언의 yaw (없으면 null -> 부모 기준 추정) */
+type Key = [t: number, x: number, y: number, z: number, yaw: number | null]
 
 // [1] 팔레트 yaw / 출하 시각
 
@@ -82,7 +83,7 @@ function withHolds(keys: Key[]) {
   for (const key of keys) {
     const last = out[out.length - 1]
 
-    if (last && key[0] - last[0] > HOLD_GAP) out.push([key[0] - 1, last[1], last[2], last[3]])
+    if (last && key[0] - last[0] > HOLD_GAP) out.push([key[0] - 1, last[1], last[2], last[3], last[4]])
 
     out.push(key)
   }
@@ -101,12 +102,18 @@ export function boxesFromRecording(recording: SimRecording, frameTimes: number[]
   const keys = new Map<string, Key[]>()
 
   for (const frame of [...recording.boxKeyframes].sort((a, b) => a.t - b.t)) {
-    for (const [id, x, y, z] of frame.boxes) (keys.get(id) ?? keys.set(id, []).get(id)!).push([frame.t, x, y, z])
+    for (const row of frame.boxes) {
+      const [id, x, y, z] = row
+
+      const yaw = row.length >= 8 ? quatYaw(row.slice(4, 8) as SimQuat) : null
+
+      ;(keys.get(id) ?? keys.set(id, []).get(id)!).push([frame.t, x, y, z, yaw])
+    }
   }
 
   // 흡착 순간의 박스 윗면 (1Hz 키 사이 컨베이어 이동 오차를 없앤다)
   for (const contact of recording.contacts) {
-    if (contact.boxId) keys.get(contact.boxId)?.push([contact.t, ...contact.boxTop])
+    if (contact.boxId) keys.get(contact.boxId)?.push([contact.t, ...contact.boxTop, null])
   }
 
   for (const list of keys.values()) list.sort((a, b) => a[0] - b[0])
@@ -162,14 +169,14 @@ export function boxesFromRecording(recording: SimRecording, frameTimes: number[]
 
     let yaw = 0
 
-    for (const [t, x, y, z] of list) {
+    for (const [t, x, y, z, recorded] of list) {
       const next = Math.max(indexAt(frameTimes, t), frame)
 
       k.push(next - frame)
 
       frame = next
 
-      const raw = yawAt(t, yaw)
+      const raw = recorded ?? yawAt(t, yaw)
 
       // 보간이 반대로 돌지 않도록 직전 yaw 에 이어 붙인다
       yaw = raw + Math.round((yaw - raw) / (Math.PI * 2)) * Math.PI * 2
