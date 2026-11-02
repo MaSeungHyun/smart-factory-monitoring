@@ -102,7 +102,7 @@ export default function HoverCallout3D() {
   return (
     <group ref={group}>
       <Html zIndexRange={[6, 0]} style={{ pointerEvents: 'none', transform: 'translate(-50%, -100%)' }}>
-        <div ref={root} className="flex flex-col items-center whitespace-nowrap" style={{ display: 'none' }}>
+        <div ref={root} data-viewport-annotation="hide" className="flex flex-col items-center whitespace-nowrap" style={{ display: 'none' }}>
           <div className="flex items-center gap-2 rounded border border-primary-on-dark bg-bg-surface/95 px-2.5 py-1.5 text-caption text-text-primary shadow-lg">
             <span ref={nameEl} className="font-semibold" />
 

@@ -60,6 +60,7 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
       position: new Vector3(),
       scale: new Vector3(1, 1, 1),
       points: [] as CarryPoint[],
+      piled: [] as CarryPoint[],
       order: [] as number[],
     }),
     [],
@@ -76,9 +77,13 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
     applied.current = time
 
-    const { pose, matrix, rotation, position, scale, points, order } = scratch
+    const { pose, matrix, rotation, position, scale, points, piled, order } = scratch
+
+    const visionIds = (target.userData.visionIds ??= []) as string[]
 
     let count = 0
+
+    let pileCount = 0
 
     for (let index = 0; index < boxes.length; index++) {
       const box = boxes[index]
@@ -86,6 +91,8 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
       if (time < box.start || time >= box.end) continue
 
       boxPoseAt(box, time, pose)
+
+      const mode = gripSync.place(box, time, pose)
 
       const point = points[count] ?? (points[count] = { x: 0, y: 0, z: 0, yaw: 0 })
 
@@ -99,10 +106,12 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
       order[count] = index
 
+      if (mode === 'rest' || mode === 'free') piled[pileCount++] = point
+
       count++
     }
 
-    holdBoxesOnPallet(points, count, time)
+    holdBoxesOnPallet(piled, pileCount, time)
 
     for (let index = 0; index < count; index++) {
       const point = points[index]
@@ -115,7 +124,9 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
       matrix.compose(position, rotation, scale)
 
-      const carried = gripSync(box, time, matrix)
+      const carried = gripSync.apply(box, time, matrix)
+
+      visionIds[index] = box.id
 
       target.setMatrixAt(index, matrix)
 
@@ -123,6 +134,8 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
 
       target.setColorAt(index, color)
     }
+
+    visionIds.length = count
 
     target.count = count
 
@@ -136,6 +149,7 @@ export default function BoxInstances({ boxes }: { boxes: DecodedBox[] }) {
   return (
     <instancedMesh
       ref={mesh}
+      name="factory-boxes"
       args={[geometry, material, capacity]}
       frustumCulled={false}
       raycast={() => null}

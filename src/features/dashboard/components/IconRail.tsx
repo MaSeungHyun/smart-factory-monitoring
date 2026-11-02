@@ -10,14 +10,18 @@ import {
 import GraphicsSettings from "./GraphicsSettings";
 
 import { cn } from "@/shared/lib/cn";
-import { monitorView, useMonitorView, type MonitorView } from "@/shared/stores/useMonitorViewStore";
+import {
+  monitorView,
+  useMonitorView,
+  type MonitorView,
+} from "@/shared/stores/useMonitorViewStore";
 
 const NAV_ITEMS: { id: string; icon: typeof Box; view?: MonitorView }[] = [
   { id: "dashboard", icon: LayoutGrid, view: "main" },
   { id: "equipment", icon: Cpu, view: "robot" },
   { id: "scan", icon: ScanLine, view: "scan" },
   { id: "storage", icon: Warehouse, view: "warehouse" },
-  { id: "report", icon: BarChart3 },
+  // { id: "report", icon: BarChart3 },
 ];
 
 export default function IconRail() {

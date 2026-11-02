@@ -56,7 +56,7 @@ export default function SelectionCallout3D({ id }: { id: string }) {
   return (
     <group ref={group}>
       <Html zIndexRange={[6, 0]} style={{ pointerEvents: 'none', transform: 'translate(-50%, -100%)' }}>
-        <div className="flex flex-col items-center">
+        <div data-viewport-annotation="hide" className="flex flex-col items-center">
           <div className="min-w-[200px] rounded border border-primary-on-dark bg-bg-surface/95 px-2.5 py-2 text-caption text-text-primary shadow-lg">
             <div className="flex items-center gap-2">
               <span className="font-semibold">{item?.name ?? id}</span>

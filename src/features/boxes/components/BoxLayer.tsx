@@ -5,6 +5,7 @@ import type { PlaybackRun } from '@/shared/types/playback'
 
 import { decodeBoxes } from '../lib/decodeBoxes'
 import { inboundPoints } from '../lib/inboundPoints'
+import BoxDefectMarks from './BoxDefectMarks'
 import BoxInstances from './BoxInstances'
 import InboundPulses from './InboundPulses'
 import RailPallets from './RailPallets'
@@ -31,6 +32,8 @@ export default function BoxLayer() {
   return (
     <>
       <BoxInstances boxes={boxes} />
+
+      <BoxDefectMarks boxes={boxes} />
 
       <RailPallets boxes={boxes} />
 

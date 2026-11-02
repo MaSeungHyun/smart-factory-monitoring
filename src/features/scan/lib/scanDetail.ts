@@ -1,5 +1,6 @@
 import { FACTORY_TEMPLATE, parseTemplate } from '@/features/template'
 import type { ActiveAlarm } from '@/features/playback'
+import { inspectionBoxMessage, isInspectionAlarm, isInspectionLabel } from '@/features/playback/lib/inspection'
 import type { EquipmentStatus } from '@/shared/types'
 import type { BoxTrack, PlaybackRun } from '@/shared/types/playback'
 
@@ -242,13 +243,15 @@ export function scanDetail(
 
   const withVerdict = (record: ScanRecord): ScanBox => ({ ...record, verdict: verdictAt(record, time) })
 
-  const open = alarms.filter((alarm) => alarm.equipmentId === id)
+  const open = alarms.filter((alarm) => alarm.equipmentId === id && !isInspectionAlarm(alarm))
 
   const sample = run.status.filter((frame) => frame.t <= time).pop()?.equipment[id]
 
   const state = sample?.state ?? 'idle'
 
-  const status: EquipmentStatus = open.some((alarm) => alarm.severity === 'error') || state === 'error'
+  const inspecting = isInspectionLabel(sample?.label)
+
+  const status: EquipmentStatus = !inspecting && (open.some((alarm) => alarm.severity === 'error') || state === 'error')
     ? 'error'
     : state === 'idle'
       ? 'idle'
@@ -266,7 +269,7 @@ export function scanDetail(
       : { key: `p-${record.boxId}`, text: `바코드 판독 정상 · ${record.boxId}`, at: at(record.at), tone: 'running' })),
     ...run.alarms
       .filter((alarm) => alarm.t <= time && alarm.equipmentId !== id && [...boxIds].some((box) => alarm.message.includes(box)))
-      .map((alarm): ScanEvent => ({ key: alarm.id, text: alarm.message, at: at(alarm.t), tone: 'warning' })),
+      .map((alarm): ScanEvent => ({ key: alarm.id, text: inspectionBoxMessage(run, alarm) ?? alarm.message, at: at(alarm.t), tone: 'warning' })),
     ...run.events
       .filter((event) => event.equipmentId === id && event.t <= time && event.from === 'idle')
       .map((event, index): ScanEvent => ({ key: `s-${index}`, text: '검사 시작', at: at(event.t), tone: 'idle' })),

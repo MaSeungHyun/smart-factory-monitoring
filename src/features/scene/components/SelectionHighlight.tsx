@@ -32,6 +32,8 @@ function makeOutline(color: Color) {
 
   lines.raycast = () => undefined
 
+  lines.userData.sensorHidden = true
+
   return lines
 }
 

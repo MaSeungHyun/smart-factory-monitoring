@@ -1,11 +1,14 @@
 import { useMemo } from 'react'
-import { Group, Mesh, type Material } from 'three'
+import { Group, Mesh, type Material, type MeshStandardMaterial } from 'three'
 
 import { FACTORY_GLB_URL } from '@/features/template'
 import { findGlbNode, stripLights } from '@/shared/lib/three/glbNode'
 import { receiveShadows } from '@/shared/lib/three/modelBounds'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import type { TemplateProp } from '@/shared/types'
+
+import FactoryIntro from './FactoryIntro'
+import { collectFactoryIntro, type IntroWire } from '../lib/factoryIntro'
 
 const FLOOR_MARKING = 'FloorMarking'
 
@@ -85,16 +88,25 @@ function cloneProp(scene: Group, prop: TemplateProp) {
 export default function FactoryProps({ props }: { props: TemplateProp[] }) {
   const { scene } = useGLTF(FACTORY_GLB_URL)
 
-  const nodes = useMemo(
-    () => props.flatMap((prop) => cloneProp(scene as Group, prop) ?? []),
-    [scene, props],
-  )
+  const built = useMemo(() => {
+    const nodes = props.flatMap((prop) => cloneProp(scene as Group, prop) ?? [])
+
+    const materials: MeshStandardMaterial[] = []
+
+    const wires: IntroWire[] = []
+
+    for (const node of nodes) collectFactoryIntro(node, materials, wires)
+
+    return { nodes, materials, wires }
+  }, [scene, props])
 
   return (
     <group name="factory-props">
-      {nodes.map((node) => (
+      {built.nodes.map((node) => (
         <primitive key={node.uuid} object={node} />
       ))}
+
+      <FactoryIntro materials={built.materials} wires={built.wires} />
     </group>
   )
 }

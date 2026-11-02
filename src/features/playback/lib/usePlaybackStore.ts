@@ -23,6 +23,8 @@ interface PlaybackActions {
   setRun: (run: PlaybackRun) => void
   setError: () => void
   toggle: () => void
+  /** 씬이 그려지고 main_cam 에 도착한 뒤 한 번 재생을 시작한다 */
+  begin: () => boolean
   setSpeed: (speed: number) => void
   seek: (time: number) => void
   ack: (id: string) => void
@@ -35,6 +37,9 @@ const UI_INTERVAL_MS = 250
 
 /** 한 프레임에 재생 시각은 최대 40ms. 25fps 가 보장된다고 보고 그 이상은 다음 프레임으로 넘긴다 */
 const STEP_MS = 40
+
+/** 오프닝이 끝나기 전에는 재생하지 않는다 */
+let live = false
 
 /** 씬이 그릴 재생 시각 (s). 스토어에 넣지 않는다 */
 let simTime = 0
@@ -117,7 +122,7 @@ export const playbackStore = createStore<PlaybackState>((set, get) => ({
     publish({
       run,
       status: 'ready',
-      playing: true,
+      playing: live,
       time: 0,
       origins: [Date.now()],
       reached: 0,
@@ -129,7 +134,19 @@ export const playbackStore = createStore<PlaybackState>((set, get) => ({
     publish({ status: 'error' })
   },
 
+  begin() {
+    if (live || !get().run) return false
+
+    live = true
+
+    set({ playing: true })
+
+    return true
+  },
+
   toggle() {
+    if (!live) return
+
     set({ playing: !get().playing })
   },
 

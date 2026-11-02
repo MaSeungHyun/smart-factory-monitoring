@@ -67,7 +67,7 @@ export default function ScanCalloutOverlay({ ref }: Props) {
   const color = box ? VERDICT_COLOR[box.verdict] : 'transparent'
 
   return (
-    <div ref={root} className="pointer-events-none absolute top-0 left-0" style={{ visibility: 'hidden' }}>
+    <div ref={root} data-viewport-annotation="cut" className="pointer-events-none absolute top-0 left-0" style={{ visibility: 'hidden' }}>
       <svg className="absolute inset-0 size-full overflow-visible">
         <polyline ref={line} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.95} />
 

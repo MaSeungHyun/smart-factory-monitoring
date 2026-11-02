@@ -1,4 +1,4 @@
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import { Group } from 'three'
 
@@ -6,9 +6,10 @@ import { getExactTime } from '@/features/playback'
 import PalletModel from '@/features/scene/components/models/PalletModel'
 import { PALLET_HEIGHT } from '@/features/scene/constants/modelPlacement'
 
-import { boxPoseAt } from '../lib/boxPoseAt'
+import { boxOwnerAt, boxPoseAt } from '../lib/boxPoseAt'
 import { holdBoxesOnPallet, nearestAmrYaw } from '../lib/carryYaw'
 import type { DecodedBox } from '../lib/decodeBoxes'
+import { createGripSync } from '../lib/gripSync'
 
 /** 박스 원점은 윗면 */
 const BOX_HEIGHT = 0.36
@@ -26,6 +27,8 @@ interface Point {
   y: number
   z: number
   yaw: number
+  /** 로봇 셀에 혼자 남아도 팔레트를 유지 */
+  keep: boolean
 }
 
 interface Load {
@@ -74,7 +77,7 @@ function loadsOf(points: Point[], time: number): Load[] {
     }
   }
 
-  return clusters.filter((cluster) => cluster.n >= 2).map((cluster) => {
+  return clusters.filter((cluster) => cluster.n >= 2 || cluster.members[0]?.keep).map((cluster) => {
     const members = cluster.members
 
     const x = cluster.x / cluster.n
@@ -120,6 +123,15 @@ function loadsOf(points: Point[], time: number): Load[] {
   })
 }
 
+/** 내려놓은 직후 컨베이어 위 박스는 팔레트로 보지 않는다 */
+const PLACED = 6
+
+function keepsPallet(box: DecodedBox, time: number) {
+  if (boxOwnerAt(box, time) !== 'robot') return false
+
+  return !box.grips.some((grip) => !grip.synthetic && time >= grip.end && time < grip.end + PLACED)
+}
+
 export default function RailPallets({ boxes }: { boxes: DecodedBox[] }) {
   const slots = useRef<Array<Group | null>>([])
 
@@ -128,6 +140,10 @@ export default function RailPallets({ boxes }: { boxes: DecodedBox[] }) {
   const pose = useMemo(() => [0, 0, 0, 0], [])
 
   const points = useMemo(() => [] as Point[], [])
+
+  const world = useThree((state) => state.scene)
+
+  const gripSync = useMemo(() => createGripSync(world), [world])
 
   useFrame(() => {
     const time = getExactTime()
@@ -143,7 +159,11 @@ export default function RailPallets({ boxes }: { boxes: DecodedBox[] }) {
 
       boxPoseAt(box, time, pose)
 
-      points.push({ x: pose[0], y: pose[1], z: pose[2], yaw: pose[3] })
+      const mode = gripSync.place(box, time, pose)
+
+      if (mode === 'attach' || mode === 'omit') continue
+
+      points.push({ x: pose[0], y: pose[1], z: pose[2], yaw: pose[3], keep: keepsPallet(box, time) })
     }
 
     holdBoxesOnPallet(points, points.length, time)

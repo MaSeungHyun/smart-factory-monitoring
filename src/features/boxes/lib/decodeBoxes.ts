@@ -1,4 +1,4 @@
-import type { BoxOwnerSegment, BoxReject, PlaybackRun } from '@/shared/types/playback'
+import type { BoxOwnerSegment, BoxReject, BoxTrack, PlaybackRun } from '@/shared/types/playback'
 
 export interface DecodedGrip {
   start: number
@@ -14,6 +14,8 @@ export interface DecodedBox {
   end: number
   src: string | null
   defectAt: number
+  /** 스캐너 판정 사유. 불량이 아니면 null */
+  defectReason: string | null
   own: BoxOwnerSegment[]
   grips: DecodedGrip[]
   reject: BoxReject | null
@@ -21,6 +23,18 @@ export interface DecodedBox {
   times: Float32Array
   /** 키프레임마다 x, y, z, yaw */
   poses: Float32Array
+}
+
+function defectReason(run: PlaybackRun, box: BoxTrack) {
+  const defect = box.defect
+
+  if (!defect) return null
+
+  const alarm = run.alarms.find(
+    (item) => item.equipmentId === defect.by && item.message.includes('불량 감지') && Math.abs(item.t - defect.t) < 8,
+  )
+
+  return alarm?.message.match(/\(([^)]+)\)/)?.[1] ?? null
 }
 
 export function decodeBoxes(run: PlaybackRun): DecodedBox[] {
@@ -53,6 +67,7 @@ export function decodeBoxes(run: PlaybackRun): DecodedBox[] {
       end: box.t1 ?? Infinity,
       src: box.src,
       defectAt: box.defect?.t ?? Infinity,
+      defectReason: defectReason(run, box),
       own: box.own,
       grips: (box.grip ?? []).map(([start, end, robot, synthetic]) => ({ start, end, robot, synthetic: synthetic === 1 })),
       reject: box.reject ?? null,

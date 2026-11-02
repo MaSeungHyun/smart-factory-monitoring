@@ -55,3 +55,8 @@ const extendLoader: ExtendLoader = (loader) => {
 export function useGLTF(url: string) {
   return useDreiGLTF(url, true, true, extendLoader)
 }
+
+/** Canvas 밖 Suspense 에서도 같은 캐시 키로 먼저 받는다 */
+export function preloadGLTF(url: string) {
+  return useDreiGLTF.preload(url, true, true, extendLoader)
+}

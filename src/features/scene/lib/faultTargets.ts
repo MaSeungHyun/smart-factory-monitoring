@@ -1,4 +1,5 @@
 import type { ActiveAlarm } from '@/features/playback'
+import { isInspectionAlarm } from '@/features/playback/lib/inspection'
 import type { EquipmentItem, EquipmentStatus } from '@/shared/types'
 
 export interface FaultLabel {
@@ -12,7 +13,7 @@ export function faultLabels(alarms: ActiveAlarm[], equipment: EquipmentItem[]): 
   const labels = new Map<string, FaultLabel>()
 
   for (const alarm of alarms) {
-    if (labels.has(alarm.equipmentId)) continue
+    if (isInspectionAlarm(alarm) || labels.has(alarm.equipmentId)) continue
 
     labels.set(alarm.equipmentId, {
       id: alarm.equipmentId,
@@ -32,5 +33,5 @@ export function faultLabels(alarms: ActiveAlarm[], equipment: EquipmentItem[]): 
 
 /** 빨간 강조 대상: 미확인 error 알람이 있는 장비 */
 export function faultedIds(alarms: ActiveAlarm[]) {
-  return new Set(alarms.filter((alarm) => alarm.severity === 'error').map((alarm) => alarm.equipmentId))
+  return new Set(alarms.filter((alarm) => alarm.severity === 'error' && !isInspectionAlarm(alarm)).map((alarm) => alarm.equipmentId))
 }

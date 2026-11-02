@@ -50,7 +50,7 @@ export function setHover(id: string | null) {
 
 export const uiStore = createStore<UiState & UiActions>((set, get) => ({
   selectedId: null,
-  alarmPanelOpen: true,
+  alarmPanelOpen: false,
   labelsVisible: true,
   sceneExpanded: false,
   hiddenStatuses: new Set(),

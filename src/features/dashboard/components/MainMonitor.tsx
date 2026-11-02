@@ -1,4 +1,4 @@
-import { AlertPanel } from '@/features/alerts'
+import { ViewportAlert } from '@/features/alerts'
 import { PlaybackControls } from '@/features/playback'
 import { SceneControls, SceneLegend, SceneSlot } from '@/features/scene'
 import { useUi } from '@/shared/stores/useUiStore'
@@ -20,9 +20,7 @@ export default function MainMonitor() {
         <SceneSlot />
 
         <div className="pointer-events-none absolute inset-0 z-30">
-          <div className="absolute top-[18px] right-3.5">
-            <AlertPanel />
-          </div>
+          <ViewportAlert />
 
           <div className="absolute bottom-3.5 left-3.5">
             <SceneLegend />

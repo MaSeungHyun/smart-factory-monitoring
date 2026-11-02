@@ -1,7 +1,7 @@
 import { OrbitControls } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ComponentRef } from 'react'
-import { PerspectiveCamera, Vector3, type Object3D } from 'three'
+import { PerspectiveCamera, Quaternion, Vector3, type Object3D } from 'three'
 
 import { FACTORY_GLB_URL } from '@/features/template'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
@@ -9,7 +9,10 @@ import { cameraBus, type CameraCommand } from '@/shared/stores/cameraBus'
 import { DEFAULT_ROBOT_ID, monitorView, useMonitorState, type MonitorViewState } from '@/shared/stores/useMonitorViewStore'
 import { uiStore } from '@/shared/stores/useUiStore'
 
+import { CAMERA_INTRO_DURATION } from '../constants/cameraIntro'
+import { cameraArrival } from '../lib/cameraArrival'
 import { focusPose, zoomPose } from '../lib/focusPose'
+import { useSceneWarm } from '../lib/sceneWarm'
 import { glbCameraPose, type CameraPose } from '../lib/glbCameraPose'
 import { robotCameraPose } from '../lib/robotCameraPose'
 import { scanCameraPose } from '../lib/scanCameraPose'
@@ -31,6 +34,45 @@ interface Flight {
   to: CameraPose
   elapsed: number
   duration: number
+  /** 바라보는 점 주위를 돌며 거리를 늘린다 */
+  arc: boolean
+  /** 첫 진입 비행. 끝나면 재생을 열 수 있다 */
+  intro: boolean
+}
+
+const ORIGIN = new Vector3()
+
+const fromOffset = new Vector3()
+
+const toOffset = new Vector3()
+
+const direction = new Vector3()
+
+const turn = new Quaternion()
+
+const partial = new Quaternion()
+
+/** 피벗 주위를 회전하고, 반지름은 시작 거리에서 목표 거리로 늘린다 */
+function arcPosition(from: Vector3, to: Vector3, pivot: Vector3, k: number, out: Vector3) {
+  fromOffset.subVectors(from, pivot)
+
+  toOffset.subVectors(to, pivot)
+
+  const fromLen = fromOffset.length()
+
+  const toLen = toOffset.length()
+
+  if (fromLen < 1e-4 || toLen < 1e-4) return out.lerpVectors(from, to, k)
+
+  fromOffset.multiplyScalar(1 / fromLen)
+
+  toOffset.multiplyScalar(1 / toLen)
+
+  turn.setFromUnitVectors(fromOffset, toOffset)
+
+  direction.copy(fromOffset).applyQuaternion(partial.identity().slerp(turn, k))
+
+  return out.copy(pivot).addScaledVector(direction, fromLen + (toLen - fromLen) * k)
 }
 
 function placeCamera(camera: PerspectiveCamera, position: Vector3, fov: number) {
@@ -125,8 +167,8 @@ function goalPose(state: MonitorViewState, main: CameraPose | null, robotCam: Ca
 }
 
 /**
- * 카메라: 시작은 항상 main_cam 위치/fov. 화면 상태가 바뀌면(레일 탭, 로봇 선택, 시점 버튼)
- * 목표 시점으로 위치 + OrbitControls 타깃 + fov 를 부드럽게 보간.
+ * 카메라: 처음에는 (0, 0, 0)에서 main_cam 까지 돌며 빠진다.
+ * 이후 화면 상태가 바뀌면(레일 탭, 로봇 선택, 시점 버튼) 목표 시점으로 보간.
  * follow 는 장비 이동량만큼 카메라와 타깃을 같이 옮긴다. 팬 또는 Esc 로 해제. 그 외 Esc 는 메인으로.
  */
 export default function GlbCameraRig() {
@@ -147,40 +189,60 @@ export default function GlbCameraRig() {
   const seenView = useRef(state)
 
   const fly = useCallback(
-    (goal: CameraPose, duration = DURATION) => {
+    (goal: CameraPose, duration = DURATION, arc = false, intro = false) => {
       const { camera } = get()
 
       const orbit = controls.current
 
       if (!(camera instanceof PerspectiveCamera) || !orbit) return
 
+      if (flight.current?.intro) cameraArrival.getState().arrive()
+
       flight.current = {
         from: { position: camera.position.clone(), target: orbit.target.clone(), fov: camera.fov },
         to: goal,
         elapsed: 0,
         duration,
+        arc,
+        intro,
       }
     },
     [get],
   )
 
+  const warm = useSceneWarm()
+
   const poses = useMemo(() => ({ main: glbCameraPose(glb, MAIN_CAM), robot: glbCameraPose(glb, ROBOT_CAM) }), [glb])
 
   useLayoutEffect(() => {
+    if (!warm) return
+
     const { camera, scene } = get()
 
     const orbit = controls.current
 
     if (!(camera instanceof PerspectiveCamera) || !orbit) return
 
-    if (!placed.current && poses.main) {
+    if (!poses.main) {
+      cameraArrival.getState().arrive()
+
+      return
+    }
+
+    const opening = !placed.current
+
+    if (opening && poses.main) {
       placed.current = true
 
-      placeCamera(camera, poses.main.position, poses.main.fov ?? camera.fov)
+      placeCamera(camera, ORIGIN, poses.main.fov ?? camera.fov)
 
       orbit.target.copy(poses.main.target)
 
       orbit.update()
+
+      fly(poses.main, CAMERA_INTRO_DURATION, true, true)
+
+      return
     }
 
     if (seenView.current !== state) {
@@ -194,7 +256,7 @@ export default function GlbCameraRig() {
     if (!goal) return
 
     fly(goal)
-  }, [get, poses, state, fly])
+  }, [warm, get, poses, state, fly])
 
   useEffect(() => {
     const onCommand = (command: CameraCommand) => {
@@ -310,7 +372,7 @@ export default function GlbCameraRig() {
 
     placeCamera(
       camera,
-      point.lerpVectors(active.from.position, active.to.position, k),
+      active.arc ? arcPosition(active.from.position, active.to.position, active.to.target, k, point) : point.lerpVectors(active.from.position, active.to.position, k),
       active.from.fov + ((active.to.fov ?? active.from.fov) - active.from.fov) * k,
     )
 
@@ -318,7 +380,13 @@ export default function GlbCameraRig() {
 
     orbit.update()
 
-    if (active.elapsed >= active.duration) flight.current = null
+    if (active.elapsed >= active.duration) {
+      const intro = active.intro
+
+      flight.current = null
+
+      if (intro) cameraArrival.getState().arrive()
+    }
   })
 
   return <OrbitControls ref={controls} makeDefault enableDamping={false} />

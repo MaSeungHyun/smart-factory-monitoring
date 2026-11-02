@@ -1,4 +1,4 @@
-import { AlertPanel } from '@/features/alerts'
+import { ViewportAlert } from '@/features/alerts'
 import { SceneControls, SceneLegend, SceneSlot } from '@/features/scene'
 import { useUi } from '@/shared/stores/useUiStore'
 import { cn } from '@/shared/lib/cn'
@@ -22,9 +22,7 @@ export default function WarehouseScene({ data, selected }: { data: WarehouseView
       )}
 
       <div className="pointer-events-none absolute inset-0 z-30">
-        <div className="absolute top-[18px] right-3.5">
-          <AlertPanel />
-        </div>
+        <ViewportAlert />
 
         {data && (
           <div className="absolute bottom-[72px] left-4">

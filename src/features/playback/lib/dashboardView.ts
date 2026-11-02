@@ -9,6 +9,7 @@ import type {
 import type { EquipmentStateSample, PlaybackEquipment, PlaybackRun, PlaybackState, StatusFrame } from '@/shared/types/playback'
 
 import { openAlarms, raisedAlarms, type ActiveAlarm } from './alarms'
+import { inspectionBoxMessage, isInspectionAlarm, isInspectionLabel } from './inspection'
 import { statusAt } from './frameAt'
 
 /** 재생 데이터 한 회차(약 3분) 기준 처리 목표 (박스) — 실제 목표치가 없어 고정값 */
@@ -45,7 +46,9 @@ export interface DashboardView {
 
 const pct = (value: number, total: number) => (total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0)
 
-function statusOf(sample: EquipmentStateSample | undefined, faulted: boolean): EquipmentStatus {
+function statusOf(sample: EquipmentStateSample | undefined, faulted: boolean, inspecting: boolean): EquipmentStatus {
+  if (inspecting) return 'running'
+
   if (faulted || sample?.state === 'error') return 'error'
 
   if (!sample || sample.state === 'idle') return 'idle'
@@ -56,9 +59,11 @@ function statusOf(sample: EquipmentStateSample | undefined, faulted: boolean): E
 }
 
 function toItem(entry: PlaybackEquipment, sample: EquipmentStateSample | undefined, faulted: boolean, inbound: number): EquipmentItem {
-  const status = statusOf(sample, faulted)
+  const inspecting = entry.kind === 'scanner' && isInspectionLabel(sample?.label)
 
-  const state = faulted ? 'error' : (sample?.state ?? 'idle')
+  const status = statusOf(sample, faulted, inspecting)
+
+  const state = inspecting ? 'moving' : faulted ? 'error' : (sample?.state ?? 'idle')
 
   const base = {
     id: entry.id,
@@ -85,7 +90,7 @@ function toItem(entry: PlaybackEquipment, sample: EquipmentStateSample | undefin
     return {
       ...base,
       type: 'scanner',
-      metricLeft: sample?.label ?? '—',
+      metricLeft: inspecting ? `스캔 ${sample?.count ?? 0}` : (sample?.label ?? '—'),
       metricRight: `${sample?.count ?? 0} 개`,
       percent: pct(sample?.count ?? 0, inbound),
     }
@@ -144,10 +149,16 @@ export function dashboardView(
 
   const counts = frame?.counts ?? { handled: 0, inbound: 0, placed: 0, passed: 0, palletsShipped: 0, outbound: 0, defects: 0, wip: 0 }
 
-  const alarms = openAlarms(raisedAlarms(run, origins, reached), acked)
+  const alarms = openAlarms(raisedAlarms(run, origins, reached), acked).map((alarm) => {
+    const message = inspectionBoxMessage(run, alarm)
+
+    return message ? { ...alarm, message } : alarm
+  })
 
   // 확인 전 고장 알람이 있는 장비는 고장으로 유지
-  const faulted = new Set(alarms.filter((alarm) => alarm.severity === 'error').map((alarm) => alarm.equipmentId))
+  const faulted = new Set(
+    alarms.filter((alarm) => alarm.severity === 'error' && !isInspectionAlarm(alarm)).map((alarm) => alarm.equipmentId),
+  )
 
   const all = run.equipment
     .filter((entry) => entry.kind !== 'conveyor')

@@ -97,7 +97,7 @@ export default function RobotCalloutOverlay({ ref }: Props) {
   const color = (vehicle ? ROBOT_STATUS_COLOR[vehicle.status] : detail ? ROBOT_STATUS_COLOR[detail.status] : 'transparent')
 
   return (
-    <div ref={root} className="pointer-events-none absolute top-0 left-0" style={{ visibility: 'hidden' }}>
+    <div ref={root} data-viewport-annotation="cut" className="pointer-events-none absolute top-0 left-0" style={{ visibility: 'hidden' }}>
       <svg className="absolute inset-0 size-full overflow-visible">
         <defs>
           <radialGradient id="detail-point" cx="50%" cy="50%" r="50%">

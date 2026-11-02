@@ -1,35 +1,51 @@
-import { cn } from '@/shared/lib/cn'
+import { useLayoutEffect, useRef } from 'react'
 
-import { CAMERA_INSET } from '../data/robotDetail.mock'
-
-export interface InsetBox {
-  label: string
-  left: number
-  top: number
-  width: number
-  height: number
-  warn?: boolean
-  tone?: 'success' | 'info' | 'error'
-}
+import { visionPort, type VisionKind } from '@/features/scene/lib/visionPort'
 
 interface CameraInsetProps {
+  meta: string
+  kind: VisionKind
+  id: string
   title?: string
-  meta?: string
-  boxes?: InsetBox[]
 }
 
-const TONE_CLASS = {
-  success: ['border-status-success bg-status-success/10', 'text-status-success'],
-  info: ['border-primary-on-dark bg-primary-on-dark/10', 'text-primary-on-dark'],
-  error: ['border-status-error bg-status-error/16', 'text-status-error'],
-  warning: ['border-status-warning bg-status-warning/16', 'text-status-warning'],
-}
+/** 비전 인셋. 영상은 작업 구역 카메라가 캔버스에 그리고, 인식 박스는 그 화면 위에 올린다 */
+export default function CameraInset({ title = '비전 인식', meta, kind, id }: CameraInsetProps) {
+  const hole = useRef<HTMLDivElement>(null)
 
-/** 비전 카메라 인셋 372x212 — 기본값은 영상 소스 연결 전 자리표시 (목업 인식 박스) */
-export default function CameraInset({ title = CAMERA_INSET.title, meta = CAMERA_INSET.meta, boxes = CAMERA_INSET.boxes }: CameraInsetProps) {
+  const overlay = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const holeElement = hole.current
+
+    const overlayElement = overlay.current
+
+    visionPort.hole = holeElement
+
+    visionPort.overlay = overlayElement
+
+    visionPort.kind = kind
+
+    visionPort.id = id
+
+    return () => {
+      if (visionPort.hole !== holeElement) return
+
+      visionPort.hole = null
+
+      visionPort.overlay = null
+
+      visionPort.kind = null
+
+      visionPort.id = null
+
+      overlayElement?.replaceChildren()
+    }
+  }, [kind, id])
+
   return (
-    <div className="pointer-events-auto h-[212px] w-[372px] rounded border border-border-default bg-bg-surface/90 p-3 backdrop-blur">
-      <div className="flex items-center gap-1.5 text-caption">
+    <div className="pointer-events-auto w-[372px] overflow-hidden rounded border border-border-default">
+      <div className="flex items-center gap-1.5 bg-bg-surface/90 px-3 py-2 text-caption backdrop-blur">
         <span className="size-2 animate-pulse rounded-full bg-status-error" />
 
         <span className="text-text-primary">{title}</span>
@@ -37,18 +53,8 @@ export default function CameraInset({ title = CAMERA_INSET.title, meta = CAMERA_
         <span className="ml-auto text-text-tertiary">{meta}</span>
       </div>
 
-      <div className="relative mt-2 h-[160px] overflow-hidden rounded bg-bg-base">
-        {boxes.map((box: InsetBox) => (
-          <div
-            key={`${box.left}-${box.top}`}
-            style={{ left: box.left + 40, top: box.top, width: box.width, height: box.height }}
-            className={cn('absolute rounded-sm border', TONE_CLASS[box.tone ?? (box.warn ? 'warning' : 'success')][0])}
-          >
-            <span className={cn('absolute -top-3.5 left-0 text-[9px] font-semibold whitespace-nowrap', TONE_CLASS[box.tone ?? (box.warn ? 'warning' : 'success')][1])}>
-              {box.label}
-            </span>
-          </div>
-        ))}
+      <div ref={hole} className="relative h-[160px]">
+        <div ref={overlay} className="pointer-events-none absolute inset-0 overflow-hidden" />
       </div>
     </div>
   )

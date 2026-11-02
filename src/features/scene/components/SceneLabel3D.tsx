@@ -26,7 +26,7 @@ export default function SceneLabel3D({ label }: { label: FaultLabel }) {
   return (
     <group ref={group}>
       <Html zIndexRange={[5, 0]} style={{ pointerEvents: 'none', transform: 'translate(-50%, -100%)' }}>
-        <div className="flex flex-col items-center whitespace-nowrap">
+        <div data-viewport-annotation="hide" className="flex flex-col items-center whitespace-nowrap">
           <span className={cn('rounded border bg-bg-surface/90 px-2 py-1 text-caption text-text-primary', TONE_BORDER[label.status])}>
             <span className={TONE_TEXT[label.status]}>● </span>
             {label.text}

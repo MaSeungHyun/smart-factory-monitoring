@@ -4,6 +4,7 @@ import { AgXToneMapping, PCFShadowMap, WebGLRenderer } from "three";
 
 import { BoxLayer } from "@/features/boxes";
 import { PlaybackDriver } from "@/features/playback";
+import PlaybackStart from "@/features/playback/components/PlaybackStart";
 import { FACTORY_TEMPLATE, parseTemplate } from "@/features/template";
 import { configureKTX2 } from "@/shared/lib/three/gltfLoader";
 import { graphicsStore, QUALITY_DPR, useGraphics } from "@/shared/stores/useGraphicsStore";
@@ -12,11 +13,14 @@ import { uiStore } from "@/shared/stores/useUiStore";
 import EquipmentLayer from "./EquipmentLayer";
 import FactoryLighting from "./FactoryLighting";
 import FactoryProps from "./FactoryProps";
+import FactoryWarmup from "./FactoryWarmup";
 import FaultHighlight from "./FaultHighlight";
 import GlbCameraRig from "./GlbCameraRig";
 import SceneBloom from "./SceneBloom";
 import SceneLabels from "./SceneLabels";
+import SceneReady from "./SceneReady";
 import SelectionLayer from "./SelectionLayer";
+import VisionInset from "./VisionInset";
 
 const CAMERA = { fov: 45, near: 0.5, far: 2000 };
 
@@ -85,6 +89,8 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
 
         <PlaybackDriver />
 
+        <PlaybackStart />
+
         <BoxLayer />
 
         <GlbCameraRig />
@@ -96,6 +102,12 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
         <SelectionLayer />
 
         <SceneBloom />
+
+        <VisionInset />
+
+        <SceneReady />
+
+        <FactoryWarmup />
 
         {children}
       </Suspense>

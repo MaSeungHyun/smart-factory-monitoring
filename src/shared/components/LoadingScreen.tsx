@@ -1,63 +1,72 @@
-import { useProgress } from '@react-three/drei'
-import { useState } from 'react'
+import { useProgress } from "@react-three/drei";
+import { useState } from "react";
 
-import SegmentProgressBar from './SegmentProgressBar'
-
-/** XD: 70칸 · 4×8 · 간격 3 → 487px */
-const SEGMENT_COUNT = 70
-
-const SEGMENT_WIDTH = 4
-
-const SEGMENT_GAP = 3
-
+/** Suspense fallback. 보이는 동안은 부모가 정하고, 여기서는 진행률만 그린다. */
 export default function LoadingScreen() {
-  const { active, progress } = useProgress()
+  const { progress } = useProgress();
 
-  const [done, setDone] = useState(false)
-
-  const [peak, setPeak] = useState(0)
+  const [peak, setPeak] = useState(0);
 
   // 항목이 바뀌면 drei 진행률이 잠시 내려간다. 이미 찬 칸은 유지한다.
-  if (progress > peak) setPeak(progress)
+  if (progress > peak) setPeak(progress);
 
-  const finished = !active && progress >= 100
-
-  /** 첫 로딩 완료 후엔 다시 띄우지 않음 (렌더 중 상태 갱신 패턴) */
-  if (finished && !done) setDone(true)
-
-  if (done || finished) return null
-
-  const percent = Math.round(peak)
+  const percent = Math.round(peak);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-base">
-      <div className="flex w-[487px] flex-col items-center">
-        <p className="text-h2 font-normal text-text-tertiary">Smart Logistics Digital Twin</p>
-
+    <div
+      data-factory-loader
+      className="flex flex-col inset-0 z-[60] h-screen w-screen overflow-hidden bg-black"
+    >
+      <div className="relative flex-1 h-full w-full items-center justify-center">
         <img
-          src="/images/logo_grapicar.png"
-          srcSet="/images/logo_grapicar.png 1x, /images/logo_grapicar@2x.png 2x"
-          alt="GRAPICAR"
-          width={532}
-          height={117}
-          className="mt-1 h-[117px] w-[532px] max-w-none"
+          src="/images/bg@2x.png"
+          alt=""
+          className="inset-0 w-full object-cover"
         />
 
-        <SegmentProgressBar
-          value={percent}
-          count={SEGMENT_COUNT}
-          segmentWidth={SEGMENT_WIDTH}
-          gap={SEGMENT_GAP}
-          label="3D 공장 데이터 로딩"
-          className="mt-[46px]"
-        />
+        <div className="absolute bottom-[65px] w-full px-24 max-[720px]:bottom-8 max-[720px]:px-8">
+          <h1 className="whitespace-pre-line text-[clamp(36px,3.75vw,72px)] font-bold leading-[1.12] tracking-[-0.02em] text-[#F2F5F8]">
+            {"See your factory.\nRun it in real time."}
+          </h1>
 
-        <div className="mt-[18px] flex w-full justify-between text-body">
-          <span className="text-text-secondary">3D 공장 데이터를 불러오는 중</span>
+          <p className="mt-8 text-[clamp(14px,0.94vw,18px)] font-normal leading-none text-text-tertiary">
+            Smart Logistics Digital Twin
+          </p>
 
-          <span className="font-semibold text-text-primary tabular-nums">{percent}%</span>
+          <div className="mt-8 flex items-center justify-between text-[14px] leading-none">
+            <span className="font-normal text-text-tertiary">
+              3D 공장 데이터를 불러오는 중
+            </span>
+
+            <span className="font-semibold text-[#F2F5F8] tabular-nums">
+              {percent}%
+            </span>
+          </div>
+
+          <div
+            role="progressbar"
+            aria-label="3D 공장 데이터 로딩"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="mt-3 h-1 min-h-1 w-full bg-white/20"
+          >
+            <div
+              className="h-full bg-[#4FA8D4]"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between items-center text-text-tertiary mt-6.25">
+            <p className="mt-3.5 text-[12px] font-normal leading-none">
+              © 2026 GRAPICAR · Smart Logistics Digital Twin
+            </p>
+            <p className="text-[12px] font-normal leading-none">
+              물류센터 A동 · v1.0
+            </p>
+          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
