@@ -31,13 +31,6 @@ export const ROUTE_TEXT: Array<[RegExp, string]> = [
   [/지게차 대기|작업 대기|^\[대기\]$/, '작업 대기'],
 ]
 
-/** 랙 적재율 목업 (A~C 행 × 1~7 열, %) — 재생 데이터에 랙 재고 없음 */
-export const MOCK_RACK_LOAD = [
-  [45, 72, 80, 95, 38, 66, 34],
-  [70, 85, 78, 62, 91, 55, 62],
-  [48, 48, 75, 68, 57, 52, 28],
-]
-
 /** 이동형 랙 적재 목업 */
 export const MOCK_MOBILE_RACK = { used: 3, slots: 4 }
 

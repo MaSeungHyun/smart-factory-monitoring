@@ -1,5 +1,5 @@
 import type { AlertSeverity, EquipmentKind } from './'
-import type { RunAggregates } from './runChunk'
+import type { ChunkRackSlot, RunAggregates } from './runChunk'
 import type { SimRecording } from './runEvents'
 
 /** 재생 장비 상태 (robot_IK 상태를 단순화) */
@@ -100,6 +100,8 @@ export interface PlaybackRun {
   boxes?: BoxTrack[]
   /** manifest 런의 aggregates.json (없으면 목업 유지) */
   aggregates?: RunAggregates
+  /** 청크 시작 시점 고정 랙 슬롯 (snapshot.racks, 없으면 랙 적재 목업 없음) */
+  racks?: { id: string; slots: ChunkRackSlot[] }[]
 }
 
 /** 박스 담당 장비 종류 */

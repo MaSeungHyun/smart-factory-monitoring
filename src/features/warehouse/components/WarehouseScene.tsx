@@ -26,7 +26,7 @@ export default function WarehouseScene({ data, selected }: { data: WarehouseView
 
         {data && (
           <div className="absolute bottom-[72px] left-4">
-            <RackMapPanel grid={data.grid} loading={data.loading} />
+            <RackMapPanel grid={data.grid} loading={data.loading} summary={data.rack.summary} recent={data.rack.recent} />
           </div>
         )}
 

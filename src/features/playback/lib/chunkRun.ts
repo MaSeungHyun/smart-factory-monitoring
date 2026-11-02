@@ -166,5 +166,6 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
     recording,
     boxes: boxesFromRecording(recording, tracks.t),
     aggregates,
+    racks: chunk.snapshot.racks,
   }
 }

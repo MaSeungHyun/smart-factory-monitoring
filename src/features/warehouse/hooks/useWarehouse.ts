@@ -6,6 +6,7 @@ import { sceneEquipment } from '@/features/scene'
 import { rackGrid, rackTargets } from '../lib/rackMap'
 import { vehicleRoster, vehiclesAt } from '../lib/vehicles'
 import { warehouseKpis } from '../lib/warehouseKpis'
+import { useRackLoad } from './useRackLoad'
 
 const grid = rackGrid(sceneEquipment)
 
@@ -18,6 +19,8 @@ export function useWarehouse() {
   const { run, time } = usePlayback()
 
   const view = useDashboardView()
+
+  const rack = useRackLoad()
 
   const roster = useMemo(() => (run ? vehicleRoster(sceneEquipment, run) : []), [run])
 
@@ -47,11 +50,12 @@ export function useWarehouse() {
         idle: live.filter((vehicle) => vehicle.tone === 'warning').length,
         error: live.filter((vehicle) => vehicle.tone === 'error').length,
       },
-      grid,
+      grid: rack.grid,
+      rack,
       loading: new Map([...targets].map(([id, cell]) => [cell.id, vehicles.find((vehicle) => vehicle.id === id)?.code ?? id])),
       kpis: warehouseKpis(frame?.counts, frame),
     }
-  }, [run, view, roster, time])
+  }, [run, view, roster, time, rack])
 }
 
 export type WarehouseView = NonNullable<ReturnType<typeof useWarehouse>>
