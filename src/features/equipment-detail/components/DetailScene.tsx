@@ -2,6 +2,7 @@ import { Box } from 'lucide-react'
 
 import { ViewportAlert } from '@/features/alerts'
 import { SceneControls, SceneSlot } from '@/features/scene'
+import { robotRole } from '@/features/scene/lib/palletPlan'
 import { usePlaybackPick } from '@/features/playback'
 import { useMonitorState } from '@/shared/stores/useMonitorViewStore'
 
@@ -21,6 +22,10 @@ export default function DetailScene() {
   const robotVision = detailKind(robotId) === 'robot'
 
   const robotName = usePlaybackPick((state) => state.run?.equipment.find((entry) => entry.id === robotId)?.name ?? '로봇')
+
+  const robotRoleName = usePlaybackPick((state) => (state.run && robotId ? robotRole(state.run, robotId) : null))
+
+  const visionTitle = robotRoleName === 'palletizing' ? '3D 비전 · 팔레타이징' : robotRoleName === 'depalletizing' ? '3D 비전 · 디팔레타이징' : '비전 인식'
 
   const chip = robotVision || !vehicle ? '3D 확대 뷰 · 로봇 별로 카메라 이동' : `3D 확대 뷰 · ${vehicle.code}로 카메라 이동`
 
@@ -46,7 +51,7 @@ export default function DetailScene() {
 
         {robotVision && (
           <div className="absolute bottom-4 left-4">
-            <CameraInset meta={robotName} kind="robot" id={robotId} />
+            <CameraInset meta={robotName} kind="robot" id={robotId} title={visionTitle} />
           </div>
         )}
 

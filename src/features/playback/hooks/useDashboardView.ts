@@ -4,6 +4,7 @@ import type { PlaybackRun } from '@/shared/types/playback'
 
 import { dashboardView, type DashboardView } from '../lib/dashboardView'
 import { indexAt } from '../lib/frameAt'
+import { kpiIndexAt } from '../lib/kpi'
 import { playbackStore, type PlaybackSnapshot } from '../lib/usePlaybackStore'
 
 let timesRun: PlaybackRun | null = null
@@ -47,7 +48,10 @@ export function dashboardAt(snap: PlaybackSnapshot): DashboardView | null {
 
   if (!run) return null
 
-  const key = `${indexAt(statusTimes(run), snap.time)}|${alarmsReached(run, snap.reached)}`
+  // KPI 녹화면 1Hz 샘플이 바뀔 때도 다시 만든다
+  const kpi = run.kpi ? kpiIndexAt(run.kpi, snap.time) : -1
+
+  const key = `${indexAt(statusTimes(run), snap.time)}|${kpi}|${alarmsReached(run, snap.reached)}`
 
   if (cachedView && cachedRun === run && cachedKey === key && cachedAcked === snap.acked && cachedOrigins === snap.origins) {
     return cachedView

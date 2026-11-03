@@ -1,5 +1,5 @@
 import { FACTORY_TEMPLATE, parseTemplate } from '@/features/template'
-import type { ActiveAlarm } from '@/features/playback'
+import { kpiAt, type ActiveAlarm } from '@/features/playback'
 import { inspectionBoxMessage, isInspectionAlarm, isInspectionLabel } from '@/features/playback/lib/inspection'
 import type { EquipmentStatus } from '@/shared/types'
 import type { BoxTrack, PlaybackRun } from '@/shared/types/playback'
@@ -278,20 +278,31 @@ export function scanDetail(
       .map((event, index): ScanEvent => ({ key: `r-${index}`, text: '불량 처리 완료 · 검사 재개', at: at(event.t), tone: 'running' })),
   ].sort((a, b) => b.at - a.at)
 
+  // v4: 공장이 기록한 스캐너별 집계 (없으면 박스 트랙으로 계산)
+  const recorded = kpiAt(run.kpi, time)?.scan?.byScanner?.[id]
+
+  const scans = recorded ? Math.round(recorded.scanned) : done.length
+
+  const defectCount = recorded ? Math.round(recorded.defect) : defects.length
+
+  const passRate = recorded ? (recorded.passRate === null ? null : round2(recorded.passRate)) : done.length ? round2(((done.length - defects.length) / done.length) * 100) : null
+
+  const defectRate = recorded ? round2(recorded.defectRate ?? 0) : done.length ? round2((defects.length / done.length) * 100) : 0
+
   return {
     id,
     name: run.equipment.find((entry) => entry.id === id)?.name ?? id,
     status,
     statusLabel,
-    scans: done.length,
+    scans,
     target: SCAN_TARGET,
-    percent: Math.round((done.length / SCAN_TARGET) * 100),
+    percent: Math.round((scans / SCAN_TARGET) * 100),
     speed,
     speedDelta,
-    passRate: done.length ? round2(((done.length - defects.length) / done.length) * 100) : null,
+    passRate,
     passTarget: PASS_TARGET,
-    defects: defects.length,
-    defectRate: done.length ? round2((defects.length / done.length) * 100) : 0,
+    defects: defectCount,
+    defectRate,
     buckets,
     bucketSeconds,
     current: currentScanBox(records, time),

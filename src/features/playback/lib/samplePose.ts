@@ -1,8 +1,8 @@
 import type { PoseSample } from '@/shared/types/playback'
 
 import { indexAt } from './frameAt'
-import { catmull, lerpAngle } from './interpolate'
-import { JOINT_INTERPOLATION } from './playbackConfig'
+import { catmull, lerp, lerpAngle } from './interpolate'
+import { JOINT_INTERPOLATION, JOINT_MAX_STEP_DEG } from './playbackConfig'
 
 function axis(track: PoseSample[], index: number, channel: number, fallback: number) {
   const sample = track[Math.min(Math.max(index, 0), track.length - 1)]
@@ -33,11 +33,29 @@ export function samplePose(track: PoseSample[], times: number[], time: number) {
   }
 }
 
-/** 관절 각(deg)도 같은 곡선 */
+/** 두 샘플 사이가 정상 범위로 이어지는지 (언랩이 끊긴 큰 점프면 false) */
+const continuous = (a: number, b: number) => Math.abs(b - a) <= JOINT_MAX_STEP_DEG
+
+/**
+ * 관절 각(deg): 기록 시각 기준으로 샘플 사이를 보간한다. 상태가 없어 탐색(seek) 시에도 바로 그 시각 자세가 된다.
+ * 각도는 로드 때 언랩된 값을 그대로 쓰고(새 wrap 처리 없음), 큰 점프 구간은 보간 없이 이전 값을 유지한다
+ */
 export function sampleJoint(track: number[][], index: number, next: number, k: number, joint: number) {
   const at = (frame: number) => track[Math.min(Math.max(frame, 0), track.length - 1)]?.[joint] ?? 0
 
-  if (!JOINT_INTERPOLATION) return at(index)
+  const a = at(index)
 
-  return catmull(at(index - 1), at(index), at(next), at(next + 1), k)
+  const b = at(next)
+
+  if (JOINT_INTERPOLATION === 'step' || !continuous(a, b)) return a
+
+  if (JOINT_INTERPOLATION === 'curve') {
+    const before = at(index - 1)
+
+    const after = at(next + 1)
+
+    if (continuous(before, a) && continuous(b, after)) return catmull(before, a, b, after, k)
+  }
+
+  return lerp(a, b, k)
 }

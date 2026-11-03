@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { useUi } from '@/shared/stores/useUiStore'
+import { AnimatedPanel } from '@/shared/components/motion/AnimatedPanel'
 import { cn } from '@/shared/lib/cn'
 
 import HeaderRegion from './regions/HeaderRegion'
@@ -38,7 +39,11 @@ export default function DetailLayout({ rail, header, main, aside }: DetailLayout
       >
         <section className="flex min-h-0 min-w-0 flex-col gap-3">{main}</section>
 
-        {!sceneExpanded && <section className="min-h-0">{aside}</section>}
+        {!sceneExpanded && (
+          <AnimatedPanel from="right" className="min-h-0">
+            {aside}
+          </AnimatedPanel>
+        )}
       </main>
     </div>
   )

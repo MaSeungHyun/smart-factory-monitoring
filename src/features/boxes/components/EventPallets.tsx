@@ -4,16 +4,20 @@ import { Matrix4, type Group } from 'three'
 
 import { getExactTime } from '@/features/playback'
 import PalletModel from '@/features/scene/components/models/PalletModel'
+import type { PlaybackRun } from '@/shared/types/playback'
 import type { PalletEvent } from '@/shared/types/runEvents'
 
 import { localMatrix } from '../lib/boxParenting'
-import { palletEventAt, palletNodeName, palletPoseAt, palletTracks } from '../lib/palletTracks'
+import { createCarriedPallets } from '../lib/carriedPallet'
+import { palletEventAt, palletNodeName, palletTracks } from '../lib/palletTracks'
 
 /**
  * PROVISIONAL: palletEvents 가 있는 run 의 팔레트. 그룹 이름 pallet:<id> 로
  * 박스가 parentKind 'pallet' 일 때 이 그룹의 자식처럼 따라온다.
  */
-export default function EventPallets({ events }: { events: PalletEvent[] }) {
+export default function EventPallets({ run, events }: { run: PlaybackRun; events: PalletEvent[] }) {
+  const poseAt = useMemo(() => createCarriedPallets(run), [run])
+
   const tracks = useMemo(() => palletTracks(events), [events])
 
   const ids = useMemo(() => [...tracks.keys()], [tracks])
@@ -62,7 +66,7 @@ export default function EventPallets({ events }: { events: PalletEvent[] }) {
         continue
       }
 
-      if (!palletPoseAt(list, time, scratch.pose)) continue
+      if (!poseAt(list, time, scratch.pose)) continue
 
       const [x, y, z, yaw] = scratch.pose
 

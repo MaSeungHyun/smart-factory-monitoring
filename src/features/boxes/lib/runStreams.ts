@@ -52,11 +52,13 @@ function fromRecording(recording: SimRecording): RunEventStreams {
 
   if (v2) for (const id of Object.keys(boxKeys)) boxKeys[id] = withHolds(boxKeys[id])
 
-  const palletEvents: PalletEvent[] = (recording.pallets ?? []).map(([t, id, kind, , position, yaw]) => ({
+  const palletEvents: PalletEvent[] = (recording.pallets ?? []).map(([t, id, kind, , position, yaw, , parentId]) => ({
     t,
     id,
     kind: PALLET_KIND[kind],
     pose: position ? [position[0], position[1], position[2], yaw ?? 0] : undefined,
+    // 싣고 가는 차량 id (row[7]). 차량 포즈 트랙이 있을 때만 carriedPallet 이 강체 추종한다
+    parentId: parentId ?? null,
   }))
 
   return {

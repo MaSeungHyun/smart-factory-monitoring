@@ -6,6 +6,7 @@ import type { ChunkSnapshotBox } from '@/shared/types/runChunk'
 import type { SimBoxKeyframe, SimBoxParentEvent, SimPalletEvent, SimQuat, SimRecording, SimSuctionEvent, SimVec3 } from '@/shared/types/runEvents'
 
 import { boxesFromRecording } from './chunkBoxes'
+import { buildKpiTrack } from './kpi'
 
 const DEG = Math.PI / 180
 
@@ -175,5 +176,6 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
     aggregates,
     racks: chunk.snapshot.racks,
     parts: manifest.animatedParts ? buildPartTracks(manifest.animatedParts, chunk.snapshot.parts, chunk.tracks.parts, offset, startOf(chunk, offset)) : undefined,
+    kpi: buildKpiTrack(chunk.tracks.kpi, chunk.snapshot.kpi, offset, manifest.kpiSchema),
   }
 }

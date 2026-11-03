@@ -1,5 +1,6 @@
 import type { AlertSeverity, EquipmentKind } from './'
 import type { AnimatedPartTrack } from './animatedParts'
+import type { KpiTrack } from './kpi'
 import type { ChunkRackSlot, RunAggregates } from './runChunk'
 import type { SimRecording } from './runEvents'
 
@@ -105,6 +106,8 @@ export interface PlaybackRun {
   racks?: { id: string; slots: ChunkRackSlot[] }[]
   /** v3 애니메이션 파츠 트랙 (재생 시간 기준, 없으면 파츠 고정) */
   parts?: AnimatedPartTrack[]
+  /** v4 KPI 스트림 (재생 시간 기준, 없으면 상태 프레임 파생값) */
+  kpi?: KpiTrack
 }
 
 /** 박스 담당 장비 종류 */

@@ -3,7 +3,7 @@ import { Suspense, useMemo, type ReactNode } from "react";
 import { AgXToneMapping, PCFShadowMap, WebGLRenderer } from "three";
 
 import { BoxLayer } from "@/features/boxes";
-import { AnimatedPartsDriver, PlaybackDriver } from "@/features/playback";
+import { AnimatedPartsDriver, PlaybackDriver, usePlaybackPick } from "@/features/playback";
 import PlaybackStart from "@/features/playback/components/PlaybackStart";
 import { FACTORY_TEMPLATE, parseTemplate } from "@/features/template";
 import { configureKTX2 } from "@/shared/lib/three/gltfLoader";
@@ -61,6 +61,14 @@ registerScenePartHandlers();
 export default function FactoryScene({ children }: { children?: ReactNode }) {
   const template = useMemo(() => parseTemplate(FACTORY_TEMPLATE), []);
 
+  // 팔레트 이벤트(위치 포함)가 있는 run 은 EventPallets 가 팔레트를 그린다 -> 템플릿 고정 팔레트(pallet-60~62 AMR 탑재, 70~72 불량 스테이션)는 렌더하지 않는다
+  const eventPallets = usePlaybackPick((state) => !!state.run?.recording?.pallets?.some((row) => row[4]));
+
+  const equipment = useMemo(
+    () => (eventPallets ? template.equipment.filter((item) => item.kind !== "pallet") : template.equipment),
+    [eventPallets, template],
+  );
+
   const { quality, shadow, renderer, antialias } = useGraphics();
 
   return (
@@ -88,7 +96,7 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
 
         <FactoryProps props={template.props} />
 
-        <EquipmentLayer equipment={template.equipment} />
+        <EquipmentLayer equipment={equipment} />
 
         <PlaybackDriver />
 

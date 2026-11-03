@@ -1,8 +1,9 @@
-import type { ActiveAlarm } from '@/features/playback'
+import { kpiAt, kpiNumber, type ActiveAlarm } from '@/features/playback'
+import { kpiKey } from '@/shared/constants/kpi'
 import type { EquipmentStatus } from '@/shared/types'
 import type { PlaybackRun, PlaybackState } from '@/shared/types/playback'
 
-import { ROBOT_TARGET } from '../data/robotDetail.mock'
+import { robotPercent, robotTarget } from '@/shared/constants/robotTargets'
 
 export interface CycleBar {
   /** 재생 시각 (s) */
@@ -99,9 +100,18 @@ export function robotDetail(run: PlaybackRun, time: number, origin: number, alar
 
   const cycles = bars.filter((bar) => !bar.paused)
 
-  const average = cycles.length ? round1(cycles.reduce((sum, bar) => sum + bar.seconds, 0) / cycles.length) : 0
+  // v4: 공장이 기록한 사이클 시간 (없으면 상태 프레임으로 계산)
+  const kpi = kpiAt(run.kpi, time)
 
-  const cycle = cycles.length ? cycles[cycles.length - 1].seconds : null
+  const recorded = kpi?.robots?.[id]
+
+  const derivedAverage = cycles.length ? round1(cycles.reduce((sum, bar) => sum + bar.seconds, 0) / cycles.length) : 0
+
+  const derivedCycle = cycles.length ? cycles[cycles.length - 1].seconds : null
+
+  const average = recorded ? round1(kpiNumber(kpi, kpiKey('robotCycleAvg', { robotId: id })) ?? 0) : derivedAverage
+
+  const cycle = recorded ? (kpiNumber(kpi, kpiKey('robotCycleLast', { robotId: id })) ?? null) : derivedCycle
 
   const recent = frames.filter((frame) => frame.t > time - LOAD_WINDOW).map((frame) => frame.equipment[id]).filter(Boolean)
 
@@ -137,7 +147,7 @@ export function robotDetail(run: PlaybackRun, time: number, origin: number, alar
     tone: alarm.severity === 'error' ? 'error' : 'warning',
   }))
 
-  const count = latest?.count ?? 0
+  const count = Math.round(kpiNumber(kpi, kpiKey('robotCycles', { robotId: id })) ?? latest?.count ?? 0)
 
   return {
     id,
@@ -145,8 +155,8 @@ export function robotDetail(run: PlaybackRun, time: number, origin: number, alar
     status,
     statusLabel: status === 'error' ? '고장' : status === 'idle' ? '대기' : '작동',
     count,
-    target: ROBOT_TARGET,
-    percent: Math.round((count / ROBOT_TARGET) * 100),
+    target: robotTarget(id),
+    percent: robotPercent(id, count),
     cycle,
     average,
     cycleDelta,

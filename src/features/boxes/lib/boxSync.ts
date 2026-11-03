@@ -6,10 +6,13 @@ import type { PlaybackRun } from '@/shared/types/playback'
 import { createArmReach } from './armReach'
 import { nearestAmrYaw } from './carryYaw'
 import { createDriftResync, keyPoseAt, keyQuatAt } from './boxKeyframes'
-import { buildParentSpans, insertSpan, spanAt, type ParentSpan, type SpanKind, type SpanLookup } from './boxParenting'
+import { buildParentSpans, insertSpan, localMatrix, spanAt, type ParentSpan, type SpanKind, type SpanLookup } from './boxParenting'
 import { boxPoseAt } from './boxPoseAt'
 import type { DecodedBox } from './decodeBoxes'
-import { palletNodeName, palletPoseAt, palletTracks } from './palletTracks'
+import { createCarriedPallets } from './carriedPallet'
+import { PRE_ALIGN_TARGET_PROBE } from '../constants/preAlign'
+import { palletEventAt, palletNodeName, palletTracks } from './palletTracks'
+import { applyPreAlign, planPreAlign, yawOf, type PreAlignTurn } from './preAlign'
 import { readStreams } from './runStreams'
 
 /** 레거시 접촉 판정: 그리퍼 끝과 박스(윗면 중심) 거리 (y=0 팔 기준 34/34 검증) */
@@ -52,12 +55,16 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
 
   const tipAt = createArmReach(armTemplate, run)
 
+  const carriedPoseAt = createCarriedPallets(run)
+
   const resync = createDriftResync()
 
   // v2: 팔레트 부모 = 스트림 포즈 T(pos) * Ry(yaw) (EventPallets 그룹과 같음). 씬 노드 대신 스트림에서 바로 계산
   const pallets = streams.palletLocal && streams.palletEvents ? palletTracks(streams.palletEvents) : null
 
   const palletPose = [0, 0, 0, 0]
+
+  const carrierLocals = new WeakMap<object, Matrix4>()
 
   const objects = new Map<string, Object3D>()
 
@@ -211,7 +218,28 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
     if (span.kind === 'pallet' && pallets) {
       const list = pallets.get(span.parentId)
 
-      if (!list || !palletPoseAt(list, time, palletPose)) return false
+      if (!list) return false
+
+      // AMR · 지게차에 실린 팔레트는 EventPallets 와 똑같이 차량 matrixWorld x local 로 강체 추종한다.
+      // (2 Hz 팔레트 스트림 보간을 쓰면 차량 위치와 어긋나 박스가 뒤처진다)
+      const event = list[palletEventAt(list, time)]
+
+      const carrier = event?.parentId && event.local ? find(event.parentId) : null
+
+      if (carrier && event?.local) {
+        let local = carrierLocals.get(event)
+
+        if (!local) carrierLocals.set(event, (local = localMatrix(event.local)))
+
+        carrier.updateWorldMatrix(true, false)
+
+        out.multiplyMatrices(carrier.matrixWorld, local)
+
+        return true
+      }
+
+      // EventPallets 와 같은 함수 -> 팔레트와 적재 박스가 같은 시각 · 같은 차량 포즈로 한 덩어리로 움직인다
+      if (!carriedPoseAt(list, time, palletPose)) return false
 
       position.set(palletPose[0], palletPose[1], palletPose[2])
 
@@ -260,7 +288,58 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
     return span.local
   }
 
+  // ---- 팔레타이징 미리 맞춤 (robot_IK startBoxTurn 재현)
+
+  const preAligns = new Map<ParentSpan, PreAlignTurn | null>()
+
+  const placedRotation = new Quaternion()
+
+  const heldEnd = new Quaternion()
+
+  const gripWorld = new Matrix4()
+
+  /** 팔 구간: 놓인 기록 각과 팔 기준 놓는 순간 각의 차이를, 베이스 정렬 뒤 흡착점 기준 회전으로 미리 돌린다 */
+  function preAlignOf(box: DecodedBox, span: ParentSpan) {
+    if (preAligns.has(span)) return preAligns.get(span) ?? null
+
+    preAligns.set(span, null)
+
+    const keys = streams.boxKeys?.[box.id]
+
+    if (!span.parentId || !keys?.length || !keyQuatAt(keys, span.end + PRE_ALIGN_TARGET_PROBE, placedRotation)) return null
+
+    if (!rigidRaw(box, span, span.end, source)) {
+      preAligns.delete(span)
+
+      return null
+    }
+
+    source.decompose(position, heldEnd, scale)
+
+    const diff = yawOf(placedRotation) - yawOf(heldEnd)
+
+    const plan = planPreAlign(run, span.parentId, span.start, span.end, Math.atan2(Math.sin(diff), Math.cos(diff)))
+
+    preAligns.set(span, plan)
+
+    return plan
+  }
+
   function rigidWorld(box: DecodedBox, span: ParentSpan, time: number, out: Matrix4): boolean {
+    const plan = span.kind === 'arm' ? preAlignOf(box, span) : null
+
+    if (!rigidRaw(box, span, time, out)) return false
+
+    if (plan) {
+      gripWorld.copy(parent)
+
+      applyPreAlign(plan, time, gripWorld, out)
+    }
+
+    return true
+  }
+
+  function rigidRaw(box: DecodedBox, span: ParentSpan, time: number, out: Matrix4): boolean {
     const local = ensureLocal(box, span, time)
 
     if (!local || !parentWorld(span, time, parent)) return false
@@ -356,6 +435,15 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
 
   // ---- 프레임 계산
 
+  /** 이 시각 팔레트가 차량 위에 실려 있으면 true (차량 포즈 트랙 있음) */
+  function onVehicle(span: ParentSpan, time: number) {
+    const list = span.kind === 'pallet' && span.parentId ? pallets?.get(span.parentId) : undefined
+
+    const event = list?.[palletEventAt(list, time)]
+
+    return !!event?.parentId && !!run.tracks.poses[event.parentId]
+  }
+
   function blend(out: Matrix4, from: Matrix4, k: number) {
     from.decompose(position, rotation, scale)
 
@@ -378,7 +466,8 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
     const { current, previous } = spanAt(parenting.spans.get(box.id), time, lookup)
 
     if (current && current.kind !== 'track' && rigidWorld(box, current, time, out)) {
-      resync(box.id, streams.boxKeys?.[box.id], time, current, out)
+      // 차량에 실린 팔레트 위 박스는 1 Hz 월드 키프레임으로 보정하지 않는다 (키 시각 오차가 오프셋으로 굳어 팔레트와 어긋남) -> 팔레트와 강체
+      if (!onVehicle(current, time)) resync(box.id, streams.boxKeys?.[box.id], time, current, out)
 
       return current.kind
     }

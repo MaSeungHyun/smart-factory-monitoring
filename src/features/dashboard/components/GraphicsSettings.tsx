@@ -84,6 +84,12 @@ export default function GraphicsSettings() {
             />
           </Field>
 
+          <Toggle
+            label="패널 애니메이션"
+            checked={graphics.panelMotion}
+            onClick={() => graphicsStore.getState().setPanelMotion(!graphics.panelMotion)}
+          />
+
           {graphics.fallback && <p className="text-caption text-text-tertiary">{graphics.fallback}</p>}
 
           {graphics.renderer === 'webgpu' && graphics.amrBloom && (

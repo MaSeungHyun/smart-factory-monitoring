@@ -1,6 +1,7 @@
 import type { EquipmentKind } from './'
 import type { PlaybackState, RunCounts } from './playback'
 import type { AnimatedPart, AnimatedPartRow, AnimatedPartValue } from './animatedParts'
+import type { KpiRow, KpiSample, KpiSchema } from './kpi'
 import type { SimRecording } from './runEvents'
 
 /**
@@ -44,6 +45,9 @@ export interface RunManifest {
   /** v3: 장비별 움직이는 파츠 (없으면 예전 녹화) */
   animatedParts?: AnimatedPart[]
   animatedPartsEncoding?: string
+  /** v4: KPI 스트림 스키마 (없으면 예전 녹화, 파생값 사용) */
+  kpiSchema?: KpiSchema
+  kpiEncoding?: string
 }
 
 // [2] chunk-NNN.json
@@ -69,6 +73,8 @@ export interface ChunkSnapshot {
   counts: Record<string, number>
   /** v3: animatedParts[i] 의 청크 시작 값 (null = 아직 없음) */
   parts?: (AnimatedPartValue | null)[]
+  /** v4: 청크 시작 시점 KPI 샘플 */
+  kpi?: KpiSample
 }
 
 export interface ChunkStatusRow {
@@ -89,6 +95,8 @@ export interface RunChunk {
     amrs: Record<string, ([number, number, number] | null)[]>
     /** v3: [t, part index, value] (변화가 threshold 이상일 때만) */
     parts?: AnimatedPartRow[]
+    /** v4: 1Hz KPI 행 [t, 샘플] */
+    kpi?: KpiRow[]
   }
   status: ChunkStatusRow[]
   events: { t: number; equipmentId: string; from: PlaybackState | null; to: PlaybackState }[]

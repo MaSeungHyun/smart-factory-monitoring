@@ -49,17 +49,16 @@ export default function ScanInfoPanel() {
         <DetailTabs tab={tab} alarmCount={detail.alarms.length} onChange={setTab} logLabel="작동 기록" />
       </div>
 
-      <div className="scroll-thin flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-        {tab === 'trend' && (
-          <DefectRateChart
+      {/* 그래프는 고정, 아래 동작 리스트만 스크롤 */}
+      {tab === 'trend' && <div className="shrink-0"><DefectRateChart
             buckets={detail.buckets}
             average={detail.defectRate}
             bucketSeconds={detail.bucketSeconds}
             lastDefect={detail.lastDefect}
             label={(t) => formatClock(origin + t * 1000)}
-          />
-        )}
+          /></div>}
 
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
         <EventList events={events} />
       </div>
 

@@ -1,6 +1,7 @@
 import { useLoader } from '@react-three/fiber'
 
 import boxUrl from '@/assets/models/box.glb?url'
+import cameraUrl from '@/assets/models/main_camera.glb?url'
 import hdrUrl from '@/assets/hdr/factory_hdr.exr?url'
 import { FACTORY_GLB_URL } from '@/features/template'
 import { EquirectEXRLoader } from '@/shared/lib/three/exrLoader'
@@ -8,7 +9,7 @@ import { preloadGLTF, useGLTF } from '@/shared/lib/three/gltfLoader'
 
 import { MODEL_URL } from '../constants/modelUrls'
 
-const MODEL_URLS = [FACTORY_GLB_URL, boxUrl, ...Object.values(MODEL_URL)]
+const MODEL_URLS = [FACTORY_GLB_URL, cameraUrl, boxUrl, ...Object.values(MODEL_URL)]
 
 for (const url of MODEL_URLS) preloadGLTF(url)
 

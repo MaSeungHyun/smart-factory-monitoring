@@ -1,6 +1,8 @@
 import { useProgress } from "@react-three/drei";
 import { useState } from "react";
 
+import { LOADING_BG_SRC } from "../constants/loadingImages";
+
 /** Suspense fallback. 보이는 동안은 부모가 정하고, 여기서는 진행률만 그린다. */
 export default function LoadingScreen() {
   const { progress } = useProgress();
@@ -19,7 +21,9 @@ export default function LoadingScreen() {
     >
       <div className="relative flex-1 h-full w-full items-center justify-center">
         <img
-          src="/images/bg@2x.png"
+          src={LOADING_BG_SRC}
+          fetchPriority="high"
+          decoding="sync"
           alt=""
           className="inset-0 w-full object-cover"
         />

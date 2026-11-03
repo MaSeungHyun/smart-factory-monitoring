@@ -49,7 +49,10 @@ export default function VehicleCard({ vehicle, selected, onSelect }: Props) {
             {vehicle.mock && <MockBadge />}
           </span>
 
-          <span className="block truncate text-[11px] leading-4 text-text-tertiary">{vehicle.route}</span>
+          <span className="block truncate text-[11px] leading-4 text-text-tertiary">{vehicle.route}
+
+            {vehicle.utilization !== undefined && ` · 가동 ${Math.round(vehicle.utilization)}%`}
+          </span>
         </span>
 
         <span className="ml-auto">

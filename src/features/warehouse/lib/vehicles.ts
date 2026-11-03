@@ -1,4 +1,5 @@
-import { indexAt, type ActiveAlarm } from '@/features/playback'
+import { indexAt, kpiAt, kpiNumber, type ActiveAlarm } from '@/features/playback'
+import { kpiKey } from '@/shared/constants/kpi'
 import type { Tone } from '@/shared/constants/status'
 import type { SceneEquipment } from '@/shared/types'
 import type { EquipmentStateSample, PlaybackRun, StatusFrame } from '@/shared/types/playback'
@@ -25,6 +26,8 @@ export interface Vehicle {
   /** 목업 (재생 데이터에 없음) */
   mock?: boolean
   usedSlots?: string
+  /** v4 KPI 가동률 (%), 예전 녹화면 없음 */
+  utilization?: number
 }
 
 const PREFIX: Record<VehicleCategory, string> = { amr: 'AMR', agv: 'AGV', forklift: 'FORK', rack: 'RACK' }
@@ -127,6 +130,8 @@ export function vehiclesAt(
 ): Vehicle[] {
   const faulted = new Set(alarms.filter((alarm) => alarm.severity === 'error').map((alarm) => alarm.equipmentId))
 
+  const kpi = kpiAt(run.kpi, time)
+
   return roster.map(({ id, code, category }): Vehicle => {
     if (category === 'rack') {
       const percent = Math.round((MOCK_MOBILE_RACK.used / MOCK_MOBILE_RACK.slots) * 100)
@@ -166,6 +171,7 @@ export function vehiclesAt(
       speed,
       percent: Math.round(sample?.battery ?? 0),
       moving: speed > 0.05,
+      utilization: kpiNumber(kpi, kpiKey('vehicleUtilization', { vehicleId: id })) ?? kpiNumber(kpi, kpiKey('deviceUtilization', { deviceId: id })),
     }
   })
 }

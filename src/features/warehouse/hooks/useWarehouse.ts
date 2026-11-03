@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import { indexAt, statusAt, useDashboardView, usePlayback } from '@/features/playback'
+import { indexAt, kpiAt, statusAt, useDashboardView, usePlayback } from '@/features/playback'
 import { sceneEquipment } from '@/features/scene'
 
 import { rackGrid, rackTargets } from '../lib/rackMap'
@@ -53,7 +53,7 @@ export function useWarehouse() {
       grid: rack.grid,
       rack,
       loading: new Map([...targets].map(([id, cell]) => [cell.id, vehicles.find((vehicle) => vehicle.id === id)?.code ?? id])),
-      kpis: warehouseKpis(frame?.counts, frame),
+      kpis: warehouseKpis(frame?.counts, frame, kpiAt(run.kpi, time)),
     }
   }, [run, view, roster, time, rack])
 }

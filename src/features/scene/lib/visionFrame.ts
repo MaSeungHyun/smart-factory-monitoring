@@ -7,6 +7,9 @@ import { findGripPoint } from '@/shared/lib/three/findGripPoint'
 import type { PlaybackRun } from '@/shared/types/playback'
 
 import { SCAN_TUNNEL_LIFT } from '../constants/modelPlacement'
+import { PALLET_CAM_EYE_LIFT_M, PALLET_CAM_FOV_DEG, PALLET_CAM_LOOK_DROP_M, PALLET_CAM_PULLBACK_M } from '../constants/visionCamera'
+import { palletPlan, robotRole } from './palletPlan'
+import { paintPallet } from './visionPallet'
 import { visionPort, type VisionKind } from './visionPort'
 
 const PICK_RANGE = 1.15
@@ -65,6 +68,10 @@ const corner = new Vector3()
 const instanceMatrix = new Matrix4()
 
 const up = new Vector3(0, 1, 0)
+
+const viewDir = new Vector3()
+
+const projected = new Vector3()
 
 const boundsMin = new Vector3()
 
@@ -127,7 +134,7 @@ function aim(nextEye: Vector3, nextLook: Vector3, nextUp: Vector3, aspect: numbe
 }
 
 /** hand04 위에서 흡착점 방향을 내려다본다. 관절보다 위·뒤에 두어 둥근 면이 보이게 한다. */
-function aimRobot(robot: Object3D, aspect: number) {
+function aimRobot(robot: Object3D, aspect: number, palletizing: boolean) {
   robot.updateWorldMatrix(true, true)
 
   const hand = robot.getObjectByName('hand04')
@@ -173,6 +180,21 @@ function aimRobot(robot: Object3D, aspect: number) {
   look.copy(world).addScaledVector(tool, 0.55)
 
   camera.near = 0.05
+
+  if (palletizing) {
+    // 팔레타이징: 시선 반대로 더 물러나고, 눈 높이를 hand04 와 맞춰 수평(월드 up) 으로 본다
+    viewDir.copy(look).sub(eye).normalize()
+
+    eye.addScaledVector(viewDir, -PALLET_CAM_PULLBACK_M)
+
+    eye.y = world.y + PALLET_CAM_EYE_LIFT_M
+
+    look.y -= PALLET_CAM_LOOK_DROP_M
+
+    aim(eye, look, up, aspect, PALLET_CAM_FOV_DEG)
+
+    return
+  }
 
   aim(eye, look, side, aspect, 30)
 }
@@ -372,6 +394,8 @@ function collect(scene: Scene, kind: VisionKind, id: string, cssWidth: number, c
   }
 
   if (kind === 'robot') {
+    const role = robotRole(run, id)
+
     let pick: Hit | null = null
 
     for (const hit of hits) {
@@ -390,7 +414,7 @@ function collect(scene: Scene, kind: VisionKind, id: string, cssWidth: number, c
 
         hit.tone = 'warning'
       } else if (hit === pick) {
-        hit.label = `집기 대상 · ${hit.label}`
+        hit.label = role === 'depalletizing' ? `검출 · 집기 대상 · ${hit.label}` : `집기 대상 · ${hit.label}`
 
         hit.tone = 'success'
       }
@@ -402,6 +426,23 @@ function collect(scene: Scene, kind: VisionKind, id: string, cssWidth: number, c
   hits.length = Math.min(hits.length, MAX_BOXES)
 
   return hits
+}
+
+/** 오버레이 안의 하위 층 (인식 박스 · 팔레트 분석 패널을 서로 지우지 않게 분리) */
+function layerOf(overlay: HTMLElement, name: string) {
+  let node = overlay.querySelector<HTMLDivElement>(`:scope > [data-vision-layer="${name}"]`)
+
+  if (!node) {
+    node = document.createElement('div')
+
+    node.dataset.visionLayer = name
+
+    node.style.cssText = 'position:absolute;inset:0;pointer-events:none;'
+
+    overlay.append(node)
+  }
+
+  return node
 }
 
 function paint(overlay: HTMLElement, hits: Hit[]) {
@@ -480,8 +521,17 @@ function revealAnnotations() {
 }
 
 /** 호버·선택 외곽선은 관제 화면용이라 센서 카메라에는 그리지 않는다 */
-function withoutSensorChrome(scene: Scene, draw: () => void) {
+function withoutSensorChrome(scene: Scene, draw: () => void, self: Object3D | null = null) {
   const hidden: Object3D[] = []
+
+  // 로봇 카메라에는 자기 몸(팔 · 핸드)을 그리지 않는다. 박스는 별도 InstancedMesh 라 잡은 박스는 그대로 보인다
+  self?.traverse((object) => {
+    if ((object as { isMesh?: boolean }).isMesh && !(object instanceof InstancedMesh) && object.visible) {
+      object.visible = false
+
+      hidden.push(object)
+    }
+  })
 
   scene.traverse((object) => {
     if (object.userData.sensorHidden && object.visible) {
@@ -526,7 +576,9 @@ export function drawVision(gl: WebGLRenderer, scene: Scene) {
 
   tracks(run)
 
-  if (kind === 'robot') aimRobot(subject, view.width / view.height)
+  const plan = kind === 'robot' && robotRole(run, id) === 'palletizing' ? palletPlan(decoded, id) : null
+
+  if (kind === 'robot') aimRobot(subject, view.width / view.height, !!plan)
   else aimScan(subject, view.width / view.height)
 
   gl.getViewport(savedView)
@@ -542,7 +594,7 @@ export function drawVision(gl: WebGLRenderer, scene: Scene) {
   gl.setScissor(view.x, view.y, view.width, view.height)
 
   try {
-    withoutSensorChrome(scene, () => gl.render(scene, camera))
+    withoutSensorChrome(scene, () => gl.render(scene, camera), kind === 'robot' ? subject : null)
   } finally {
     gl.setViewport(savedView)
 
@@ -551,5 +603,17 @@ export function drawVision(gl: WebGLRenderer, scene: Scene) {
     gl.setScissorTest(scissorTest)
   }
 
-  paint(overlay, collect(scene, kind, id, view.cssWidth, view.cssHeight))
+  paint(layerOf(overlay, 'hits'), collect(scene, kind, id, view.cssWidth, view.cssHeight))
+
+  const { cssWidth, cssHeight } = view
+
+  const project = (x: number, y: number, z: number): [number, number] | null => {
+    projected.set(x, y, z).project(camera)
+
+    if (projected.z > 1) return null
+
+    return [((projected.x + 1) / 2) * cssWidth, ((1 - projected.y) / 2) * cssHeight]
+  }
+
+  paintPallet(layerOf(overlay, 'pallet'), boundsReady ? plan : null, getExactTime(), project, (boundsMax.x - boundsMin.x) / 2, (boundsMax.z - boundsMin.z) / 2)
 }

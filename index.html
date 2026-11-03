@@ -2,7 +2,11 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- 로딩 화면 배경: JS 보다 먼저 받아 빈 화면을 막는다 -->
+    <link rel="preload" as="image" type="image/webp" href="/images/bg@2x.webp" fetchpriority="high" />
+    <link rel="preload" as="image" type="image/webp" href="/images/logo_grapicar@2x.webp" />
+
+    <link rel="icon" type="image/svg+xml" href="/images/logo_symbol.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <link

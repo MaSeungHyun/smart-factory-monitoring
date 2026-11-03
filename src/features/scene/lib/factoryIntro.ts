@@ -1,9 +1,11 @@
 import { Color, Mesh, MeshBasicMaterial, MeshStandardMaterial, type Material, type Object3D } from 'three'
 
+import { FACTORY_INTRO_DURATION_S, FACTORY_INTRO_SURFACE, FACTORY_INTRO_WIRE } from '@/shared/constants/animation'
+
 /** 로딩 창이 닫힌 뒤에만 재생한다 */
 let armed = false
 
-const DURATION = 4.6
+const DURATION = FACTORY_INTRO_DURATION_S
 
 const LINE = new Color('#d5dde4')
 
@@ -106,9 +108,9 @@ export function paintFactorySurface(material: MeshStandardMaterial, t: number) {
     return
   }
 
-  const appear = smooth(0.34, 0.78, t)
+  const appear = smooth(FACTORY_INTRO_SURFACE.appearStart, FACTORY_INTRO_SURFACE.appearEnd, t)
 
-  const settle = smooth(0.58, 1, t)
+  const settle = smooth(FACTORY_INTRO_SURFACE.settleStart, 1, t)
 
   material.wireframe = false
 
@@ -141,15 +143,15 @@ export function paintFactoryWire(wire: IntroWire, t: number) {
     return
   }
 
-  const glowK = smooth(0.08, 0.46, t)
+  const glowK = smooth(FACTORY_INTRO_WIRE.glowStart, FACTORY_INTRO_WIRE.glowEnd, t)
 
-  const hot = smooth(0.28, 0.55, t)
+  const hot = smooth(FACTORY_INTRO_WIRE.hotStart, FACTORY_INTRO_WIRE.hotEnd, t)
 
   wire.material.color.copy(LINE).lerp(GLOW, glowK)
 
   wire.material.color.lerp(HOT, hot * 0.85)
 
-  wire.material.opacity = 1 - smooth(0.48, 0.9, t)
+  wire.material.opacity = 1 - smooth(FACTORY_INTRO_WIRE.fadeStart, FACTORY_INTRO_WIRE.fadeEnd, t)
 
   wire.mesh.visible = wire.material.opacity > 0.02
 }

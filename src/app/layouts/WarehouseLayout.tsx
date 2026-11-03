@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { useUi } from "@/shared/stores/useUiStore";
+import { AnimatedPanel } from "@/shared/components/motion/AnimatedPanel";
 import { cn } from "@/shared/lib/cn";
 
 import HeaderRegion from "./regions/HeaderRegion";
@@ -48,13 +49,17 @@ export default function WarehouseLayout({
         )}
       >
         {!sceneExpanded && (
-          <section className="min-h-0 min-w-0">{aside}</section>
+          <AnimatedPanel from="left" className="min-h-0 min-w-0">
+            {aside}
+          </AnimatedPanel>
         )}
 
         <section className="relative min-h-0 min-w-0">{main}</section>
 
         {!sceneExpanded && (
-          <section className="col-span-2 min-h-0">{bottom}</section>
+          <AnimatedPanel from="bottom" className="col-span-2 min-h-0">
+            {bottom}
+          </AnimatedPanel>
         )}
       </main>
     </div>

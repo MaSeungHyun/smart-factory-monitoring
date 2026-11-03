@@ -8,3 +8,5 @@ export { getExactTime, playbackStore, usePlayback, usePlaybackPick } from './lib
 export { indexAt, statusAt } from './lib/frameAt'
 export { STATE_LABEL } from './lib/dashboardView'
 export { useContinuousCount } from './hooks/useContinuousCount'
+export { kpiOf, useKpi, useKpiGetter } from './hooks/useKpi'
+export { kpiAt, kpiNumber, kpiValue } from './lib/kpi'

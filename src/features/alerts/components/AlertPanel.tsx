@@ -27,7 +27,7 @@ export default function AlertPanel() {
       data-alarm-panel
       className={cn(
         'w-full rounded border border-border-default bg-bg-surface/90 p-3.5 backdrop-blur transition-[opacity,transform] duration-200',
-        alarmPanelOpen ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none -translate-y-2 opacity-0',
+        alarmPanelOpen ? 'pointer-events-auto translate-x-0 opacity-100' : 'pointer-events-none translate-x-3 opacity-0',
       )}
     >
       <div className="flex items-center gap-2">

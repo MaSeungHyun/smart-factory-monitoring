@@ -12,11 +12,13 @@ import {
 } from "lucide-react";
 
 import AnimatedNumber from "@/shared/components/AnimatedNumber";
+import { AnimatedItem, AnimatedList } from "@/shared/components/motion/AnimatedPanel";
 import Card from "@/shared/components/Card";
 import KpiCard from "@/shared/components/KpiCard";
 import Panel from "@/shared/components/Panel";
 import SegmentBar from "@/shared/components/SegmentBar";
-import { useContinuousCount, useDashboardView } from "@/features/playback";
+import { useContinuousCount, useDashboardView, useKpiGetter } from "@/features/playback";
+import { KPI_KEYS } from "@/shared/constants/kpi";
 import { useScrollToSelected } from "@/shared/hooks/useScrollToSelected";
 import {
   Tabs,
@@ -47,7 +49,7 @@ const KPI_ICONS = {
   outbound: <ArrowUpFromLine size={14} />,
 };
 
-/** 오늘 처리량 = 적치 + 디팔레타이징 */
+/** 오늘 처리량 (KPI 없는 예전 녹화) = 적치 + 디팔레타이징 */
 const pickHandled = (frame: StatusFrame) => frame.counts.handled;
 
 type TabId = "equipment" | "alarm" | "history";
@@ -76,7 +78,10 @@ export default function TodayPanel() {
   const alarmTotal = view?.alarms.length ?? ALARM_TOTAL;
 
   // 상태 프레임의 계단식 처리량을 재생 시각으로 보간해 매 프레임 연속으로 읽는다
-  const handled = useContinuousCount(pickHandled, throughput.value);
+  const derived = useContinuousCount(pickHandled, throughput.value);
+
+  // KPI 녹화면 공장 기록 처리량 (팔레타이징 박스, 1Hz 샘플 보간)
+  const handled = useKpiGetter(KPI_KEYS.processed, derived);
 
   const target = throughput.target;
 
@@ -160,15 +165,16 @@ export default function TodayPanel() {
       </Card>
 
       {/* KPI grid */}
-      <div className="grid shrink-0 grid-cols-2 gap-1">
+      <AnimatedList className="grid shrink-0 grid-cols-2 gap-1">
         {kpis.map((item) => (
-          <KpiCard
-            key={item.id}
-            item={item}
-            icon={KPI_ICONS[item.id as keyof typeof KPI_ICONS]}
-          />
+          <AnimatedItem key={item.id}>
+            <KpiCard
+              item={item}
+              icon={KPI_ICONS[item.id as keyof typeof KPI_ICONS]}
+            />
+          </AnimatedItem>
         ))}
-      </div>
+      </AnimatedList>
 
       <Tabs
         value={tab}
@@ -195,17 +201,18 @@ export default function TodayPanel() {
         {/* 장비 · 알람 · 기록만 이 영역에서 스크롤 */}
         <div ref={list} className="scroll-thin min-h-0 flex-1 overflow-y-auto">
           <TabsContent value="equipment" className="outline-none">
-            <div
+            <AnimatedList
               role="listbox"
               aria-label="장비 목록"
               className="flex flex-col gap-2.5"
             >
               {equipment.map((item) => (
-                <EquipmentCard
-                  key={item.id}
-                  item={item}
-                  selected={item.id === ui.selectedId}
-                />
+                <AnimatedItem key={item.id}>
+                  <EquipmentCard
+                    item={item}
+                    selected={item.id === ui.selectedId}
+                  />
+                </AnimatedItem>
               ))}
 
               {equipment.length === 0 && (
@@ -213,7 +220,7 @@ export default function TodayPanel() {
                   필터에 맞는 장비가 없습니다
                 </p>
               )}
-            </div>
+            </AnimatedList>
           </TabsContent>
 
           <TabsContent value="alarm" className="outline-none">

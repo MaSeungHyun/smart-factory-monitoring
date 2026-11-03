@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 
+import { AnimatedItem, AnimatedList } from "@/shared/components/motion/AnimatedPanel";
 import Panel from "@/shared/components/Panel";
 import { useScrollToSelected } from "@/shared/hooks/useScrollToSelected";
 import { statusVisible, useUi } from "@/shared/stores/useUiStore";
@@ -66,14 +67,17 @@ export default function VehiclePanel({ vehicles, selected, onSelect }: Props) {
         ref={list}
         className="scroll-thin -mr-2 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-2"
       >
-        {shown.map((vehicle) => (
-          <VehicleCard
-            key={vehicle.id}
-            vehicle={vehicle}
-            selected={vehicle.id === selected}
-            onSelect={onSelect}
-          />
-        ))}
+        <AnimatedList className="flex flex-col gap-1">
+          {shown.map((vehicle) => (
+            <AnimatedItem key={vehicle.id}>
+              <VehicleCard
+                vehicle={vehicle}
+                selected={vehicle.id === selected}
+                onSelect={onSelect}
+              />
+            </AnimatedItem>
+          ))}
+        </AnimatedList>
       </div>
 
       <DockSection />

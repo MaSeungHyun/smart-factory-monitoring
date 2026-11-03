@@ -4,7 +4,7 @@ import { useNow } from "@/shared/hooks/useNow";
 
 import AlarmBell from "./AlarmBell";
 import EquipmentSearch from "./EquipmentSearch";
-import logo from "./../../../../public/images/logo_grapicar@2x.png";
+import logo from "./../../../../public/images/logo_grapicar@2x.webp";
 
 function formatDateTime(date: Date) {
   const pad = (value: number) => String(value).padStart(2, "0");

@@ -21,6 +21,17 @@ export interface CalloutLayout {
   update: (frame: CalloutFrame | null) => void
 }
 
+/** 리더선: 기준점에서 위로 올라가는 길이 (px) */
+const LEADER_RISE = 90
+
+/** 리더선: 위로 꺾인 뒤 카드까지 가로로 가는 길이 (px) */
+const LEADER_RUN = 48
+
+/** 카드가 화면 위·아래 끝에서 띄우는 여백 (px, 위쪽은 HUD 아래) */
+const LEADER_TOP = 64
+
+const LEADER_MARGIN = 12
+
 interface Props {
   ref: Ref<CalloutLayout>
 }
@@ -74,6 +85,27 @@ export default function RobotCalloutOverlay({ ref }: Props) {
       if (!frame.anchor) return
 
       const [ax, ay] = frame.anchor
+
+      if (!fade) {
+        // 로봇: 기준점에서 위로 올라간 뒤 가로로 꺾여 위쪽 카드 옆면으로 들어간다
+        const right = ax + LEADER_RUN + CALLOUT_WIDTH + LEADER_MARGIN <= width
+
+        const cx = right ? ax + LEADER_RUN : ax - LEADER_RUN - CALLOUT_WIDTH
+
+        const cy = Math.min(Math.max(ay - LEADER_RISE - CALLOUT_HEIGHT / 2, LEADER_TOP), height - CALLOUT_HEIGHT - LEADER_MARGIN)
+
+        const turn = cy + CALLOUT_HEIGHT / 2
+
+        card.current.style.transform = `translate(${cx}px, ${cy}px)`
+
+        line.current.setAttribute('points', `${ax},${ay} ${ax},${turn} ${right ? cx : cx + CALLOUT_WIDTH},${turn}`)
+
+        dot.current.setAttribute('cx', String(ax))
+
+        dot.current.setAttribute('cy', String(ay))
+
+        return
+      }
 
       const inside = ax >= x && ax <= x + CALLOUT_WIDTH
 

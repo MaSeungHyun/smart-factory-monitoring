@@ -1,4 +1,5 @@
 import { useDashboardView } from "@/features/playback";
+import { AnimatedItem, AnimatedList } from "@/shared/components/motion/AnimatedPanel";
 import Panel from "@/shared/components/Panel";
 
 import { PROCESS_STAGES } from "../data/process.mock";
@@ -17,11 +18,13 @@ export default function ProcessFlow() {
         </span>
       </div>
 
-      <div className="mt-3 grid min-h-0 flex-1 grid-cols-6 gap-3">
+      <AnimatedList className="mt-3 grid min-h-0 flex-1 grid-cols-6 gap-3">
         {stages.map((stage) => (
-          <ProcessStageCard key={stage.id} stage={stage} />
+          <AnimatedItem key={stage.id}>
+            <ProcessStageCard stage={stage} />
+          </AnimatedItem>
         ))}
-      </div>
+      </AnimatedList>
     </Panel>
   );
 }

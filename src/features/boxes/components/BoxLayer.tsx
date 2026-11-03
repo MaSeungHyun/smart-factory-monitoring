@@ -24,7 +24,7 @@ function BoxScene({ run, boxes }: { run: PlaybackRun; boxes: DecodedBox[] }) {
   return (
     <>
 
-      {pallets?.length ? <EventPallets events={pallets} /> : <RailPallets boxes={boxes} sync={sync} />}
+      {pallets?.length ? <EventPallets run={run} events={pallets} /> : <RailPallets boxes={boxes} sync={sync} />}
       <BoxInstances boxes={boxes} sync={sync} />
 
       <BoxDefectMarks boxes={boxes} />

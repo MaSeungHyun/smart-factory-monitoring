@@ -1,10 +1,10 @@
 import AnimatedNumber from '@/shared/components/AnimatedNumber'
+import { useKpiGetter } from '@/features/playback'
 import { ArrowDownToLine, ArrowUpFromLine, ClipboardList, Layers, ScanLine, Truck, Workflow } from 'lucide-react'
 
 import SegmentBar from '@/shared/components/SegmentBar'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { cn } from '@/shared/lib/cn'
-import { formatNumber } from '@/shared/lib/format'
 import type { ProcessStage } from '@/shared/types'
 
 const STAGE_ICON = {
@@ -21,6 +21,11 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
   const Icon = STAGE_ICON[stage.icon]
 
   const isError = stage.status === 'error'
+
+  // KPI 키가 있으면 1Hz 샘플을 보간해 매 프레임 읽고, 없으면 파생값
+  const value = useKpiGetter(stage.valueKey, stage.value)
+
+  const percent = useKpiGetter(stage.percentKey, stage.percent)
 
   return (
     <div
@@ -41,15 +46,15 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
 
       <div className="mt-auto flex items-baseline justify-between">
         <p className="flex items-baseline gap-1">
-          <span className="text-h1 text-text-primary tabular-nums">{formatNumber(stage.value)}</span>
+          <span className="text-h1 text-text-primary tabular-nums"><AnimatedNumber value={value} grouped /></span>
 
           <span className="text-caption text-text-tertiary">{stage.unit}</span>
         </p>
 
-        <span className="text-caption text-text-secondary tabular-nums"><AnimatedNumber value={stage.percent} suffix="%" /></span>
+        <span className="text-caption text-text-secondary tabular-nums"><AnimatedNumber value={percent} suffix="%" /></span>
       </div>
 
-      <SegmentBar percent={stage.percent} tone={stage.status} segments={35} className="mt-2" />
+      <SegmentBar percent={percent} tone={stage.status} segments={35} className="mt-2" />
     </div>
   )
 }

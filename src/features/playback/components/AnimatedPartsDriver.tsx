@@ -90,7 +90,8 @@ export default function AnimatedPartsDriver() {
 
       binding.handler.apply(binding.node, value, track.part, binding.root)
     }
-  })
+    // 차량 · 포크 포즈를 박스 · 팔레트보다 먼저 적용해 실린 짐이 한 프레임 늦지 않게 한다
+  }, -1)
 
   return null
 }

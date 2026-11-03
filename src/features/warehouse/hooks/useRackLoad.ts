@@ -1,12 +1,26 @@
 import { useMemo } from 'react'
 
-import { usePlayback } from '@/features/playback'
+import { kpiAt, kpiNumber, usePlayback } from '@/features/playback'
+import { KPI_KEYS } from '@/shared/constants/kpi'
 import { sceneEquipment } from '@/features/scene'
 
 import { rackCellsAt, rackGrid, rackSummary } from '../lib/rackMap'
 import { buildRackTimeline, rackChangesAt, rackStateAt } from '../lib/rackTimeline'
 
 const grid = rackGrid(sceneEquipment)
+
+/** v4: 적재 칸 · 전체 칸 · 점유율은 공장 기록값 (가득 찬 랙 수는 타임라인 계산 유지) */
+function withKpiRack(summary: ReturnType<typeof rackSummary>, kpi: ReturnType<typeof kpiAt>) {
+  const stored = kpiNumber(kpi, KPI_KEYS.rackStored)
+
+  const slots = kpiNumber(kpi, KPI_KEYS.rackSlots)
+
+  const occupancy = kpiNumber(kpi, KPI_KEYS.rackOccupancy)
+
+  if (stored === undefined || slots === undefined) return summary
+
+  return { ...summary, used: Math.round(stored), capacity: slots, percent: Math.round(occupancy ?? (slots ? (stored / slots) * 100 : 0)) }
+}
 
 /** 최근 입출고 표시 개수 */
 const RECENT = 4
@@ -28,13 +42,13 @@ export function useRackLoad() {
 
     return {
       grid: rackCellsAt(grid, state),
-      summary: rackSummary(state),
+      summary: withKpiRack(rackSummary(state), kpiAt(run?.kpi, time)),
       recent: timeline.changes
         .slice(Math.max(0, applied - RECENT), applied)
         .reverse()
         .map((change) => ({ ...change, rackName: names.get(change.rackId) ?? change.rackId })),
     }
-  }, [timeline, time])
+  }, [timeline, time, run])
 }
 
 export type RackLoadView = ReturnType<typeof useRackLoad>

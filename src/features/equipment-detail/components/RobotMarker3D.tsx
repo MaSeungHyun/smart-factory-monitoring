@@ -6,6 +6,7 @@ import { decodeBoxes, robotWorkSpots, type WorkSpot } from '@/features/boxes'
 import { dashboardAt, playbackStore } from '@/features/playback'
 import { useMonitorState } from '@/shared/stores/useMonitorViewStore'
 import { screenBounds, type ScreenRect } from '@/shared/lib/three/screenBounds'
+import { robotAnchor, robotBaseSpot } from '@/features/scene/lib/boundsRaycast'
 import { surfaceBelow } from '@/shared/lib/three/surfaceBelow'
 import type { PlaybackRun } from '@/shared/types/playback'
 
@@ -26,6 +27,9 @@ const FALLBACK_DROP = 0.3
 const spot = new Vector3()
 
 const anchor = new Vector3()
+
+/** 리더선 끝: 로봇 라벨 기준점 (작업 지점은 컨베이어 위라 로봇과 떨어져 보임) */
+const pivot = new Vector3()
 
 const markerBox = new Box3()
 
@@ -57,7 +61,7 @@ function colorOf(robotId: string, fade: boolean) {
   return ROBOT_STATUS_COLOR[robotDetail(snap.run, snap.time, origin, view.alarms, robotId).status]
 }
 
-/** 선택 로봇의 작업 지점 (박스 집는 곳) 바닥 마커. 상태 색은 바뀔 때만 다시 그린다 */
+/** 선택 로봇의 base 바닥 마커 (base 메쉬 없으면 작업 지점). 상태 색은 바뀔 때만 다시 그린다 */
 export default function RobotMarker3D({ layout }: Props) {
   const { robotId } = useMonitorState()
 
@@ -114,7 +118,10 @@ export default function RobotMarker3D({ layout }: Props) {
 
     if (!robot || !group.current) return
 
-    if (workSpot && !fade) {
+    if (!fade && robotBaseSpot(robot, spot)) {
+      // 링은 로봇 base 바로 아래(받침대 위면)에 둔다
+      spot.y += LIFT
+    } else if (workSpot && !fade) {
       const surfaceKey = `${robotId}:${workSpot.join(',')}`
 
       if (surface.current.key !== surfaceKey || surface.current.y === null) {
@@ -146,7 +153,7 @@ export default function RobotMarker3D({ layout }: Props) {
       bounds.maxY = Math.max(bounds.maxY, marker.maxY)
     }
 
-    anchor.copy(spot).project(camera)
+    anchor.copy(!fade && robotAnchor(robot, pivot) ? pivot : spot).project(camera)
 
     const visible = anchor.z <= 1 && Math.abs(anchor.x) <= 1 && Math.abs(anchor.y) <= 1
 

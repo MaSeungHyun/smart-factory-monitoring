@@ -1,4 +1,6 @@
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
+
+import { AnimatePresence } from "motion/react";
 
 import DashboardLayout from "@/app/layouts/DashboardLayout";
 import {
@@ -13,16 +15,16 @@ import { SceneHost } from "@/features/scene";
 import SuspendFactoryAssets from "@/features/scene/components/SuspendFactoryAssets";
 import WarmupScreen from "@/features/scene/components/WarmupScreen";
 import LoadingScreen from "@/shared/components/LoadingScreen";
-import { useMonitorView } from "@/shared/stores/useMonitorViewStore";
+import { useMonitorView, type MonitorView } from "@/shared/stores/useMonitorViewStore";
 import EquipmentDetailPage from "@/pages/equipment-detail/EquipmentDetailPage";
 import ScanPage from "@/pages/scan/ScanPage";
 import WarehousePage from "@/pages/warehouse/WarehousePage";
 
+import { useIntroGate } from "./useIntroGate";
 import ViewOverlays3D from "./ViewOverlays3D";
 
-function ViewPage() {
-  const view = useMonitorView();
-
+/** 화면 하나. 사라지는 동안에도 자기 탭을 그리도록 view 를 고정해서 받는다 */
+function ViewScreen({ view }: { view: MonitorView }) {
   if (view === "robot") return <EquipmentDetailPage />;
 
   if (view === "scan") return <ScanPage />;
@@ -47,6 +49,11 @@ function ViewPage() {
 export default function MonitoringPage() {
   usePlaybackLoader();
 
+  // 화면이 모두 준비된 뒤에 인트로 시작
+  useIntroGate();
+
+  const view = useMonitorView();
+
   return (
     <Suspense fallback={<LoadingScreen />}>
       <SuspendFactoryAssets />
@@ -55,7 +62,12 @@ export default function MonitoringPage() {
         <ViewOverlays3D />
       </SceneHost>
 
-      <ViewPage />
+      {/* 탭이 바뀌면 이전 화면 패널이 짧게 사라진 뒤 새 화면 패널이 들어온다 */}
+      <AnimatePresence mode="wait">
+        <Fragment key={view}>
+          <ViewScreen view={view} />
+        </Fragment>
+      </AnimatePresence>
 
       <WarmupScreen />
     </Suspense>

@@ -70,12 +70,14 @@ export function mergeChunks(chunks: RunChunk[]): RunChunk {
 
   const hasParts = chunks.some((chunk) => chunk.tracks.parts)
 
+  const hasKpi = chunks.some((chunk) => chunk.tracks.kpi)
+
   const hasPalletParents = chunks.some((chunk) => chunk.recording.palletParents)
 
   return {
     ...first,
     meta: { ...first.meta, t1: last.meta.t1 },
-    tracks: { ...first.tracks, t, joints, amrs, parts: hasParts ? concat((chunk) => chunk.tracks.parts) : undefined },
+    tracks: { ...first.tracks, t, joints, amrs, parts: hasParts ? concat((chunk) => chunk.tracks.parts) : undefined, kpi: hasKpi ? concat((chunk) => chunk.tracks.kpi) : undefined },
     status: concat((chunk) => chunk.status),
     events: concat((chunk) => chunk.events),
     alarms: concat((chunk) => chunk.alarms),

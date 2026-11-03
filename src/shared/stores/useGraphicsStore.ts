@@ -35,6 +35,8 @@ interface Persisted {
   /** MSAA. 캔버스를 다시 만들 때만 반영된다 */
   antialias: boolean
   renderer: RendererKind
+  /** 패널 · 카드 등장 애니메이션 */
+  panelMotion: boolean
 }
 
 export interface GraphicsState extends Persisted {
@@ -49,6 +51,7 @@ interface GraphicsActions {
   setAmrBloom: (amrBloom: boolean) => void
   setAntialias: (antialias: boolean) => void
   setRenderer: (renderer: RendererKind) => void
+  setPanelMotion: (panelMotion: boolean) => void
   /** 캔버스가 실제로 쓴 백엔드. 선호값(renderer)은 바꾸지 않는다 */
   markActive: (active: RendererKind, fallback: string | null) => void
 }
@@ -59,6 +62,7 @@ const DEFAULTS: Persisted = {
   amrBloom: false,
   antialias: true,
   renderer: 'webgl',
+  panelMotion: true,
 }
 
 function oneOf<T extends string>(value: unknown, list: readonly T[], fallback: T) {
@@ -81,6 +85,7 @@ function load(): Persisted {
       amrBloom: typeof parsed.amrBloom === 'boolean' ? parsed.amrBloom : legacy === 'soft' || legacy === 'strong' || legacy === true,
       antialias: typeof parsed.antialias === 'boolean' ? parsed.antialias : DEFAULTS.antialias,
       renderer: oneOf(parsed.renderer, RENDERERS, DEFAULTS.renderer),
+      panelMotion: typeof parsed.panelMotion === 'boolean' ? parsed.panelMotion : DEFAULTS.panelMotion,
     }
   } catch {
     return DEFAULTS
@@ -88,9 +93,9 @@ function load(): Persisted {
 }
 
 function write() {
-  const { quality, shadow, amrBloom, antialias, renderer } = graphicsStore.getState()
+  const { quality, shadow, amrBloom, antialias, renderer, panelMotion } = graphicsStore.getState()
 
-  localStorage.setItem(KEY, JSON.stringify({ quality, shadow, amrBloom, antialias, renderer }))
+  localStorage.setItem(KEY, JSON.stringify({ quality, shadow, amrBloom, antialias, renderer, panelMotion }))
 }
 
 export const graphicsStore = createStore<GraphicsState & GraphicsActions>((set, get) => ({
@@ -134,6 +139,14 @@ export const graphicsStore = createStore<GraphicsState & GraphicsActions>((set, 
     if (renderer === get().renderer) return
 
     set({ renderer, fallback: null })
+
+    write()
+  },
+
+  setPanelMotion(panelMotion) {
+    if (panelMotion === get().panelMotion) return
+
+    set({ panelMotion })
 
     write()
   },
