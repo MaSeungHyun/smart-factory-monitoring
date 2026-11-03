@@ -2,6 +2,8 @@ import { useImperativeHandle, useRef, type Ref } from 'react'
 
 import { CALLOUT_HEIGHT, CALLOUT_WIDTH, calloutPlacement, type CalloutLayout } from '@/features/equipment-detail'
 
+import { leaderLayout } from '@/shared/lib/leaderLine'
+
 import { useScanDetail } from '../hooks/useScanDetail'
 import { VERDICT_COLOR } from '../lib/scanTone'
 import ScanCallout from './ScanCallout'
@@ -36,25 +38,27 @@ export default function ScanCalloutOverlay({ ref }: Props) {
 
       root.current.style.height = `${height}px`
 
-      const { x, y } = calloutPlacement(frame.rect, width, height)
-
-      card.current.style.transform = `translate(${x}px, ${y}px)`
-
       line.current.style.display = frame.anchor ? '' : 'none'
 
       dot.current.style.display = frame.anchor ? '' : 'none'
 
-      if (!frame.anchor) return
+      if (!frame.anchor) {
+        // 기준점이 없으면 기존 배치 규칙으로 카드만 둔다
+        const { x, y } = calloutPlacement(frame.rect, width, height)
+
+        card.current.style.transform = `translate(${x}px, ${y}px)`
+
+        return
+      }
 
       const [ax, ay] = frame.anchor
 
-      const inside = ax >= x && ax <= x + CALLOUT_WIDTH
+      // 로봇 카드와 같은 ㄱ자 선, 실제 렌더된 카드 크기로 배치
+      const { points, cardX, cardY } = leaderLayout(ax, ay, card.current.offsetWidth || CALLOUT_WIDTH, card.current.offsetHeight || CALLOUT_HEIGHT, width)
 
-      const ey = inside ? (ay > y ? y + CALLOUT_HEIGHT : y) : y + CALLOUT_HEIGHT / 2
+      card.current.style.transform = `translate(${cardX}px, ${cardY}px)`
 
-      const ex = ax < x ? x : x + CALLOUT_WIDTH
-
-      line.current.setAttribute('points', inside ? `${ax},${ay} ${ax},${ey}` : `${ax},${ay} ${ax},${ey} ${ex},${ey}`)
+      line.current.setAttribute('points', points)
 
       dot.current.setAttribute('cx', String(ax))
 
