@@ -1,6 +1,7 @@
 import { Package } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import AnimatedNumber from '@/shared/components/AnimatedNumber'
 import Card from '@/shared/components/Card'
 import SegmentProgressBar from '@/shared/components/SegmentProgressBar'
 
@@ -27,11 +28,11 @@ export default function HeroKpi({ count, target, percent, bar = percent, label =
       </div>
 
       <div className="mt-1 flex items-end gap-1">
-        <span className="text-display text-text-primary tabular-nums">{count.toLocaleString('ko-KR')}</span>
+        <span className="text-display text-text-primary tabular-nums"><AnimatedNumber value={count} grouped /></span>
 
         <span className="pb-1 text-caption text-text-tertiary">{unit}</span>
 
-        {percent !== undefined && <span className="ml-auto text-title font-semibold text-primary-on-dark tabular-nums">{percent}%</span>}
+        {percent !== undefined && <span className="ml-auto text-title font-semibold text-primary-on-dark tabular-nums"><AnimatedNumber value={percent} suffix="%" /></span>}
       </div>
 
       {bar !== undefined && <SegmentProgressBar value={bar} count={70} className="mt-3" />}

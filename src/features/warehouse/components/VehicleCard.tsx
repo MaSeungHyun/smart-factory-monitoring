@@ -1,3 +1,4 @@
+import AnimatedNumber from '@/shared/components/AnimatedNumber'
 import SegmentProgressBar from '@/shared/components/SegmentProgressBar'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { cn } from '@/shared/lib/cn'
@@ -63,7 +64,7 @@ export default function VehicleCard({ vehicle, selected, onSelect }: Props) {
 
         <SegmentProgressBar value={vehicle.percent} count={30} height={8} fillClassName={barFill(vehicle)} className="flex-1" />
 
-        <span className="w-9 shrink-0 text-right font-semibold text-text-primary">{vehicle.percent}%</span>
+        <span className="w-9 shrink-0 text-right font-semibold text-text-primary"><AnimatedNumber value={vehicle.percent} suffix="%" /></span>
       </div>
     </button>
   )

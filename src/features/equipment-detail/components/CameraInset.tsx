@@ -2,6 +2,9 @@ import { useLayoutEffect, useRef } from 'react'
 
 import { visionPort, type VisionKind } from '@/features/scene/lib/visionPort'
 
+/** 비전 영상 프레임 표기 */
+const VISION_FPS = 30
+
 interface CameraInsetProps {
   meta: string
   kind: VisionKind
@@ -50,7 +53,7 @@ export default function CameraInset({ title = '비전 인식', meta, kind, id }:
 
         <span className="text-text-primary">{title}</span>
 
-        <span className="ml-auto text-text-tertiary">{meta}</span>
+        <span className="ml-auto text-text-tertiary">{meta} · {VISION_FPS}fps</span>
       </div>
 
       <div ref={hole} className="relative h-[160px]">

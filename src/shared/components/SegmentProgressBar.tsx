@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 
+import { useSmoothValue, type SmoothTarget } from '@/shared/hooks/useSmoothValue'
 import { cn } from '@/shared/lib/cn'
 
 /** 칸 사이 간격 / 막대 높이 (CSS px) */
@@ -10,8 +11,8 @@ const HEIGHT = 8
 type Layout = { cssW: number; dpr: number; offset: number }
 
 interface SegmentProgressBarProps {
-  /** 0-100 (범위 밖은 잘림) */
-  value: number
+  /** 0-100 (범위 밖은 잘림). 함수면 프레임마다 읽는 연속 값 */
+  value: SmoothTarget
   count?: number
   /** 채워진 칸의 SVG fill 클래스 */
   fillClassName?: string
@@ -107,11 +108,7 @@ export default function SegmentProgressBar({
 }: SegmentProgressBarProps) {
   const { ref, layout } = useDeviceLayout()
 
-  const percent = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0
-
   const segments = Math.max(1, Math.floor(count))
-
-  const filled = Math.round((percent / 100) * segments)
 
   const { cssW, dpr, offset } = layout
 
@@ -135,12 +132,37 @@ export default function SegmentProgressBar({
 
   cell = Math.max(1, cell)
 
+  const fills = useRef<SVGGElement>(null)
+
+  const last = useRef(0)
+
+  /** 칸마다 채움 rect 너비 = 칸 너비 × 채운 비율. 마지막 칸은 부분 채움으로 연속 */
+  const paint = (current: number) => {
+    last.current = current
+
+    const rects = fills.current?.children
+
+    if (!rects) return
+
+    const amount = (Math.min(Math.max(current, 0), 100) / 100) * segments
+
+    for (let index = 0; index < rects.length; index += 1) {
+      rects[index].setAttribute('width', String(cell * Math.min(Math.max(amount - index, 0), 1)))
+    }
+
+    ref.current?.setAttribute('aria-valuenow', String(Math.round(current)))
+  }
+
+  useSmoothValue(value, paint)
+
+  // 크기 · 배율이 바뀌면 칸 너비가 달라지므로 마지막 값으로 다시 칠한다
+  useLayoutEffect(() => paint(last.current))
+
   return (
     <div
       ref={ref}
       role="progressbar"
       aria-label={label}
-      aria-valuenow={Math.round(percent)}
       aria-valuemin={0}
       aria-valuemax={100}
       style={{
@@ -160,18 +182,14 @@ export default function SegmentProgressBar({
           className="block"
         >
           {Array.from({ length: segments }, (_, index) => (
-            <rect
-              key={index}
-              x={offset + index * (cell + gap)}
-              y={0}
-              width={cell}
-              height={height}
-              className={cn(
-                'transition-colors',
-                index < filled ? cn(fillClassName, pulse && 'animate-pulse') : 'fill-text-primary/10',
-              )}
-            />
+            <rect key={index} x={offset + index * (cell + gap)} y={0} width={cell} height={height} className="fill-text-primary/10" />
           ))}
+
+          <g ref={fills} className={cn(fillClassName, pulse && 'animate-pulse')}>
+            {Array.from({ length: segments }, (_, index) => (
+              <rect key={index} x={offset + index * (cell + gap)} y={0} width={0} height={height} />
+            ))}
+          </g>
         </svg>
       )}
     </div>

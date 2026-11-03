@@ -12,8 +12,8 @@ import { openAlarms, raisedAlarms, type ActiveAlarm } from './alarms'
 import { inspectionBoxMessage, isInspectionAlarm, isInspectionLabel } from './inspection'
 import { statusAt } from './frameAt'
 
-/** 재생 데이터 한 회차(10분) 기준 처리 목표 (박스) — 실제 목표치가 없어 고정값 */
-export const RUN_TARGET = 120
+/** 오늘 처리 목표 (박스) — 실제 목표치가 없어 고정값 */
+export const RUN_TARGET = 10800
 
 /** 이 배터리 미만이면 경고 (post-processing 조건 알람과 같은 값) */
 const LOW_BATTERY = 60
@@ -44,7 +44,8 @@ export interface DashboardView {
   alarms: ActiveAlarm[]
 }
 
-const pct = (value: number, total: number) => (total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0)
+/** 0-100 으로 자른 비율. 워밍업 재공(wip)이 입고 수보다 많으면 음수가 나오므로 0 아래도 막는다 */
+const pct = (value: number, total: number) => (total > 0 ? Math.max(0, Math.min(100, Math.round((value / total) * 100))) : 0)
 
 function statusOf(sample: EquipmentStateSample | undefined, faulted: boolean, inspecting: boolean): EquipmentStatus {
   if (inspecting) return 'running'

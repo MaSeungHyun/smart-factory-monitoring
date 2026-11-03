@@ -1,3 +1,4 @@
+import AnimatedNumber from '@/shared/components/AnimatedNumber'
 import { ArrowDownToLine, ArrowUpFromLine, ClipboardList, Layers, ScanLine, Truck, Workflow } from 'lucide-react'
 
 import SegmentBar from '@/shared/components/SegmentBar'
@@ -45,7 +46,7 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
           <span className="text-caption text-text-tertiary">{stage.unit}</span>
         </p>
 
-        <span className="text-caption text-text-secondary tabular-nums">{stage.percent}%</span>
+        <span className="text-caption text-text-secondary tabular-nums"><AnimatedNumber value={stage.percent} suffix="%" /></span>
       </div>
 
       <SegmentBar percent={stage.percent} tone={stage.status} segments={35} className="mt-2" />

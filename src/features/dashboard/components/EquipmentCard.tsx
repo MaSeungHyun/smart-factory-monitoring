@@ -1,3 +1,4 @@
+import AnimatedNumber from '@/shared/components/AnimatedNumber'
 import type { KeyboardEvent } from 'react'
 
 import { Bot, ScanLine, Truck } from 'lucide-react'
@@ -61,7 +62,7 @@ export default function EquipmentCard({ item, selected }: EquipmentCardProps) {
 
         <SegmentBar percent={item.percent} tone={item.status} segments={22} height={12} className="ml-auto" />
 
-        <span className="w-8 text-right text-text-primary">{item.percent}%</span>
+        <span className="w-8 text-right text-text-primary"><AnimatedNumber value={item.percent} suffix="%" /></span>
       </div>
     </Card>
   )

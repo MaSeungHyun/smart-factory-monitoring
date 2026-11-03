@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import {
   AlertTriangle,
@@ -11,14 +11,21 @@ import {
   Package,
 } from "lucide-react";
 
+import AnimatedNumber from "@/shared/components/AnimatedNumber";
 import Card from "@/shared/components/Card";
 import KpiCard from "@/shared/components/KpiCard";
 import Panel from "@/shared/components/Panel";
 import SegmentBar from "@/shared/components/SegmentBar";
-import { useDashboardView } from "@/features/playback";
+import { useContinuousCount, useDashboardView } from "@/features/playback";
 import { useScrollToSelected } from "@/shared/hooks/useScrollToSelected";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/Tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/shared/components/ui/Tabs";
 import { formatNumber } from "@/shared/lib/format";
+import type { StatusFrame } from "@/shared/types/playback";
 import { statusVisible, useUi } from "@/shared/stores/useUiStore";
 
 import {
@@ -39,6 +46,9 @@ const KPI_ICONS = {
   inbound: <ArrowDownToLine size={14} />,
   outbound: <ArrowUpFromLine size={14} />,
 };
+
+/** 오늘 처리량 = 적치 + 디팔레타이징 */
+const pickHandled = (frame: StatusFrame) => frame.counts.handled;
 
 type TabId = "equipment" | "alarm" | "history";
 
@@ -65,9 +75,14 @@ export default function TodayPanel() {
 
   const alarmTotal = view?.alarms.length ?? ALARM_TOTAL;
 
-  const percent = Math.min(
-    100,
-    Math.round((throughput.value / throughput.target) * 100),
+  // 상태 프레임의 계단식 처리량을 재생 시각으로 보간해 매 프레임 연속으로 읽는다
+  const handled = useContinuousCount(pickHandled, throughput.value);
+
+  const target = throughput.target;
+
+  const percent = useCallback(
+    () => Math.min(100, (handled() / target) * 100),
+    [handled, target],
   );
 
   const tabs: Array<{ id: TabId; label: string; count?: number }> = [
@@ -122,7 +137,7 @@ export default function TodayPanel() {
         <div className="mt-2 flex items-end justify-between">
           <p className="flex items-baseline gap-1">
             <span className="text-display text-text-primary tabular-nums">
-              {formatNumber(throughput.value)}
+              <AnimatedNumber value={handled} grouped />
             </span>
 
             <span className="text-caption text-text-tertiary">
@@ -131,7 +146,7 @@ export default function TodayPanel() {
           </p>
 
           <span className="text-h2 text-primary-on-dark tabular-nums">
-            {percent}%
+            <AnimatedNumber value={percent} suffix="%" />
           </span>
         </div>
 

@@ -9,5 +9,5 @@ export default function ScanCameraInset() {
 
   const { scannerId } = useMonitorState()
 
-  return <CameraInset meta={detail?.name ?? '스캐너'} kind="scan" id={scannerId} />
+  return <CameraInset title="스캔 카메라 · 판독 결과" meta={detail?.name ?? '스캐너'} kind="scan" id={scannerId} />
 }
