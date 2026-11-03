@@ -103,3 +103,15 @@ export const FACTORY_INTRO_SURFACE = {
   appearEnd: 0.52,
   settleStart: 0.4,
 } as const
+
+
+/* Wireframe 보기 (우측 하단 Wireframe 버튼) */
+
+/** 와이어프레임 전환 시간 상수 (초). 지수 감쇠라 ease-out 으로 다가가고 넘치지 않는다 */
+export const WIREFRAME_FADE_TAU_S = 0.12
+
+/** 와이어프레임 보기에서 남기는 면의 불투명도 비율 (0 = 선만, 1 = 원래 면) */
+export const WIREFRAME_SURFACE_OPACITY = 0.06
+
+/** 새로 생긴 메쉬(박스 · 팔레트)에 선을 붙이러 씬을 다시 훑는 주기 (초) */
+export const WIREFRAME_RESCAN_S = 1

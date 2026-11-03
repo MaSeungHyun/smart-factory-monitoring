@@ -2,7 +2,6 @@ import { useFrame } from '@react-three/fiber'
 import { useRef, useState } from 'react'
 
 import { dashboardAt, playbackStore } from '@/features/playback'
-import { useUi } from '@/shared/stores/useUiStore'
 
 import { faultLabels, type FaultLabel } from '../lib/faultTargets'
 import SceneLabel3D from './SceneLabel3D'
@@ -13,7 +12,6 @@ function labelKey(labels: FaultLabel[]) {
 
 /** 실시간 데이터 기반 3D 라벨 (Canvas 안에서 사용). 문구가 바뀔 때만 다시 그린다 */
 export default function SceneLabels() {
-  const { labelsVisible } = useUi()
 
   const [labels, setLabels] = useState<FaultLabel[]>(() => {
     const view = dashboardAt(playbackStore.getState())
@@ -37,7 +35,6 @@ export default function SceneLabels() {
     setLabels(next)
   })
 
-  if (!labelsVisible) return null
 
   return (
     <>

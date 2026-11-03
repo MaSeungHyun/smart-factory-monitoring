@@ -11,8 +11,8 @@ export interface UiState {
   selectedId: string | null
   /** 헤더 벨로 여닫는 알림 패널 */
   alarmPanelOpen: boolean
-  /** View 버튼: 3D 라벨 · 콜아웃 표시 */
-  labelsVisible: boolean
+  /** Wireframe 버튼: 공장 씬을 와이어프레임으로 보기 (라벨 · 콜아웃은 항상 표시) */
+  wireframe: boolean
   /** 전체 보기: 헤더 · 아이콘 레일을 남기고 씬을 키움 */
   sceneExpanded: boolean
   /** 범례로 숨긴 상태 */
@@ -25,7 +25,7 @@ interface UiActions {
   select: (id: string | null) => void
   toggleSelect: (id: string) => void
   toggleAlarmPanel: () => void
-  toggleLabels: () => void
+  toggleWireframe: () => void
   toggleSceneExpanded: () => void
   toggleStatus: (status: EquipmentStatus) => void
   toggleFilter: (filter: StatusFilter) => void
@@ -51,7 +51,7 @@ export function setHover(id: string | null) {
 export const uiStore = createStore<UiState & UiActions>((set, get) => ({
   selectedId: null,
   alarmPanelOpen: false,
-  labelsVisible: true,
+  wireframe: false,
   sceneExpanded: false,
   hiddenStatuses: new Set(),
   statusFilter: null,
@@ -68,8 +68,8 @@ export const uiStore = createStore<UiState & UiActions>((set, get) => ({
     set({ alarmPanelOpen: !get().alarmPanelOpen })
   },
 
-  toggleLabels() {
-    set({ labelsVisible: !get().labelsVisible })
+  toggleWireframe() {
+    set({ wireframe: !get().wireframe })
   },
 
   toggleSceneExpanded() {

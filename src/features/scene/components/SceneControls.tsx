@@ -5,9 +5,9 @@ import { cn } from "@/shared/lib/cn";
 import { cameraBus } from "@/shared/stores/cameraBus";
 import { uiStore, useUi } from "@/shared/stores/useUiStore";
 
-/** 카메라: 확대 · 축소 · 맞춤(선택 장비 / 현재 시점) · 전체 보기(씬 확대) · View(라벨 표시) */
+/** 카메라: 확대 · 축소 · 맞춤(선택 장비 / 현재 시점) · 전체 보기(씬 확대) · Wireframe(와이어프레임 보기) */
 export default function SceneControls() {
-  const { labelsVisible, sceneExpanded, selectedId } = useUi();
+  const { wireframe, sceneExpanded, selectedId } = useUi();
 
   return (
     <div className="pointer-events-auto flex items-center gap-1">
@@ -52,17 +52,17 @@ export default function SceneControls() {
 
       <button
         type="button"
-        aria-pressed={labelsVisible}
-        title="라벨 · 콜아웃 표시"
-        onClick={uiStore.getState().toggleLabels}
+        aria-pressed={wireframe}
+        title={wireframe ? "실제 모델로 보기" : "와이어프레임으로 보기"}
+        onClick={uiStore.getState().toggleWireframe}
         className={cn(
           "h-11 w-[92px] rounded border text-label hover:border-text-tertiary",
-          labelsVisible
+          wireframe
             ? "border-primary-on-dark bg-bg-surface text-text-primary"
             : "border-border-default bg-bg-surface text-text-tertiary",
         )}
       >
-        View
+        {wireframe ? "Wireframe" : "View"}
       </button>
     </div>
   );

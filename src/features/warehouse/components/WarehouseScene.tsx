@@ -9,13 +9,13 @@ import VehicleTagOverlay from './VehicleTagOverlay'
 
 /** 가운데: 상주 3D 창고 탑뷰 + 콜아웃 · 랙 맵 · 알림 · 범례 */
 export default function WarehouseScene({ data, selected }: { data: WarehouseView | null; selected: string | null }) {
-  const { labelsVisible, sceneExpanded } = useUi()
+  const { sceneExpanded } = useUi()
 
   return (
     <div className={cn('relative min-h-0 flex-1 overflow-hidden rounded bg-bg-base', !sceneExpanded && 'mt-2.5')}>
       <SceneSlot />
 
-      {data && labelsVisible && (
+      {data && (
         <div className="pointer-events-none absolute inset-0 z-10">
           <VehicleTagOverlay vehicles={data.vehicles} selected={selected} />
         </div>

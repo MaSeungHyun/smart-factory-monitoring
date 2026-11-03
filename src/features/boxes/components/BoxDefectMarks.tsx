@@ -6,7 +6,6 @@ import { Vector3, type Group } from 'three'
 import { getExactTime } from '@/features/playback'
 import { TONE_BG, TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
 import { cn } from '@/shared/lib/cn'
-import { useUi } from '@/shared/stores/useUiStore'
 
 import { boxPoseAt } from '../lib/boxPoseAt'
 import type { DecodedBox } from '../lib/decodeBoxes'
@@ -72,11 +71,10 @@ function DefectMark({ box }: { box: DecodedBox }) {
 
 /** 스캐너가 불량으로 판정한 박스에만 사유를 붙인다 */
 export default function BoxDefectMarks({ boxes }: { boxes: DecodedBox[] }) {
-  const { labelsVisible } = useUi()
 
   const marked = boxes.filter((box) => Number.isFinite(box.defectAt))
 
-  if (!labelsVisible || marked.length === 0) return null
+  if (marked.length === 0) return null
 
   return (
     <>

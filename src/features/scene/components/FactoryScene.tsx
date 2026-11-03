@@ -15,6 +15,7 @@ import { registerScenePartHandlers } from "../lib/partHandlers";
 import FactoryLighting from "./FactoryLighting";
 import FactoryProps from "./FactoryProps";
 import FactoryWarmup from "./FactoryWarmup";
+import FactoryWireframe from "./FactoryWireframe";
 import FaultHighlight from "./FaultHighlight";
 import GlbCameraRig from "./GlbCameraRig";
 import SceneBloom from "./SceneBloom";
@@ -117,6 +118,9 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
         <SceneBloom />
 
         <VisionInset />
+
+        <FactoryWireframe />
+
 
         <SceneReady />
 
