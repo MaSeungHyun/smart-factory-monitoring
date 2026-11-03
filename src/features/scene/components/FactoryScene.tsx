@@ -3,7 +3,7 @@ import { Suspense, useMemo, type ReactNode } from "react";
 import { AgXToneMapping, PCFShadowMap, WebGLRenderer } from "three";
 
 import { BoxLayer } from "@/features/boxes";
-import { PlaybackDriver } from "@/features/playback";
+import { AnimatedPartsDriver, PlaybackDriver } from "@/features/playback";
 import PlaybackStart from "@/features/playback/components/PlaybackStart";
 import { FACTORY_TEMPLATE, parseTemplate } from "@/features/template";
 import { configureKTX2 } from "@/shared/lib/three/gltfLoader";
@@ -11,6 +11,7 @@ import { graphicsStore, QUALITY_DPR, useGraphics } from "@/shared/stores/useGrap
 import { uiStore } from "@/shared/stores/useUiStore";
 
 import EquipmentLayer from "./EquipmentLayer";
+import { registerScenePartHandlers } from "../lib/partHandlers";
 import FactoryLighting from "./FactoryLighting";
 import FactoryProps from "./FactoryProps";
 import FactoryWarmup from "./FactoryWarmup";
@@ -55,6 +56,8 @@ async function createWebGPU(props: ConstructorParameters<typeof WebGLRenderer>[0
 
 /** 템플릿 06 (factory-glb-v2) 읽기 전용 뷰어: factory.glb props + 장비 모델 + factory.glb main_cam/robot_cam 카메라 */
 /** children: 페이지별 3D 오버레이 (Canvas 안) */
+registerScenePartHandlers();
+
 export default function FactoryScene({ children }: { children?: ReactNode }) {
   const template = useMemo(() => parseTemplate(FACTORY_TEMPLATE), []);
 
@@ -88,6 +91,8 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
         <EquipmentLayer equipment={template.equipment} />
 
         <PlaybackDriver />
+
+        <AnimatedPartsDriver />
 
         <PlaybackStart />
 

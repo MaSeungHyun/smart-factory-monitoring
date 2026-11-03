@@ -56,6 +56,7 @@ export default function DoorModel({ entity }: { entity: SceneEquipment }) {
 
   return (
     <mesh
+      name="curtain"
       geometry={panel.geometry}
       material={panel.material}
       position={[0, panel.height, 0]}

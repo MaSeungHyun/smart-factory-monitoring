@@ -25,8 +25,34 @@ export function openEquipment(id: string) {
   cameraBus.request({ kind: 'focus', id })
 }
 
-/** 장비 상세 탭에서 3D 클릭: 오른쪽 정보를 그 로봇·AMR 계열로 바꾼다. 다른 화면이면 false */
+/** 스캔 검사 탭에서 3D 클릭: 오른쪽 정보를 그 스캐너로 바꾼다. 같은 스캐너를 다시 누르면 선택만 해제 (패널은 마지막 스캐너 유지) */
+function pickScanner(id: string) {
+  if (!id.startsWith('scanner-')) return false
+
+  if (uiStore.getState().selectedId === id) {
+    uiStore.getState().select(null)
+
+    return true
+  }
+
+  uiStore.getState().select(id)
+
+  monitorView.getState().selectScanner(id)
+
+  return true
+}
+
+/** 패널 목록에서 스캐너를 고름: 3D 선택 · 외곽선도 같이 맞춘다 */
+export function chooseScanner(id: string) {
+  uiStore.getState().select(id)
+
+  monitorView.getState().selectScanner(id)
+}
+
+/** 장비 상세 / 스캔 검사 탭에서 3D 클릭: 오른쪽 정보를 그 로봇·AMR 계열 / 스캐너로 바꾼다. 다른 화면 · 장비면 false */
 export function pickDetailEquipment(id: string) {
+  if (monitorView.getState().view === 'scan') return pickScanner(id)
+
   if (monitorView.getState().view !== 'robot') return false
 
   if (!id.startsWith('robot-') && !id.startsWith('amr-')) return false

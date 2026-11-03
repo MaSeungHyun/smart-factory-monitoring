@@ -37,5 +37,18 @@ export const SCAN_TUNNEL_LIFT = 0.4757 + 0.5649 + 0.003 + 1.034
 /** 셔터 문: 완전히 열면 높이의 절반까지 말려 올라간다 */
 export const DOOR_OPEN_RATIO = 0.5
 
+/** Transfer_Forklift_fork 휴지 y. carriage 는 (포크 y - 이 값) 만큼 오르내린다 */
+export const TRANSFER_FORK_REST_Y = 1.27529
+
+/** 레일 리프트 스토퍼 (carriage 로컬, robot_IK 와 같은 크기 m) */
+export const TRANSFER_STOPPERS = {
+  size: [0.08, 0.12, 1.0] as [number, number, number],
+  parts: [
+    { name: 'stopper-x', pos: [-0.73915, 1.03, 1.73] as [number, number, number] },
+    { name: 'stopper+x', pos: [0.61915, 1.03, 1.73] as [number, number, number] },
+  ],
+  color: '#f59e0b',
+}
+
 /** 출하 dock 표시 */
 export const DOCK = { size: 1.3, color: '#075985', opacity: 0.75, y: 0.004 }

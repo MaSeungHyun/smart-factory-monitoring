@@ -6,8 +6,10 @@ import SelectionCallout3D from './SelectionCallout3D'
 import SelectionHighlight from './SelectionHighlight'
 import StatusVisibility from './StatusVisibility'
 
-/** 장비 상세 리더 카드가 같은 장비를 보여 주면 선택 콜아웃은 겹치지 않는다 */
-function detailCardOwns(view: string, id: string, detailId: string) {
+/** 장비 상세 리더 카드 / 스캔 콜아웃이 같은 장비를 보여 주면 선택 콜아웃은 겹치지 않는다 */
+function detailCardOwns(view: string, id: string, detailId: string, scannerId: string) {
+  if (view === 'scan') return id === scannerId
+
   return view === 'robot' && id === detailId && (id.startsWith('robot-') || id.startsWith('amr-'))
 }
 
@@ -15,9 +17,9 @@ function detailCardOwns(view: string, id: string, detailId: string) {
 export default function SelectionLayer() {
   const { selectedId } = useUi()
 
-  const { view, robotId } = useMonitorState()
+  const { view, robotId, scannerId } = useMonitorState()
 
-  const showSelection = selectedId !== null && !detailCardOwns(view, selectedId, robotId)
+  const showSelection = selectedId !== null && !detailCardOwns(view, selectedId, robotId, scannerId)
 
   return (
     <>

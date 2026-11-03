@@ -1,5 +1,6 @@
 import type { EquipmentKind } from './'
 import type { PlaybackState, RunCounts } from './playback'
+import type { AnimatedPart, AnimatedPartRow, AnimatedPartValue } from './animatedParts'
 import type { SimRecording } from './runEvents'
 
 /**
@@ -33,13 +34,16 @@ export interface RunManifest {
   template?: string
   duration: number
   simTimeOffset: number
-  sampleHz?: number
+  sampleHz?: number | Record<string, number>
   jointNames: string[]
   armMount?: 'pedestal' | 'ground'
   chunkSeconds: number
   equipment: RunManifestEquipment[]
   chunks: RunManifestChunk[]
   aggregates?: string
+  /** v3: 장비별 움직이는 파츠 (없으면 예전 녹화) */
+  animatedParts?: AnimatedPart[]
+  animatedPartsEncoding?: string
 }
 
 // [2] chunk-NNN.json
@@ -63,6 +67,8 @@ export interface ChunkSnapshot {
   /** robotId -> 흡착 중인 boxId */
   suction: Record<string, string | null>
   counts: Record<string, number>
+  /** v3: animatedParts[i] 의 청크 시작 값 (null = 아직 없음) */
+  parts?: (AnimatedPartValue | null)[]
 }
 
 export interface ChunkStatusRow {
@@ -81,6 +87,8 @@ export interface RunChunk {
     joints: Record<string, number[][]>
     /** amrId -> 프레임별 [x cm, z cm, yaw 0.1 deg] */
     amrs: Record<string, ([number, number, number] | null)[]>
+    /** v3: [t, part index, value] (변화가 threshold 이상일 때만) */
+    parts?: AnimatedPartRow[]
   }
   status: ChunkStatusRow[]
   events: { t: number; equipmentId: string; from: PlaybackState | null; to: PlaybackState }[]

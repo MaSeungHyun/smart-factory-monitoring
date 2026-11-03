@@ -2,9 +2,11 @@ import { unwrapDegrees } from '@/shared/lib/angles'
 import type { PlaybackRun } from '@/shared/types/playback'
 import type { RunAggregates, RunChunk, RunManifest } from '@/shared/types/runChunk'
 
-import { chunkToRun } from './chunkRun'
+import { ChunkWindow } from './chunkWindow'
 
-export const RUN_URL = '/data/run-2026-11-03-t06-10m-w7200-s12345-v2/manifest.json'
+export { chunkIndexAt } from './chunkWindow'
+
+export const RUN_URL = '/data/run-2026-11-03-t06-20m-w7200-s12345-v3/manifest.json'
 
 const isManifest = (url: string) => url.endsWith('manifest.json')
 
@@ -14,6 +16,12 @@ async function fetchJson<T>(url: string): Promise<T> {
   if (!response.ok) throw new Error(`playback data ${response.status} ${url}`)
 
   return (await response.json()) as T
+}
+
+export interface LoadedRun {
+  run: PlaybackRun
+  /** 청크 run 이면 재생 시각에 맞춰 run 을 바꿔 끼우는 창. 단일 파일 run 이면 없음 */
+  window?: ChunkWindow
 }
 
 // [1] 기존 단일 파일 run
@@ -28,31 +36,19 @@ async function loadSingle(url: string) {
 
 // [2] manifest + 청크
 
-/** 재생 시간 (offset 제거) 이 들어 있는 청크 index */
-export function chunkIndexAt(manifest: RunManifest, time: number) {
-  const sim = time + manifest.simTimeOffset
-
-  const index = manifest.chunks.findIndex((chunk) => sim >= chunk.t0 && sim < chunk.t1)
-
-  return index >= 0 ? index : sim < manifest.chunks[0].t0 ? 0 : manifest.chunks.length - 1
-}
-
-/** time 이 속한 청크를 읽어 PlaybackRun 으로 바꾼다. 집계는 없으면 목업 그대로 */
-export async function loadChunkedRun(url: string, time = 0) {
+/** manifest 와 집계를 읽고 time 의 청크 창으로 첫 run 을 만든다. 집계는 없으면 목업 그대로 */
+export async function loadChunkedRun(url: string, time = 0): Promise<LoadedRun> {
   const base = url.slice(0, url.lastIndexOf('/') + 1)
 
   const manifest = await fetchJson<RunManifest>(url)
 
-  const entry = manifest.chunks[chunkIndexAt(manifest, time)]
+  const aggregates = manifest.aggregates ? await fetchJson<RunAggregates>(base + manifest.aggregates).catch(() => undefined) : undefined
 
-  const [chunk, aggregates] = await Promise.all([
-    fetchJson<RunChunk>(base + entry.file),
-    manifest.aggregates ? fetchJson<RunAggregates>(base + manifest.aggregates).catch(() => undefined) : undefined,
-  ])
+  const window = new ChunkWindow(manifest, base, (chunkUrl) => fetchJson<RunChunk>(chunkUrl), aggregates)
 
-  return chunkToRun(manifest, chunk, aggregates)
+  return { run: await window.build(time), window }
 }
 
-export async function loadRun(url = RUN_URL): Promise<PlaybackRun> {
-  return isManifest(url) ? loadChunkedRun(url) : loadSingle(url)
+export async function loadRun(url = RUN_URL): Promise<LoadedRun> {
+  return isManifest(url) ? loadChunkedRun(url) : { run: await loadSingle(url) }
 }

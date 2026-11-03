@@ -1,4 +1,5 @@
 import type { AlertSeverity, EquipmentKind } from './'
+import type { AnimatedPartTrack } from './animatedParts'
 import type { ChunkRackSlot, RunAggregates } from './runChunk'
 import type { SimRecording } from './runEvents'
 
@@ -102,6 +103,8 @@ export interface PlaybackRun {
   aggregates?: RunAggregates
   /** 청크 시작 시점 고정 랙 슬롯 (snapshot.racks, 없으면 랙 적재 목업 없음) */
   racks?: { id: string; slots: ChunkRackSlot[] }[]
+  /** v3 애니메이션 파츠 트랙 (재생 시간 기준, 없으면 파츠 고정) */
+  parts?: AnimatedPartTrack[]
 }
 
 /** 박스 담당 장비 종류 */

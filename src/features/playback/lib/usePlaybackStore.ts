@@ -1,6 +1,7 @@
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
 
+import { PLAYBACK_TIME_SCALE } from '@/shared/constants/playback'
 import type { PlaybackRun } from '@/shared/types/playback'
 
 export type LoadStatus = 'loading' | 'ready' | 'error'
@@ -21,6 +22,8 @@ export interface PlaybackSnapshot {
 
 interface PlaybackActions {
   setRun: (run: PlaybackRun) => void
+  /** 같은 run 의 다른 청크 구간으로 바꿔 끼운다. 재생 시각 · 회차 · 알람 확인은 유지 */
+  replaceRun: (run: PlaybackRun) => void
   setError: () => void
   toggle: () => void
   /** 씬이 그려지고 main_cam 에 도착한 뒤 한 번 재생을 시작한다 */
@@ -83,7 +86,7 @@ function frame(now: number) {
 
   pendingMs -= step
 
-  simTime += (step / 1000) * speed
+  simTime += (step / 1000) * speed * PLAYBACK_TIME_SCALE
 
   let patch: Partial<PlaybackSnapshot> = {}
 
@@ -128,6 +131,12 @@ export const playbackStore = createStore<PlaybackState>((set, get) => ({
       reached: 0,
       acked: new Set(),
     })
+  },
+
+  replaceRun(run) {
+    simTime = Math.min(simTime, run.meta.duration)
+
+    publish({ run, status: 'ready' })
   },
 
   setError() {

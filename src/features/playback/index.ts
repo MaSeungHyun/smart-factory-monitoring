@@ -1,4 +1,5 @@
 export { default as PlaybackControls } from './components/PlaybackControls'
+export { default as AnimatedPartsDriver } from './components/AnimatedPartsDriver'
 export { default as PlaybackDriver } from './components/PlaybackDriver'
 export { dashboardAt, useDashboardView } from './hooks/useDashboardView'
 export { usePlaybackLoader } from './hooks/usePlaybackLoader'
