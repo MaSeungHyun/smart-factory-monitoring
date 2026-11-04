@@ -85,7 +85,13 @@ export const PALLET_TARGET_PULSE_S = 1.2
 /* 공장 인트로(와이어프레임 → 면) — 진행도 t 는 0~1 (전체 시간 대비 비율) */
 
 /** 공장 인트로 전체 길이 (초) */
-export const FACTORY_INTRO_DURATION_S = 4.6
+export const FACTORY_INTRO_DURATION_S = 2.8
+
+/** 셰이더 준비(sceneWarm)를 기다리며 인트로를 멈춰 두는 최대 시간 (실제 시간, 초). 지나면 준비와 상관없이 진행 */
+export const FACTORY_INTRO_WARM_WAIT_S = 3
+
+/** 안전장치: 인트로 시작 후 전체 길이 + 이 시간(실제 시간, 초)이 지나면 무조건 실제 모델로 끝낸다 */
+export const FACTORY_INTRO_SAFETY_S = 2
 
 /** 와이어프레임 선: 색이 푸르게 → 하얗게 달아오른 뒤 사라지는 구간 (기존보다 빨리 풀림) */
 export const FACTORY_INTRO_WIRE = {

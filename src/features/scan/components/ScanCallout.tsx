@@ -17,7 +17,7 @@ const actionOf = (box: ScanBox) => {
 }
 
 /** 스캔 콜아웃 카드 254x136: 박스 id, 판정 배지, 판독 / 사유 / 조치 */
-export default function ScanCallout({ box }: { box: ScanBox }) {
+export default function ScanCallout({ box, color }: { box: ScanBox; color?: string }) {
   const tone = VERDICT_TONE[box.verdict]
 
   const rows = [
@@ -27,7 +27,7 @@ export default function ScanCallout({ box }: { box: ScanBox }) {
   ]
 
   return (
-    <InfoCard className="w-[254px]">
+    <InfoCard className="w-[254px]" color={color}>
       <div className="flex items-center gap-2">
         <span className="flex size-5 items-center justify-center rounded-full border border-text-secondary text-caption text-text-primary">3</span>
 

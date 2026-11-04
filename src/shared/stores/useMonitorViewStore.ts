@@ -12,6 +12,10 @@ export interface MonitorViewState {
   robotId: string
   scannerId: string
   angle: ViewAngle
+  /** 사용자가 카메라를 직접 움직여 시점 버튼이 풀린 상태 (카메라는 그대로) */
+  free: boolean
+  /** 시점 버튼을 누를 때마다 증가: 같은 버튼을 다시 눌러도 다시 비행한다 */
+  angleNonce: number
 }
 
 interface MonitorViewActions {
@@ -19,6 +23,7 @@ interface MonitorViewActions {
   selectRobot: (robotId: string) => void
   selectScanner: (scannerId: string) => void
   setAngle: (angle: ViewAngle) => void
+  release: () => void
 }
 
 /** robot_cam 이 원본에서 비추는 로봇 */
@@ -32,21 +37,27 @@ export const monitorView = createStore<MonitorViewState & MonitorViewActions>((s
   robotId: DEFAULT_ROBOT_ID,
   scannerId: DEFAULT_SCANNER_ID,
   angle: 'front',
+  free: false,
+  angleNonce: 0,
 
   set(view) {
-    if (view !== get().view) set({ view, angle: 'front' })
+    if (view !== get().view) set({ view, angle: 'front', free: false })
   },
 
   selectRobot(robotId) {
-    if (robotId !== get().robotId) set({ robotId, angle: 'front' })
+    if (robotId !== get().robotId) set({ robotId, angle: 'front', free: false })
   },
 
   selectScanner(scannerId) {
-    if (scannerId !== get().scannerId) set({ scannerId, angle: 'front' })
+    if (scannerId !== get().scannerId) set({ scannerId, angle: 'front', free: false })
   },
 
   setAngle(angle) {
-    if (angle !== get().angle) set({ angle })
+    set({ angle, free: false, angleNonce: get().angleNonce + 1 })
+  },
+
+  release() {
+    if (!get().free) set({ free: true })
   },
 }))
 

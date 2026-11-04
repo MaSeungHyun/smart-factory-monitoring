@@ -39,9 +39,9 @@ function rowsOf(detail: VehicleDetail): Row[] {
 }
 
 /** 운반 장비 콜아웃. AGV 는 속도 · 모터 부하 · 배터리 */
-export default function VehicleCallout({ detail }: { detail: VehicleDetail }) {
+export default function VehicleCallout({ detail, color }: { detail: VehicleDetail; color?: string }) {
   return (
-    <InfoCard className="w-[254px]">
+    <InfoCard className="w-[254px]" color={color}>
       <div className="flex items-center gap-2">
         <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-text-secondary text-caption text-text-primary">
           {detail.badge}

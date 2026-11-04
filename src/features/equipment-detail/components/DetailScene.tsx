@@ -11,7 +11,7 @@ import { robotCalloutRef } from '../lib/robotCalloutRef'
 import { useVehicleDetail } from '../hooks/useVehicleDetail'
 import CameraInset from './CameraInset'
 import RobotCalloutOverlay from './RobotCalloutOverlay'
-import ViewAngleButtons from './ViewAngleButtons'
+import ViewAngleButtons from '@/shared/components/ViewAngleButtons'
 
 /** 3D 확대 뷰 (상주 Canvas 슬롯) + 오버레이 (칩, 시점 버튼, 카메라 인셋, 하단 컨트롤) */
 export default function DetailScene() {

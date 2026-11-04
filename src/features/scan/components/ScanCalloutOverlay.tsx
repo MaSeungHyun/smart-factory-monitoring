@@ -79,7 +79,7 @@ export default function ScanCalloutOverlay({ ref }: Props) {
       </svg>
 
       <div ref={card} className="absolute top-0 left-0">
-        {box && <ScanCallout box={box} />}
+        {box && <ScanCallout box={box} color={color} />}
       </div>
     </div>
   )

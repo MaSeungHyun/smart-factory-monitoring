@@ -40,13 +40,17 @@ export default function Select({
       <SelectPrimitive.Trigger className={triggerClass} aria-label={ariaLabel}>
         {leading}
 
-        <SelectPrimitive.Value className="min-w-0 flex-1 truncate text-label font-semibold" />
+        <span className="min-w-0 flex-1 truncate text-label font-semibold">
+          <SelectPrimitive.Value />
+        </span>
 
-        {trailing}
+        <span className="ml-auto flex shrink-0 items-center gap-2">
+          {trailing}
 
-        <SelectPrimitive.Icon className="text-text-tertiary ml-auto">
-          <ChevronDown size={14} />
-        </SelectPrimitive.Icon>
+          <SelectPrimitive.Icon className="text-text-tertiary">
+            <ChevronDown size={14} />
+          </SelectPrimitive.Icon>
+        </span>
       </SelectPrimitive.Trigger>
 
       <SelectPrimitive.Portal>

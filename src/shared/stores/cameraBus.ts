@@ -1,6 +1,6 @@
 /** 카메라 명령 (GlbCameraRig 가 구독): 장비로 비행 · 따라가기 · 확대/축소 · 맞춤 · main_cam */
 export type CameraCommand =
-  | { kind: 'focus'; id: string }
+  | { kind: 'focus'; id: string; /** true 면 빠르게 (F 키) */ fast?: boolean }
   | { kind: 'follow'; id: string }
   | { kind: 'zoom'; factor: number }
   | { kind: 'fit' }

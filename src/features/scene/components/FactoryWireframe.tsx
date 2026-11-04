@@ -32,7 +32,7 @@ import {
   WIRE_STYLE,
   type WireCategory,
 } from '../constants/wireframe'
-import { factoryIntroArmed } from '../lib/factoryIntro'
+import { factoryIntroDone } from '../lib/factoryIntro'
 import { faultedIds } from '../lib/faultTargets'
 import { wireState } from '../lib/wireframeBypass'
 
@@ -313,7 +313,7 @@ export default function FactoryWireframe() {
   }
 
   useFrame((_, delta) => {
-    const target = uiStore.getState().wireframe && factoryIntroArmed() ? 1 : 0
+    const target = uiStore.getState().wireframe && factoryIntroDone() ? 1 : 0
 
     if (target === 0 && k.current === 0) return
 

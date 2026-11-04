@@ -5,6 +5,9 @@ import { FACTORY_INTRO_DURATION_S, FACTORY_INTRO_SURFACE, FACTORY_INTRO_WIRE } f
 /** 로딩 창이 닫힌 뒤에만 재생한다 */
 let armed = false
 
+/** 인트로가 한 번 끝났는지. 다시 만들어진 노드는 바로 실제 재질로 둔다 */
+let finished = false
+
 const DURATION = FACTORY_INTRO_DURATION_S
 
 const LINE = new Color('#d5dde4')
@@ -161,7 +164,12 @@ function introMaterial(source: Material, into: MeshStandardMaterial[]) {
 
   const existing = introOf.get(source)
 
-  if (existing) return existing
+  if (existing) {
+    // 다시 만들어진 노드도 같은 재질을 쓰므로 새 인트로 목록에 다시 넣어 끝 상태까지 칠해지게 한다
+    if (!into.includes(existing)) into.push(existing)
+
+    return existing
+  }
 
   const clone = source.clone()
 
@@ -272,6 +280,14 @@ export function armFactoryIntro() {
 
 export function factoryIntroArmed() {
   return armed
+}
+
+export function finishFactoryIntro() {
+  finished = true
+}
+
+export function factoryIntroDone() {
+  return finished
 }
 
 export const FACTORY_INTRO_DURATION = DURATION

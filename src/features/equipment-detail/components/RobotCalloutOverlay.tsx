@@ -119,7 +119,7 @@ export default function RobotCalloutOverlay({ ref }: Props) {
       </svg>
 
       <div ref={card} className="absolute top-0 left-0">
-        {fade && vehicle ? <VehicleCallout detail={vehicle} /> : detail && <RobotCallout detail={detail} />}
+        {fade && vehicle ? <VehicleCallout detail={vehicle} color={color} /> : detail && <RobotCallout detail={detail} color={color} />}
       </div>
     </div>
   )

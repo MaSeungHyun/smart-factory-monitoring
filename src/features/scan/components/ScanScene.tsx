@@ -1,7 +1,7 @@
 import { ScanLine } from 'lucide-react'
 
 import { ViewportAlert } from '@/features/alerts'
-import { ViewAngleButtons } from '@/features/equipment-detail'
+import ViewAngleButtons from '@/shared/components/ViewAngleButtons'
 import { SceneControls, SceneSlot } from '@/features/scene'
 
 import { scanCalloutRef } from '../lib/scanCalloutRef'

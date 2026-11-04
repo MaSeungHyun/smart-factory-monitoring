@@ -26,10 +26,19 @@ const ROBOT_CAM = 'robot_cam'
 const CLIP_NAME = 'main_camAction'
 
 /** 시점 이동 비행 시간 (초) */
-const DURATION = 0.9
+const DURATION = 1.4
 
 /** 휠 줌 비행 시간 (초) */
-const ZOOM_DURATION = 0.3
+const ZOOM_DURATION = 0.35
+
+/** 정면 / 측면 / 탑뷰 전환 비행 시간 (초). 이때만 타깃 둘레로 돌며 빠르게 간다 */
+const ANGLE_DURATION = 0.6
+
+/** F 키 포커싱 비행 시간 (초). 빠르게 붙는다 */
+const FOCUS_KEY_DURATION = 0.5
+
+/** 더블클릭 따라가기 비행 시간 (초). 일반 이동보다 조금 빠르게 */
+const FOLLOW_DURATION = 1.1
 
 /** 인트로 카메라가 끝나는 자세(메인 홈 시점). 궤적은 통째로 옮기고 회전·화각은 진행도에 따라 서서히 맞춘다 */
 const INTRO_END_POSE = {
@@ -52,6 +61,8 @@ interface Flight {
   to: CameraPose
   elapsed: number
   duration: number
+  /** true 면 타깃 둘레 호(구면 보간), false 면 직선 */
+  arc: boolean
   /** 타깃 기준 카메라 오프셋 (구면 좌표). 회전·고도·거리를 같이 보간해 도착 후 도는 일이 없게 한다 */
   fromOrbit: Spherical
   toOrbit: Spherical
@@ -212,7 +223,7 @@ function placeCamera(camera: PerspectiveCamera, position: Vector3, fov: number) 
 }
 
 function sameView(a: MonitorViewState, b: MonitorViewState) {
-  return a.view === b.view && a.robotId === b.robotId && a.scannerId === b.scannerId && a.angle === b.angle
+  return a.view === b.view && a.robotId === b.robotId && a.scannerId === b.scannerId && a.angle === b.angle && a.angleNonce === b.angleNonce
 }
 
 interface Chase {
@@ -369,7 +380,7 @@ export default function GlbCameraRig() {
   }, [get])
 
   const fly = useCallback(
-    (goal: CameraPose, duration = DURATION) => {
+    (goal: CameraPose, duration = DURATION, arc = false) => {
       if (intro.current === 'play') finishIntro()
 
       const { camera } = get()
@@ -383,6 +394,7 @@ export default function GlbCameraRig() {
         to: goal,
         elapsed: 0,
         duration,
+        arc,
         fromOrbit: orbitOf({ position: camera.position, target: orbit.target }),
         toOrbit: orbitOf(goal),
       }
@@ -460,17 +472,27 @@ export default function GlbCameraRig() {
       return
     }
 
-    if (!sameView(seenView.current, state)) {
+    const prev = seenView.current
+
+    if (!sameView(prev, state)) {
       seenView.current = state
 
       stopChase(chase, flight, false)
+    } else if (prev.free !== state.free) {
+      // 직접 조작으로 시점 버튼만 풀린 경우: 카메라는 그대로 둔다
+      seenView.current = state
+
+      return
     }
 
     const goal = goalPose(state, poses.main, poses.robot, scene)
 
     if (!goal) return
 
-    fly(goal)
+    const angleOnly = prev.view === state.view && prev.robotId === state.robotId && prev.scannerId === state.scannerId && (prev.angle !== state.angle || prev.angleNonce !== state.angleNonce)
+
+    if (angleOnly) fly(goal, ANGLE_DURATION, true)
+    else fly(goal)
   }, [warm, get, poses, state, fly, clip, chase])
 
   useEffect(() => {
@@ -496,7 +518,7 @@ export default function GlbCameraRig() {
 
         chase.ready = false
 
-        fly(focusPose(object, camera.position, orbit.target))
+        fly(focusPose(object, camera.position, orbit.target), FOLLOW_DURATION)
 
         return
       }
@@ -520,7 +542,7 @@ export default function GlbCameraRig() {
       const object = id ? scene.getObjectByName(id) : null
 
       if (object) {
-        fly(focusPose(object, camera.position, orbit.target))
+        fly(focusPose(object, camera.position, orbit.target), command.kind === 'focus' && command.fast ? FOCUS_KEY_DURATION : DURATION)
 
         return
       }
@@ -553,6 +575,27 @@ export default function GlbCameraRig() {
 
     return () => window.removeEventListener('keydown', onKey)
   }, [chase])
+
+  useEffect(() => {
+    // F 키: 선택한 오브젝트로 포커싱 (입력 중이거나 조합 키면 무시)
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'f' && event.key !== 'F') return
+
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+
+      const field = event.target
+
+      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || (field instanceof HTMLElement && field.isContentEditable)) return
+
+      const id = uiStore.getState().selectedId
+
+      if (id) cameraBus.request({ kind: 'focus', id, fast: true })
+    }
+
+    window.addEventListener('keydown', onKey)
+
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => {
     if (!import.meta.env.DEV) return
@@ -646,12 +689,16 @@ export default function GlbCameraRig() {
 
     orbit.target.lerpVectors(active.from.target, active.to.target, k)
 
-    // 위치는 직선이 아니라 타깃 둘레로 보간: 탑뷰로 갈 때 내려다보며 돌면서 도착한다
-    const { fromOrbit, toOrbit } = active
+    if (active.arc) {
+      // 시점 전환: 타깃 둘레로 보간해 탑뷰로 갈 때 내려다보며 돌면서 도착한다
+      const { fromOrbit, toOrbit } = active
 
-    scratchOrbit.set(fromOrbit.radius + (toOrbit.radius - fromOrbit.radius) * k, fromOrbit.phi + (toOrbit.phi - fromOrbit.phi) * k, fromOrbit.theta + (toOrbit.theta - fromOrbit.theta) * k)
+      scratchOrbit.set(fromOrbit.radius + (toOrbit.radius - fromOrbit.radius) * k, fromOrbit.phi + (toOrbit.phi - fromOrbit.phi) * k, fromOrbit.theta + (toOrbit.theta - fromOrbit.theta) * k)
 
-    point.setFromSpherical(scratchOrbit).add(orbit.target)
+      point.setFromSpherical(scratchOrbit).add(orbit.target)
+    } else {
+      point.lerpVectors(active.from.position, active.to.position, k)
+    }
 
     if (active.elapsed >= active.duration) point.copy(active.to.position)
 
@@ -662,5 +709,5 @@ export default function GlbCameraRig() {
     if (active.elapsed >= active.duration) flight.current = null
   })
 
-  return <OrbitControls ref={controls} makeDefault enableDamping={false} maxDistance={MAX_ZOOM_OUT_DISTANCE} />
+  return <OrbitControls ref={controls} makeDefault enableDamping={false} maxDistance={MAX_ZOOM_OUT_DISTANCE} onStart={() => monitorView.getState().release()} />
 }

@@ -38,4 +38,14 @@ export const TONE_BORDER: Record<Tone, string> = {
   info: 'border-primary-on-dark',
 }
 
+/** 상태별 실제 색 (SVG 선 · 카드 테두리처럼 클래스 대신 값이 필요한 곳). 장비 상세 ROBOT_STATUS_COLOR 와 같은 값 */
+export const TONE_COLOR: Record<Tone, string> = {
+  running: '#34c77b',
+  success: '#34c77b',
+  idle: '#8a8f98',
+  warning: '#d99718',
+  error: '#d94845',
+  info: '#4fa8d4',
+}
+
 export type { Tone }

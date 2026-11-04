@@ -4,7 +4,7 @@ import StatusBadge from '@/shared/components/StatusBadge'
 import type { RobotDetail } from '../lib/robotDetail'
 
 /** 로봇 콜아웃 카드 254x136 */
-export default function RobotCallout({ detail }: { detail: RobotDetail }) {
+export default function RobotCallout({ detail, color }: { detail: RobotDetail; color?: string }) {
   const rows = [
     ['사이클', detail.cycle === null ? '—' : `${detail.cycle.toFixed(1)}초`],
     ['성공률', detail.success === null ? '—' : `${detail.success.toFixed(1)}%`],
@@ -12,7 +12,7 @@ export default function RobotCallout({ detail }: { detail: RobotDetail }) {
   ]
 
   return (
-    <InfoCard className="w-[254px]">
+    <InfoCard className="w-[254px]" color={color}>
       <div className="flex items-center gap-2">
         <span className="flex size-5 items-center justify-center rounded-full border border-text-secondary text-caption text-text-primary">
           {detail.id.replace(/\D/g, '').slice(-1)}

@@ -8,7 +8,6 @@ export { default as DetailTabs, type DetailTabId } from './components/DetailTabs
 export { default as EventList } from './components/EventList'
 export { default as HeroKpi } from './components/HeroKpi'
 export { default as RunButtons } from './components/RunButtons'
-export { default as ViewAngleButtons } from './components/ViewAngleButtons'
 export { default as WorkSpotMarker } from './components/WorkSpotMarker'
 export { CALLOUT_HEIGHT, CALLOUT_WIDTH, calloutPlacement } from './lib/calloutPlacement'
 export type { CalloutFrame, CalloutLayout } from './components/RobotCalloutOverlay'

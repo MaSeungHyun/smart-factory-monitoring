@@ -5,6 +5,7 @@ import { Vector3, type Group } from 'three'
 
 import { dashboardAt, playbackStore } from '@/features/playback'
 import InfoCard from '@/shared/components/InfoCard'
+import { TONE_COLOR } from '@/shared/constants/status'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { LEADER_OVERLAP, LEADER_RISE, LEADER_RUN } from '@/shared/lib/leaderLine'
 import type { EquipmentItem } from '@/shared/types'
@@ -55,6 +56,9 @@ export default function SelectionCallout3D({ id }: { id: string }) {
     group.current.position.copy(anchor)
   })
 
+  // 리더선 · 카드 테두리 공통 상태 색
+  const color = item ? TONE_COLOR[item.status] : TONE_COLOR.info
+
   return (
     <group ref={group}>
       <Html zIndexRange={[6, 0]} style={{ pointerEvents: 'none' }}>
@@ -64,15 +68,15 @@ export default function SelectionCallout3D({ id }: { id: string }) {
             <polyline
               points={`0,0 0,${-LEADER_RISE} ${LEADER_RUN + LEADER_OVERLAP},${-LEADER_RISE}`}
               fill="none"
-              stroke="var(--color-primary-on-dark)"
+              stroke={color}
               strokeWidth={1.5}
             />
 
-            <circle r={4} fill="var(--color-primary-on-dark)" />
+            <circle r={4} fill={color} />
           </svg>
 
           <div className="absolute -translate-y-1/2" style={{ left: LEADER_RUN, top: -LEADER_RISE }}>
-            <InfoCard className="w-max">
+            <InfoCard className="w-max" color={color}>
               <div className="flex items-center gap-2">
                 <span className="font-semibold">{item?.name ?? id}</span>
 
