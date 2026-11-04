@@ -2,6 +2,12 @@ import { Box3, Vector3, type Object3D } from 'three'
 
 import type { CameraPose } from './glbCameraPose'
 
+/** 장비 확대 거리 = 반경 x 이 배율 (클수록 멀리) */
+const FOCUS_DISTANCE_SCALE = 3.8
+
+/** 장비 확대 최소 거리 (m): 작은 장비도 이보다 가까이 붙지 않는다 */
+const FOCUS_MIN_DISTANCE = 8.5
+
 const box = new Box3()
 
 const size = new Vector3()
@@ -22,7 +28,7 @@ export function focusPose(object: Object3D, from: Vector3, target: Vector3): Cam
     direction.normalize()
   }
 
-  return { position: center.clone().addScaledVector(direction, Math.max(radius * 3.2, 7)), target: center }
+  return { position: center.clone().addScaledVector(direction, Math.max(radius * FOCUS_DISTANCE_SCALE, FOCUS_MIN_DISTANCE)), target: center }
 }
 
 /** 타깃 기준 거리만 factor 배 */

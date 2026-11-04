@@ -1,5 +1,6 @@
+import InfoCard from '@/shared/components/InfoCard'
 import StatusBadge from '@/shared/components/StatusBadge'
-import { TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
+import { TONE_TEXT } from '@/shared/constants/status'
 import { cn } from '@/shared/lib/cn'
 import type { EquipmentStatus } from '@/shared/types'
 
@@ -40,7 +41,7 @@ function rowsOf(detail: VehicleDetail): Row[] {
 /** 운반 장비 콜아웃. AGV 는 속도 · 모터 부하 · 배터리 */
 export default function VehicleCallout({ detail }: { detail: VehicleDetail }) {
   return (
-    <div className={cn('w-[254px] rounded border bg-[#121417] p-3', TONE_BORDER[detail.status])}>
+    <InfoCard className="w-[254px]">
       <div className="flex items-center gap-2">
         <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-text-secondary text-caption text-text-primary">
           {detail.badge}
@@ -62,6 +63,6 @@ export default function VehicleCallout({ detail }: { detail: VehicleDetail }) {
           </div>
         ))}
       </dl>
-    </div>
+    </InfoCard>
   )
 }

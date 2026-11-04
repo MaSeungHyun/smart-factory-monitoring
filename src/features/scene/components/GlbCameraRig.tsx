@@ -1,7 +1,7 @@
 import { OrbitControls } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ComponentRef } from 'react'
-import { AnimationMixer, LoopOnce, PerspectiveCamera, Quaternion, Vector3, type AnimationAction, type AnimationClip, type Object3D } from 'three'
+import { AnimationMixer, LoopOnce, Matrix4, PerspectiveCamera, Quaternion, Spherical, Vector3, type AnimationAction, type AnimationClip, type Object3D } from 'three'
 
 import cameraUrl from '@/assets/models/main_camera.glb?url'
 import { FACTORY_GLB_URL } from '@/features/template'
@@ -25,20 +25,44 @@ const ROBOT_CAM = 'robot_cam'
 
 const CLIP_NAME = 'main_camAction'
 
-const DURATION = 1.4
+/** 시점 이동 비행 시간 (초) */
+const DURATION = 0.9
 
-const ZOOM_DURATION = 0.35
+/** 휠 줌 비행 시간 (초) */
+const ZOOM_DURATION = 0.3
+
+/** 인트로 카메라가 끝나는 자세(메인 홈 시점). 궤적은 통째로 옮기고 회전·화각은 진행도에 따라 서서히 맞춘다 */
+const INTRO_END_POSE = {
+  position: new Vector3(114.903, 124.905, 123.815),
+  target: new Vector3(6.235, -8.646, 8.339),
+  fov: 32.269,
+}
+
+// 줌 아웃 한계: 인트로 끝 시점의 카메라-타깃 거리보다 멀어지지 않게 한다
+const MAX_ZOOM_OUT_DISTANCE = INTRO_END_POSE.position.distanceTo(INTRO_END_POSE.target)
 
 /** 한 프레임에 클립이 통째로 건너뛰지 않게 하는 상한(초) */
 const CLIP_STEP = 0.05
 
-const ease = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2)
+/** ease-out (cubic): 빠르게 출발해 오버슈트 없이 멈춘다 */
+const ease = (k: number) => 1 - (1 - k) ** 3
 
 interface Flight {
   from: CameraPose & { fov: number }
   to: CameraPose
   elapsed: number
   duration: number
+  /** 타깃 기준 카메라 오프셋 (구면 좌표). 회전·고도·거리를 같이 보간해 도착 후 도는 일이 없게 한다 */
+  fromOrbit: Spherical
+  toOrbit: Spherical
+}
+
+const scratchOffset = new Vector3()
+
+const scratchOrbit = new Spherical()
+
+function orbitOf(pose: CameraPose) {
+  return new Spherical().setFromVector3(scratchOffset.subVectors(pose.position, pose.target))
 }
 
 interface CameraClip {
@@ -47,6 +71,10 @@ interface CameraClip {
   duration: number
   node: PerspectiveCamera
   end: CameraPose | null
+  /** 원래 끝 회전에서 목표 끝 회전으로 가는 보정 회전 */
+  turn: Quaternion
+  /** 원래 끝 화각 */
+  rawFov: number
 }
 
 const scratchPos = new Vector3()
@@ -83,8 +111,15 @@ function findCamera(root: Object3D, name: string): PerspectiveCamera | null {
   return found[0] ?? null
 }
 
-/** 클립을 time 에 맞춘 뒤 시선이 바닥과 만나는 포즈를 읽는다. 끝 프레임은 클램프해야 마지막 키가 남는다 */
-function poseAt(root: Object3D, clip: AnimationClip, time: number): CameraPose | null {
+function buildClip(root: Object3D, animations: AnimationClip[]): CameraClip | null {
+  const clip = animations.find((item) => item.name === CLIP_NAME) ?? animations[0]
+
+  if (!clip) return null
+
+  const node = findCamera(root, MAIN_CAM)
+
+  if (!node) return null
+
   const mixer = new AnimationMixer(root)
 
   const action = mixer.clipAction(clip)
@@ -95,55 +130,70 @@ function poseAt(root: Object3D, clip: AnimationClip, time: number): CameraPose |
 
   action.play()
 
-  mixer.update(time)
+  mixer.update(clip.duration)
 
   root.updateMatrixWorld(true)
 
-  const pose = glbCameraPose(root, MAIN_CAM)
+  const rawPos = node.getWorldPosition(new Vector3())
 
-  mixer.stopAllAction()
+  const rawQuat = node.getWorldQuaternion(new Quaternion())
 
-  mixer.uncacheRoot(root)
+  const rawFov = node.fov
 
-  return pose
+  action.stop()
+
+  // 궤적 전체를 평행이동해서 끝 위치를 목표 위치에 맞춘다
+  root.position.add(new Vector3().subVectors(INTRO_END_POSE.position, rawPos))
+
+  root.updateMatrixWorld(true)
+
+  const look = new Matrix4().lookAt(INTRO_END_POSE.position, INTRO_END_POSE.target, new Vector3(0, 1, 0))
+
+  const endQuat = new Quaternion().setFromRotationMatrix(look)
+
+  const turn = endQuat.multiply(rawQuat.invert())
+
+  const end: CameraPose = { position: INTRO_END_POSE.position.clone(), target: INTRO_END_POSE.target.clone(), fov: INTRO_END_POSE.fov }
+
+  return { mixer, action, duration: clip.duration, node, end, turn, rawFov }
 }
 
-function buildClip(root: Object3D, animations: AnimationClip[]): CameraClip | null {
-  const clip = animations.find((item) => item.name === CLIP_NAME) ?? animations[0]
+const identity = new Quaternion()
 
-  if (!clip) return null
+const scratchTurn = new Quaternion()
 
-  const node = findCamera(root, MAIN_CAM)
+/** 애니메이션 카메라의 월드 자세를 화면 카메라에 복사한다. 회전·화각 보정은 진행도에 맞춰 서서히 적용 */
+function applyAnimated(clip: CameraClip, camera: PerspectiveCamera, target: Vector3) {
+  const { node } = clip
 
-  if (!node) return null
+  const raw = clip.duration > 0 ? Math.min(clip.action.time / clip.duration, 1) : 1
 
-  const end = poseAt(root, clip, clip.duration)
+  const k = raw * raw * (3 - 2 * raw)
 
-  const mixer = new AnimationMixer(root)
-
-  const action = mixer.clipAction(clip)
-
-  action.setLoop(LoopOnce, 1)
-
-  action.clampWhenFinished = true
-
-  return { mixer, action, duration: clip.duration, node, end }
-}
-
-/** 애니메이션 카메라의 월드 자세를 화면 카메라에 복사하고, 궤도 타깃은 시선이 바닥과 만나는 점으로 둔다 */
-function applyAnimated(node: PerspectiveCamera, camera: PerspectiveCamera, target: Vector3) {
   node.getWorldPosition(scratchPos)
 
   node.getWorldQuaternion(scratchQuat)
+
+  scratchTurn.slerpQuaternions(identity, clip.turn, k)
+
+  scratchQuat.premultiply(scratchTurn)
 
   camera.position.copy(scratchPos)
 
   camera.quaternion.copy(scratchQuat)
 
-  if (node.fov !== camera.fov) {
-    camera.fov = node.fov
+  const fov = node.fov + ((clip.end?.fov ?? node.fov) - clip.rawFov) * k
+
+  if (fov !== camera.fov) {
+    camera.fov = fov
 
     camera.updateProjectionMatrix()
+  }
+
+  if (raw >= 1 && clip.end) {
+    target.copy(clip.end.target)
+
+    return
   }
 
   scratchDir.set(0, 0, -1).applyQuaternion(scratchQuat)
@@ -185,13 +235,23 @@ function stopChase(chase: Chase, flight: { current: Flight | null }, cancelFligh
   if (cancelFlight) flight.current = null
 }
 
+/** 로봇 추적 기준 관절: hand03, 팔 관절이 움직이는 대로 위치만 따라간다 (회전은 따라가지 않음) */
+const ROBOT_TRACK_NODE = 'hand03'
+
+/** 추적 기준점: 로봇은 hand02 (없으면 로봇 원점), 나머지는 장비 원점 */
+function trackPoint(id: string, object: Object3D) {
+  if (!id.startsWith('robot-')) return object
+
+  return object.getObjectByName(ROBOT_TRACK_NODE) ?? object
+}
+
 /** 따라가는 장비가 움직인 만큼 카메라 · 비행 경로를 같이 옮긴다 */
 function applyFollow(chase: Chase, scene: Object3D, camera: PerspectiveCamera, orbit: { target: Vector3; update: () => void }, flight: Flight | null) {
   const object = chase.id ? scene.getObjectByName(chase.id) : null
 
   if (!object) return
 
-  object.getWorldPosition(chase.world)
+  trackPoint(chase.id!, object).getWorldPosition(chase.world)
 
   if (!chase.ready) {
     chase.anchor.copy(chase.world)
@@ -323,7 +383,16 @@ export default function GlbCameraRig() {
         to: goal,
         elapsed: 0,
         duration,
+        fromOrbit: orbitOf({ position: camera.position, target: orbit.target }),
+        toOrbit: orbitOf(goal),
       }
+
+      // 방위각은 짧은 쪽으로 돈다
+      const { fromOrbit, toOrbit } = flight.current
+
+      const turn = Math.atan2(Math.sin(toOrbit.theta - fromOrbit.theta), Math.cos(toOrbit.theta - fromOrbit.theta))
+
+      toOrbit.theta = fromOrbit.theta + turn
     },
     [get, finishIntro],
   )
@@ -355,7 +424,7 @@ export default function GlbCameraRig() {
 
         clip.mixer.update(0)
 
-        applyAnimated(clip.node, camera, orbit.target)
+        applyAnimated(clip, camera, orbit.target)
 
         return
       }
@@ -485,6 +554,31 @@ export default function GlbCameraRig() {
     return () => window.removeEventListener('keydown', onKey)
   }, [chase])
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+
+    // 개발용: P 키로 현재 카메라 자세를 콘솔에 출력
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'p' && event.key !== 'P') return
+
+      const { camera } = get()
+
+      const orbit = controls.current
+
+      if (!(camera instanceof PerspectiveCamera) || !orbit) return
+
+      const r = (v: number) => Math.round(v * 1000) / 1000
+
+      const pose = { position: camera.position.toArray().map(r), target: orbit.target.toArray().map(r), fov: r(camera.fov) }
+
+      console.log('[camera pose]', JSON.stringify(pose))
+    }
+
+    window.addEventListener('keydown', onKey)
+
+    return () => window.removeEventListener('keydown', onKey)
+  }, [get])
+
   const point = useMemo(() => new Vector3(), [])
 
   useEffect(() => {
@@ -519,7 +613,7 @@ export default function GlbCameraRig() {
 
       playing.mixer.update(Math.min(delta, CLIP_STEP))
 
-      applyAnimated(playing.node, camera, orbit.target)
+      applyAnimated(playing, camera, orbit.target)
 
       const finished = playing.action.time >= playing.duration - 1e-4
 
@@ -550,14 +644,23 @@ export default function GlbCameraRig() {
 
     const k = ease(active.elapsed / active.duration)
 
-    placeCamera(camera, point.lerpVectors(active.from.position, active.to.position, k), active.from.fov + ((active.to.fov ?? active.from.fov) - active.from.fov) * k)
-
     orbit.target.lerpVectors(active.from.target, active.to.target, k)
+
+    // 위치는 직선이 아니라 타깃 둘레로 보간: 탑뷰로 갈 때 내려다보며 돌면서 도착한다
+    const { fromOrbit, toOrbit } = active
+
+    scratchOrbit.set(fromOrbit.radius + (toOrbit.radius - fromOrbit.radius) * k, fromOrbit.phi + (toOrbit.phi - fromOrbit.phi) * k, fromOrbit.theta + (toOrbit.theta - fromOrbit.theta) * k)
+
+    point.setFromSpherical(scratchOrbit).add(orbit.target)
+
+    if (active.elapsed >= active.duration) point.copy(active.to.position)
+
+    placeCamera(camera, point, active.from.fov + ((active.to.fov ?? active.from.fov) - active.from.fov) * k)
 
     orbit.update()
 
     if (active.elapsed >= active.duration) flight.current = null
   })
 
-  return <OrbitControls ref={controls} makeDefault enableDamping={false} />
+  return <OrbitControls ref={controls} makeDefault enableDamping={false} maxDistance={MAX_ZOOM_OUT_DISTANCE} />
 }

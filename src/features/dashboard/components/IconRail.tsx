@@ -10,10 +10,10 @@ import GraphicsSettings from "./GraphicsSettings";
 
 import { cn } from "@/shared/lib/cn";
 import {
-  monitorView,
   useMonitorView,
   type MonitorView,
 } from "@/shared/stores/useMonitorViewStore";
+import { openView } from "@/shared/lib/equipmentActions";
 
 const NAV_ITEMS: { id: string; icon: typeof Box; view?: MonitorView }[] = [
   { id: "dashboard", icon: LayoutGrid, view: "main" },
@@ -41,7 +41,7 @@ export default function IconRail() {
           key={id}
           type="button"
           aria-pressed={view === current}
-          onClick={() => view && monitorView.getState().set(view)}
+          onClick={() => view && openView(view)}
           className={cn(
             "flex size-10 items-center justify-center rounded",
             view === current

@@ -1,6 +1,5 @@
+import InfoCard from '@/shared/components/InfoCard'
 import StatusBadge from '@/shared/components/StatusBadge'
-import { TONE_BORDER } from '@/shared/constants/status'
-import { cn } from '@/shared/lib/cn'
 
 import type { RobotDetail } from '../lib/robotDetail'
 
@@ -13,7 +12,7 @@ export default function RobotCallout({ detail }: { detail: RobotDetail }) {
   ]
 
   return (
-    <div className={cn('w-[254px] rounded border bg-[#121417] p-3', TONE_BORDER[detail.status])}>
+    <InfoCard className="w-[254px]">
       <div className="flex items-center gap-2">
         <span className="flex size-5 items-center justify-center rounded-full border border-text-secondary text-caption text-text-primary">
           {detail.id.replace(/\D/g, '').slice(-1)}
@@ -35,6 +34,6 @@ export default function RobotCallout({ detail }: { detail: RobotDetail }) {
           </div>
         ))}
       </dl>
-    </div>
+    </InfoCard>
   )
 }

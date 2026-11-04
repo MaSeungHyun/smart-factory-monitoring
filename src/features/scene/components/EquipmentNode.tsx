@@ -2,7 +2,7 @@ import type { ThreeEvent } from '@react-three/fiber'
 import { useLayoutEffect, useRef } from 'react'
 import type { Group } from 'three'
 
-import { flyToEquipment, pickDetailEquipment } from '@/shared/lib/equipmentActions'
+import { followEquipment, pickDetailEquipment } from '@/shared/lib/equipmentActions'
 import { getHover, setHover, uiStore } from '@/shared/stores/useUiStore'
 import type { SceneEquipment } from '@/shared/types'
 
@@ -77,7 +77,7 @@ export default function EquipmentNode({ entity, position }: Props) {
   const onDoubleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
 
-    flyToEquipment(entity.id)
+    followEquipment(entity.id)
   }
 
   return (

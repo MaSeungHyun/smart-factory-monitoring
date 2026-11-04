@@ -1,5 +1,6 @@
+import InfoCard from '@/shared/components/InfoCard'
 import StatusBadge from '@/shared/components/StatusBadge'
-import { TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
+import { TONE_TEXT } from '@/shared/constants/status'
 import { cn } from '@/shared/lib/cn'
 
 import type { ScanBox } from '../lib/scanDetail'
@@ -26,7 +27,7 @@ export default function ScanCallout({ box }: { box: ScanBox }) {
   ]
 
   return (
-    <div className={cn('w-[254px] rounded border bg-[#121417] p-3', TONE_BORDER[tone])}>
+    <InfoCard className="w-[254px]">
       <div className="flex items-center gap-2">
         <span className="flex size-5 items-center justify-center rounded-full border border-text-secondary text-caption text-text-primary">3</span>
 
@@ -46,6 +47,6 @@ export default function ScanCallout({ box }: { box: ScanBox }) {
           </div>
         ))}
       </dl>
-    </div>
+    </InfoCard>
   )
 }

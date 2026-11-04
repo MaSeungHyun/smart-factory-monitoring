@@ -1,8 +1,8 @@
 import { cameraBus } from '@/shared/stores/cameraBus'
-import { monitorView } from '@/shared/stores/useMonitorViewStore'
+import { monitorView, type MonitorView } from '@/shared/stores/useMonitorViewStore'
 import { uiStore } from '@/shared/stores/useUiStore'
 
-/** 목록 더블클릭: 로봇 · AMR 계열 · 스캐너는 상세 탭으로, 나머지는 카메라를 그 장비로 */
+/** 목록 더블클릭: 로봇 · AMR 계열 · 스캐너는 상세 탭으로, 나머지는 카메라가 그 장비를 따라간다 (팬 · Esc 로 해제) */
 export function openEquipment(id: string) {
   uiStore.getState().select(id)
 
@@ -22,7 +22,7 @@ export function openEquipment(id: string) {
     return
   }
 
-  cameraBus.request({ kind: 'focus', id })
+  cameraBus.request({ kind: 'follow', id })
 }
 
 /** 스캔 검사 탭에서 3D 클릭: 오른쪽 정보를 그 스캐너로 바꾼다. 같은 스캐너를 다시 누르면 선택만 해제 (패널은 마지막 스캐너 유지) */
@@ -76,4 +76,15 @@ export function followEquipment(id: string) {
   uiStore.getState().select(id)
 
   cameraBus.request({ kind: 'follow', id })
+}
+
+/** 레일 탭 이동: 장비 상세 / 스캔 검사는 지금 선택된 장비가 맞는 종류면 그 장비를 연다 (없으면 마지막 장비 유지, 처음엔 robot-1) */
+export function openView(view: MonitorView) {
+  const selected = uiStore.getState().selectedId
+
+  if (view === 'robot' && selected && (selected.startsWith('robot-') || selected.startsWith('amr-'))) monitorView.getState().selectRobot(selected)
+
+  if (view === 'scan' && selected?.startsWith('scanner-')) monitorView.getState().selectScanner(selected)
+
+  monitorView.getState().set(view)
 }

@@ -34,6 +34,7 @@ import {
 } from '../constants/wireframe'
 import { factoryIntroArmed } from '../lib/factoryIntro'
 import { faultedIds } from '../lib/faultTargets'
+import { wireState } from '../lib/wireframeBypass'
 
 /*
  * 성능 메모
@@ -187,6 +188,8 @@ export default function FactoryWireframe() {
 
   useEffect(
     () => () => {
+      wireState.active = false
+
       clear()
 
       for (const material of Object.values(lines)) material.dispose()
@@ -319,10 +322,19 @@ export default function FactoryWireframe() {
     if (Math.abs(target - k.current) < 0.002) k.current = target
 
     if (k.current === 0) {
+      wireState.active = false
+
       clear()
 
       return
     }
+
+    // 비전 인셋이 실제 모델로 그릴 수 있게 현재 재질 · 선을 알려 둔다
+    wireState.active = true
+
+    wireState.saved = saved.current
+
+    wireState.lines = [[...attached.current.values()], [...merged.current.values()]]
 
     sinceScan.current += delta
 

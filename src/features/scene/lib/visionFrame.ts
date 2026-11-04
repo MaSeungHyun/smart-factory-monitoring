@@ -11,6 +11,7 @@ import { PALLET_CAM_EYE_LIFT_M, PALLET_CAM_FOV_DEG, PALLET_CAM_LOOK_DROP_M, PALL
 import { palletPlan, robotRole } from './palletPlan'
 import { paintPallet } from './visionPallet'
 import { visionPort, type VisionKind } from './visionPort'
+import { withRealMaterials } from './wireframeBypass'
 
 const PICK_RANGE = 1.15
 
@@ -594,7 +595,7 @@ export function drawVision(gl: WebGLRenderer, scene: Scene) {
   gl.setScissor(view.x, view.y, view.width, view.height)
 
   try {
-    withoutSensorChrome(scene, () => gl.render(scene, camera), kind === 'robot' ? subject : null)
+    withoutSensorChrome(scene, () => withRealMaterials(() => gl.render(scene, camera)), kind === 'robot' ? subject : null)
   } finally {
     gl.setViewport(savedView)
 
