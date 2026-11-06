@@ -14,7 +14,8 @@ import { cameraArrival } from '../lib/cameraArrival'
 import { focusPose, zoomPose } from '../lib/focusPose'
 import { useSceneWarm } from '../lib/sceneWarm'
 import { glbCameraPose, type CameraPose } from '../lib/glbCameraPose'
-import { robotCameraPose } from '../lib/robotCameraPose'
+import { MODEL_URL } from '../constants/modelUrls'
+import { robotCameraPose, setRobotArmRest } from '../lib/robotCameraPose'
 import { scanCameraPose } from '../lib/scanCameraPose'
 import { warehouseCameraPose } from '../lib/warehouseCameraPose'
 
@@ -329,6 +330,13 @@ export default function GlbCameraRig() {
   const { scene: glb } = useGLTF(FACTORY_GLB_URL)
 
   const cameraGltf = useGLTF(cameraUrl)
+
+  // 로봇 정면 기준: 애니메이션이 안 걸린 원본 RobotArm.glb 초기 자세
+  const { scene: armRest } = useGLTF(MODEL_URL.robotArm)
+
+  useLayoutEffect(() => {
+    setRobotArmRest(armRest)
+  }, [armRest])
 
   const get = useThree((state) => state.get)
 
