@@ -2,6 +2,8 @@ import { useLayoutEffect, useRef } from 'react'
 
 import { visionPort, type VisionKind } from '@/features/scene/lib/visionPort'
 
+import VisionDebugPanel from './VisionDebugPanel'
+
 /** 비전 영상 프레임 표기 */
 const VISION_FPS = 30
 
@@ -58,6 +60,8 @@ export default function CameraInset({ title = '비전 인식', meta, kind, id }:
 
       <div ref={hole} className="relative h-[160px]">
         <div ref={overlay} className="pointer-events-none absolute inset-0 overflow-hidden" />
+
+        <VisionDebugPanel id={id} />
       </div>
     </div>
   )

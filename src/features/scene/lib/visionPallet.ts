@@ -1,6 +1,6 @@
 import { PALLET_SCAN_SWEEP_S, PALLET_TARGET_PULSE_S } from '@/shared/constants/animation'
 
-import type { PalletPlan } from './palletPlan'
+import type { PalletGroup, PalletPlan } from './palletPlan'
 
 /** 화면 좌표 투영 (카메라 뒤면 null) */
 export type Project = (x: number, y: number, z: number) => [number, number] | null
@@ -235,4 +235,127 @@ export function paintPallet(host: HTMLElement, plan: PalletPlan | null, time: nu
   nodes.label.textContent = target
     ? `최적 위치 분석 · ${layer + 1}/${plan.layers}층 · 신뢰도 ${(80 + 18 * progress + Math.sin(time * 5)).toFixed(1)}%\nX ${target.x.toFixed(2)} Z ${target.z.toFixed(2)} m`
     : '적재 완료 · 대기'
+}
+
+interface PickNodes {
+  plan: PalletPlan
+  frame: SVGPolygonElement
+  sweep: SVGLineElement
+  label: HTMLDivElement
+}
+
+const pickPanels = new WeakMap<HTMLElement, PickNodes>()
+
+/** 팔레트 영역 테두리가 박스 칸보다 바깥으로 나오는 여유 (m) */
+const PICK_FRAME_PAD = 0.45
+
+function buildPick(host: HTMLElement, plan: PalletPlan) {
+  host.replaceChildren()
+
+  const svg = document.createElementNS(SVG_NS, 'svg')
+
+  svg.setAttribute('style', 'position:absolute;inset:0;width:100%;height:100%;overflow:visible;')
+
+  const frame = document.createElementNS(SVG_NS, 'polygon')
+
+  frame.setAttribute('style', `fill:rgba(79,168,212,0.06);stroke:${COLOR.filled};stroke-width:1;stroke-dasharray:4 3;`)
+
+  const sweep = document.createElementNS(SVG_NS, 'line')
+
+  sweep.setAttribute('stroke', COLOR.filled)
+
+  sweep.setAttribute('stroke-width', '1.5')
+
+  sweep.setAttribute('stroke-opacity', '0.75')
+
+  svg.append(frame, sweep)
+
+  const label = document.createElement('div')
+
+  label.style.cssText = `position:absolute;font-size:9px;line-height:11px;font-weight:600;white-space:pre;color:${COLOR.text};background:rgba(10,14,20,0.55);padding:1px 4px;border-radius:2px;pointer-events:none;`
+
+  host.append(svg, label)
+
+  const nodes = { plan, frame, sweep, label }
+
+  pickPanels.set(host, nodes)
+
+  return nodes
+}
+
+/**
+ * 디팔레타이징 인셋: 집어 올 팔레트 윗면을 스캔하며 위에 놓인 박스 수와 다음 집기 대상을 보여 준다.
+ * 적재 칸 · 층 · 최적 위치 분석은 팔레타이징 전용이라 그리지 않는다
+ */
+export function paintPick(host: HTMLElement, plan: PalletPlan | null, time: number, project: Project, count: number, target: string | null, holding: string | null = null, slot: PalletGroup | null = null) {
+  if (!plan) {
+    host.replaceChildren()
+
+    pickPanels.delete(host)
+
+    return
+  }
+
+  let nodes = pickPanels.get(host)
+
+  if (!nodes || nodes.plan !== plan) nodes = buildPick(host, plan)
+
+  // 지금 작업하는 팔레트 묶음(카메라 중심)이 있으면 그 팔레트만, 없으면 전체 기록 범위
+  const top = slot ? slot.y : Math.max(...plan.slots.map((item) => item.y))
+
+  const [minX, maxX, minZ, maxZ] = slot ? [slot.minX, slot.maxX, slot.minZ, slot.maxZ] : [plan.minX, plan.maxX, plan.minZ, plan.maxZ]
+
+  const corners = [
+    [minX - PICK_FRAME_PAD, minZ - PICK_FRAME_PAD],
+    [maxX + PICK_FRAME_PAD, minZ - PICK_FRAME_PAD],
+    [maxX + PICK_FRAME_PAD, maxZ + PICK_FRAME_PAD],
+    [minX - PICK_FRAME_PAD, maxZ + PICK_FRAME_PAD],
+  ]
+
+  const points = corners.map(([x, z]) => project(x, top - BOX_HEIGHT, z)).filter((point): point is [number, number] => !!point)
+
+  if (points.length < 4) {
+    nodes.frame.setAttribute('points', '')
+
+    nodes.sweep.setAttribute('visibility', 'hidden')
+
+    nodes.label.style.display = 'none'
+
+    return
+  }
+
+  nodes.frame.setAttribute('points', points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '))
+
+  const left = Math.min(...points.map(([x]) => x))
+
+  const right = Math.max(...points.map(([x]) => x))
+
+  const minY = Math.min(...points.map(([, y]) => y))
+
+  const maxY = Math.max(...points.map(([, y]) => y))
+
+  // 팔레트 위를 가로지르는 인식 스캔 선 (재생 시각 기준)
+  const phase = (time % PALLET_SCAN_SWEEP_S) / PALLET_SCAN_SWEEP_S
+
+  const sweepX = left + (right - left) * phase
+
+  nodes.sweep.setAttribute('visibility', count > 0 ? 'visible' : 'hidden')
+
+  nodes.sweep.setAttribute('x1', sweepX.toFixed(1))
+
+  nodes.sweep.setAttribute('x2', sweepX.toFixed(1))
+
+  nodes.sweep.setAttribute('y1', minY.toFixed(1))
+
+  nodes.sweep.setAttribute('y2', maxY.toFixed(1))
+
+  nodes.label.style.display = ''
+
+  nodes.label.style.left = `${Math.max(2, left).toFixed(1)}px`
+
+  nodes.label.style.top = `${Math.max(2, minY - 26).toFixed(1)}px`
+
+  nodes.label.textContent = count > 0
+    ? `팔레트 박스 인식 · ${count}개${holding ? `\n빼는 중 · ${holding}` : target ? `\n다음 집기 · ${target}` : ''}`
+    : '팔레트 비어 있음 · 다음 팔레트 대기'
 }

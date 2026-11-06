@@ -1,11 +1,17 @@
-/** 팔레타이징 로봇 비전 카메라: 기본 위치에서 시선 반대 방향으로 더 물러나는 거리 (m) */
-export const PALLET_CAM_PULLBACK_M = 0.6
+/** 팔레트 공정 외부 비전 카메라: 팔레트/AMR 중심 위 높이 (m). 클수록 더 넓게 보인다 */
+export const PALLET_CAM_HEIGHT_M = 2.9
 
-/** 팔레타이징 로봇 비전 카메라: hand04 높이 기준 눈 높이 차 (m). 0 이면 hand04 와 수평 */
-export const PALLET_CAM_EYE_LIFT_M = 0
+/** 팔레트 공정 외부 비전 카메라: 팔레트 중심에서 로봇 쪽으로 눈을 당기는 거리 (m). 작은 값으로 거의 수직 탑뷰 */
+export const PALLET_CAM_TOWARD_ROBOT_M = 0.15
 
-/** 팔레타이징 로봇 비전 카메라: 시선 끝점을 흡착점보다 더 내리는 거리 (m). 클수록 아래로 기울어 팔레트가 잘 보인다 */
-export const PALLET_CAM_LOOK_DROP_M = 0.25
+/** 팔레트 공정 외부 비전 카메라: 로봇-팔레트 축에 수직인 옆 오프셋 (m). 과도한 사선을 피하기 위해 최소 */
+export const PALLET_CAM_SIDE_M = 0.08
 
-/** 팔레타이징 로봇 비전 카메라: 화각 (deg) */
-export const PALLET_CAM_FOV_DEG = 40
+/** 팔레트 공정 외부 비전 카메라: 화각 (deg) */
+export const PALLET_CAM_FOV_DEG = 46
+
+/** 팔레타이징 외부 비전 카메라: plan 없을 때 쓸 시선 높이 (m). AMR 덱보다 살짝 위 */
+export const PALLET_CAM_FALLBACK_LOOK_Y = 1.15
+
+/** 비전 디버그: 패널이 실제 카메라 값을 다시 읽는 주기 (ms) */
+export const VISION_DEBUG_POLL_MS = 200
