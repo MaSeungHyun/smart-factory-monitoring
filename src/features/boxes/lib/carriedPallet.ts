@@ -4,23 +4,46 @@ import type { AnimatedPartTrack } from '@/shared/types/animatedParts'
 import type { PlaybackRun } from '@/shared/types/playback'
 import type { PalletEvent } from '@/shared/types/runEvents'
 
-import { CARRY_TURN_EPS, CARRY_TURN_PROBE } from '../constants/carry'
+import { CARRY_TURN_EPS, CARRY_TURN_PROBE, PLACE_LEAD } from '../constants/carry'
 import { palletEventAt, palletPoseAt } from './palletTracks'
 
 /** 차량 yaw 좌표계 기준 팔레트 오프셋 [x, z, yaw] */
 type CarryLocal = [x: number, z: number, yaw: number]
 
+function lerpAngle(a: number, b: number, k: number) {
+  let delta = b - a
+
+  if (delta > Math.PI) delta -= Math.PI * 2
+
+  if (delta < -Math.PI) delta += Math.PI * 2
+
+  return a + delta * k
+}
+
+/** 다음 이벤트가 출하·다른 부모로 바뀌면 착지 대상 */
+function landingOf(event: PalletEvent, next: PalletEvent | undefined) {
+  if (!next?.pose || next.t <= event.t) return null
+
+  if (next.kind === 'ship') return next
+
+  if (next.kind === 'move' && next.parentId !== event.parentId) return next
+
+  return null
+}
+
 /**
  * 차량(AMR · 지게차)에 실린 팔레트 포즈. 매 프레임 차량 현재 포즈(PlaybackDriver 와 같은 samplePose) x 고정 local 로
  * 강체 추종한다. local 은 각 이벤트 시각의 차량 포즈 기준으로 잠그고, 같은 차량의 다음 이벤트 local 까지 보간한다
  * (주행 중엔 일정 -> 강체, 포크 신축만 반영). y 는 차량에 포크 트랙(10 Hz)이 있으면 포크 높이 + 이벤트별 잔차 보간,
- * 없으면 기록 스트림(1 Hz). 상태 없음 -> 탐색 · 청크 경계 안전
+ * 없으면 기록 스트림(1 Hz). 출하·하차 직전 PLACE_LEAD 동안은 착지 포즈로 월드 보간해 던지듯 보이지 않게 한다.
  */
 export function createCarriedPallets(run: PlaybackRun) {
   const locals = new WeakMap<PalletEvent, CarryLocal | null>()
 
   // 지게차 포크 높이 트랙 (차량 id -> posY 파츠). 팔레트 스트림은 1 Hz 라 계단식으로 내려가므로 y 는 포크를 따른다
   const forks = new Map<string, AnimatedPartTrack | null>()
+
+  const placeFrom = new WeakMap<PalletEvent, [x: number, y: number, z: number, yaw: number]>()
 
   function forkOf(id: string) {
     if (!forks.has(id)) forks.set(id, run.parts?.find((track) => track.part.deviceId === id && track.part.channel === 'posY' && /fork/i.test(track.part.partName)) ?? null)
@@ -60,8 +83,13 @@ export function createCarriedPallets(run: PlaybackRun) {
 
     const previous = events[index - 1]
 
+    const next = events[index + 1]
+
+    // 착지 직전 샘플은 회전 보정을 쓰지 않는다. 내려놓을 월드 포즈가 직전 오프셋으로 덮이면 안 된다
+    const keepTurn = !landingOf(event, next)
+
     // 회전 중 기록은 같은 차량의 직전 오프셋을 그대로 쓴다 (IN-0193 / amr-65 @ t 7258.85 에서 1.4 m 튐)
-    if (track && previous?.parentId === event.parentId && turning(track, event.t)) local = localOf(events, index - 1)
+    if (keepTurn && track && previous?.parentId === event.parentId && turning(track, event.t)) local = localOf(events, index - 1)
     else if (carrier && event.pose) {
       const dx = event.pose[0] - carrier.x
 
@@ -79,12 +107,8 @@ export function createCarriedPallets(run: PlaybackRun) {
     return local
   }
 
-  /** palletPoseAt 과 같은 out [x, y, z, yaw]. 차량에 안 실렸으면 스트림 포즈 */
-  return function carriedPoseAt(events: PalletEvent[], time: number, out: number[]) {
-    if (!palletPoseAt(events, time, out)) return false
-
-    const index = palletEventAt(events, time)
-
+  /** 차량에 실린 강체 포즈를 out 에 쓴다. 못 쓰면 false */
+  function rigidAt(events: PalletEvent[], index: number, time: number, out: number[]) {
     const event = events[index]
 
     const track = event.parentId ? run.tracks.poses[event.parentId] : undefined
@@ -93,7 +117,7 @@ export function createCarriedPallets(run: PlaybackRun) {
 
     const carrier = local && track ? samplePose(track, run.tracks.t, time) : null
 
-    if (!local || !carrier) return true
+    if (!local || !carrier) return false
 
     const next = events[index + 1]
 
@@ -111,11 +135,12 @@ export function createCarriedPallets(run: PlaybackRun) {
 
     out[0] = carrier.x + lx * cos + lz * sin
 
+    out[1] = event.pose?.[1] ?? out[1]
+
     out[2] = carrier.z - lx * sin + lz * cos
 
     out[3] = carrier.yaw + local[2]
 
-    // 포크 위 팔레트: 현재 포크 높이 + (기록 y - 그 시각 포크 높이) 잔차를 다음 이벤트까지 보간 -> 포크와 같은 10 Hz 로 연속 하강
     const fork = event.parentId ? forkOf(event.parentId) : null
 
     const now = fork ? forkY(fork, time) : null
@@ -135,6 +160,57 @@ export function createCarriedPallets(run: PlaybackRun) {
 
       out[1] = now + residual + (nextResidual - residual) * r
     }
+
+    return true
+  }
+
+  /** palletPoseAt 과 같은 out [x, y, z, yaw]. 차량에 안 실렸으면 스트림 포즈 */
+  return function carriedPoseAt(events: PalletEvent[], time: number, out: number[]) {
+    if (!palletPoseAt(events, time, out)) return false
+
+    const index = palletEventAt(events, time)
+
+    const event = events[index]
+
+    if (!event.parentId || !run.tracks.poses[event.parentId]) return true
+
+    const landing = landingOf(event, events[index + 1])
+
+    if (landing?.pose) {
+      const start = Math.max(event.t, landing.t - PLACE_LEAD)
+
+      if (time >= start) {
+        let from = placeFrom.get(landing)
+
+        if (!from) {
+          const seed = [0, 0, 0, 0]
+
+          if (rigidAt(events, index, start, seed)) from = seed as [number, number, number, number]
+          else if (event.pose) from = [...event.pose]
+          else from = [...landing.pose]
+
+          placeFrom.set(landing, from)
+        }
+
+        const span = landing.t - start
+
+        const k = span > 0 ? Math.min(Math.max((time - start) / span, 0), 1) : 1
+
+        const to = landing.pose
+
+        out[0] = from[0] + (to[0] - from[0]) * k
+
+        out[1] = from[1] + (to[1] - from[1]) * k
+
+        out[2] = from[2] + (to[2] - from[2]) * k
+
+        out[3] = lerpAngle(from[3], to[3], k)
+
+        return true
+      }
+    }
+
+    if (!rigidAt(events, index, time, out)) return true
 
     return true
   }

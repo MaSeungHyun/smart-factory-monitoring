@@ -147,10 +147,13 @@ function scanCounts(run: PlaybackRun, time: number) {
 
 const RANK: Record<EquipmentStatus, number> = { error: 0, warning: 1, running: 2, idle: 3 }
 
-function utilizationAt(frame: StatusFrame) {
-  const robots = Object.entries(frame.equipment).filter(([id]) => id.startsWith('robot-'))
+/** 로봇 가동률 평균(%). utilization 없는 샘플·고장 장비는 0 으로 넣어 끌어내린다 */
+function utilizationAt(frame: StatusFrame, faulted: ReadonlySet<string> = new Set()) {
+  const robots = Object.entries(frame.equipment).filter(([id, sample]) => id.startsWith('robot-') && sample.utilization !== undefined)
 
-  return robots.length ? robots.reduce((sum, [, sample]) => sum + (sample.utilization ?? 0), 0) / robots.length : 0
+  if (!robots.length) return 0
+
+  return robots.reduce((sum, [id, sample]) => sum + (faulted.has(id) ? 0 : (sample.utilization ?? 0)), 0) / robots.length
 }
 
 function stage(
@@ -160,11 +163,13 @@ function stage(
   percent: number,
   members: EquipmentItem[],
 ): ProcessStage {
-  const error = members.some((item) => item.status === 'error')
+  const errors = members.filter((item) => item.status === 'error')
 
   const active = members.some((item) => item.status === 'running' || item.status === 'warning')
 
-  const status: EquipmentStatus = error ? 'error' : active ? 'running' : 'idle'
+  // 장비 1대 고장으로 공정 전체를 '고장' 처리하지 않음 (일부만 이상이면 warning)
+  const status: EquipmentStatus =
+    errors.length === 0 ? (active ? 'running' : 'idle') : errors.length >= members.length && members.length > 0 ? 'error' : 'warning'
 
   return {
     id,
@@ -174,7 +179,8 @@ function stage(
     unit: '박스',
     percent,
     status,
-    statusLabel: error ? '고장' : active ? '작동' : '대기',
+    statusLabel:
+      errors.length === 0 ? (active ? '작동' : '대기') : errors.length >= members.length ? '고장' : `이상 ${errors.length}`,
   }
 }
 
@@ -220,61 +226,88 @@ export function dashboardView(
 
   const step = Math.max(1, Math.floor(history.length / 8))
 
-  const sparkline = history.filter((_, index) => index % step === 0).slice(-8).map(utilizationAt)
+  const sparkline = history.filter((_, index) => index % step === 0).slice(-8).map((entry) => utilizationAt(entry, faulted))
 
-  const oee = frame ? utilizationAt(frame) : 0
-
-  const kpis: KpiItem[] = [
-    { id: 'oee', label: '장비 효율 (OEE)', value: oee.toFixed(1), unit: '%', sparkline: sparkline.length > 1 ? sparkline : undefined },
-    {
-      id: 'defect',
-      label: '불량',
-      value: String(counts.defects),
-      unit: '개',
-      sub: `· ${counts.inbound ? ((counts.defects / counts.inbound) * 100).toFixed(2) : '0.00'}%`,
-      tone: counts.defects > 0 ? 'error' : 'default',
-    },
-    { id: 'inbound', label: '입고', value: counts.inbound.toLocaleString('ko-KR'), unit: '박스' },
-    { id: 'outbound', label: '출고', value: counts.outbound.toLocaleString('ko-KR'), unit: '박스' },
-  ]
+  const oee = frame ? utilizationAt(frame, faulted) : 0
 
   const byKind = (kind: string) => everything.filter((item) => run.equipment.find((entry) => entry.id === item.id)?.kind === kind)
 
   const statusScanned = all.filter((item) => item.type === 'scanner').reduce((sum, item) => sum + (frame?.equipment[item.id]?.count ?? 0), 0)
 
-  // 상태 스트림에 스캐너 count 가 없으면(v3) 박스 scanbelt 기록에서 판정 수(정상 + 불량)를 센다. 진행률 = 판정 / 벨트 진입
+  // 상태 스트림 scanned 가 0 이면(v3) 박스 scanbelt 기록으로 판정 수 산출
   const scan = statusScanned ? null : scanCounts(run, time)
 
+  // 스캔된 개수 = 정상 + 불량 판정
   const scanned = scan ? scan.passed + scan.defects : statusScanned
+
+  const defectCount = scan ? scan.defects : counts.defects
+
+  const classified = Math.max(scanned, 0)
+
+  // 스캔 정상률 = 정상 판정 / 전체 판정
+  const classifySuccess = classified > 0 ? ((classified - defectCount) / classified) * 100 : 100
+
+  // 입고 = 오늘 처리량(라인 통과·완료) + 현재 재공(들어오는 중)
+  const processed = Math.max(0, counts.inbound - counts.wip)
+
+  const kpis: KpiItem[] = [
+    { id: 'oee', label: '장비 효율 (OEE)', value: oee.toFixed(1), unit: '%', sparkline: sparkline.length > 1 ? sparkline : undefined },
+    {
+      id: 'defect',
+      label: '분류 성공',
+      value: classifySuccess.toFixed(1),
+      unit: '%',
+      sub: `· 불량 ${defectCount}개`,
+      tone: defectCount > 0 ? 'error' : 'default',
+    },
+    { id: 'inbound', label: '입고', value: counts.inbound.toLocaleString('ko-KR'), unit: '박스' },
+    { id: 'outbound', label: '출고', value: counts.outbound.toLocaleString('ko-KR'), unit: '박스' },
+  ]
 
   const amrTrips = all.filter((item) => item.type === 'amr').reduce((sum, item) => sum + (frame?.equipment[item.id]?.count ?? 0), 0)
 
   const stages: ProcessStage[] = [
-    stage('inbound', '입고', counts.inbound, pct(counts.inbound - counts.wip, counts.inbound), []),
-    stage('conveyor', '컨베이어 투입', counts.wip, pct(counts.wip, counts.inbound), byKind('conveyor')),
-    stage('scan', '스캔 검사 · 분류', scanned, scan ? pct(scanned, scan.entered) : pct(scanned, counts.inbound), byKind('scanner')),
-    stage('pallet', '팔레트 적재', counts.handled, pct(counts.handled, counts.inbound), byKind('robot')),
+    // 입고: 누적 입고, % = 처리 완료 비율 (처리량/입고)
+    stage('inbound', '입고', counts.inbound, pct(processed, counts.inbound), []),
+    // 컨베이어 투입: 스캔된(판정된) 개수 / 입고
+    stage('conveyor', '컨베이어 투입', scanned, pct(scanned, counts.inbound), byKind('conveyor')),
+    // 스캔 검사: 스캔 개수, % = 정상률
+    stage('scan', '스캔 검사 · 분류', scanned, Math.round(classifySuccess), byKind('scanner')),
+    stage('pallet', '팔레트 적재', counts.placed ?? counts.handled, pct(counts.placed ?? counts.handled, counts.inbound), byKind('robot')),
     stage('amr', 'AMR 이송', amrTrips, pct(amrTrips, counts.inbound), byKind('amr')),
     stage('outbound', '출고', counts.outbound, pct(counts.outbound, counts.inbound), []),
   ]
 
   stages[0] = { ...stages[0], status: counts.inbound > 0 ? 'running' : 'idle', statusLabel: counts.inbound > 0 ? '작동' : '대기' }
 
-  // 파생 스캔: 판정이 진행 중이면 작동, 불량이 있으면 불량 N
+  stages[1] = {
+    ...stages[1],
+    status: scanned > 0 || counts.wip > 0 ? 'running' : 'idle',
+    statusLabel: scanned > 0 ? '작동' : counts.wip > 0 ? `재공 ${counts.wip}` : '대기',
+  }
+
   if (scan) {
     const active = scan.entered > scanned
 
-    stages[2] = scan.defects
-      ? { ...stages[2], status: 'error', statusLabel: `불량 ${scan.defects}` }
-      : stages[2].status === 'idle' && (active || scanned > 0)
-        ? { ...stages[2], status: 'running', statusLabel: active ? '판독 중' : '작동' }
-        : stages[2]
+    stages[2] = {
+      ...stages[2],
+      status:
+        defectCount > 0
+          ? classifySuccess < 95
+            ? 'warning'
+            : stages[2].status
+          : stages[2].status === 'idle' && (active || scanned > 0)
+            ? 'running'
+            : stages[2].status,
+      statusLabel: defectCount > 0 ? `정상 ${classifySuccess.toFixed(0)}%` : active ? '판독 중' : scanned > 0 ? '작동' : stages[2].statusLabel,
+    }
   }
 
   stages[5] = { ...stages[5], status: counts.outbound > 0 ? 'running' : 'idle', statusLabel: counts.outbound > 0 ? '작동' : '대기' }
 
   const view: DashboardView = {
-    throughput: { value: counts.handled, target: RUN_TARGET, unit: '박스' },
+    // 오늘 처리량 = 입고 − 현재 재공 (입고 = 처리량 + 들어오는 중)
+    throughput: { value: processed, target: RUN_TARGET, unit: '박스' },
     kpis,
     equipment: all,
     equipmentTotal: all.length,
@@ -317,7 +350,16 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
     if (item.id === 'oee' && oee !== undefined) return { ...item, value: oee.toFixed(1) }
 
     if (item.id === 'defect' && defects !== undefined) {
-      return { ...item, value: fmt(defects), sub: `· ${(defectRate ?? 0).toFixed(2)}%`, tone: defects > 0 ? 'error' : 'default' }
+      const success = Math.max(0, 100 - (defectRate ?? 0))
+
+      return {
+        ...item,
+        label: '분류 성공',
+        value: success.toFixed(1),
+        unit: '%',
+        sub: `· 불량 ${fmt(defects)}개`,
+        tone: defects > 0 ? 'error' : 'default',
+      }
     }
 
     if (item.id === 'inbound' && inbound !== undefined) return { ...item, value: fmt(inbound) }

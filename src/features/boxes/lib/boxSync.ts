@@ -218,39 +218,47 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
     if (span.kind === 'pallet' && pallets) {
       const list = pallets.get(span.parentId)
 
-      if (!list) return false
+      if (list) {
+        // AMR · 지게차에 실린 팔레트는 EventPallets 와 똑같이 차량 matrixWorld x local 로 강체 추종한다.
+        // (2 Hz 팔레트 스트림 보간을 쓰면 차량 위치와 어긋나 박스가 뒤처진다)
+        const event = list[palletEventAt(list, time)]
 
-      // AMR · 지게차에 실린 팔레트는 EventPallets 와 똑같이 차량 matrixWorld x local 로 강체 추종한다.
-      // (2 Hz 팔레트 스트림 보간을 쓰면 차량 위치와 어긋나 박스가 뒤처진다)
-      const event = list[palletEventAt(list, time)]
+        const carrier = event?.parentId && event.local ? find(event.parentId) : null
 
-      const carrier = event?.parentId && event.local ? find(event.parentId) : null
+        if (carrier && event?.local) {
+          let local = carrierLocals.get(event)
 
-      if (carrier && event?.local) {
-        let local = carrierLocals.get(event)
+          if (!local) carrierLocals.set(event, (local = localMatrix(event.local)))
 
-        if (!local) carrierLocals.set(event, (local = localMatrix(event.local)))
+          carrier.updateWorldMatrix(true, false)
 
-        carrier.updateWorldMatrix(true, false)
+          out.multiplyMatrices(carrier.matrixWorld, local)
 
-        out.multiplyMatrices(carrier.matrixWorld, local)
+          return true
+        }
+
+        // EventPallets 와 같은 함수 -> 팔레트와 적재 박스가 같은 시각 · 같은 차량 포즈로 한 덩어리로 움직인다
+        if (!carriedPoseAt(list, time, palletPose)) return false
+
+        position.set(palletPose[0], palletPose[1], palletPose[2])
+
+        rotation.setFromAxisAngle(UP, palletPose[3])
+
+        out.compose(position, rotation, ONE)
 
         return true
       }
 
-      // EventPallets 와 같은 함수 -> 팔레트와 적재 박스가 같은 시각 · 같은 차량 포즈로 한 덩어리로 움직인다
-      if (!carriedPoseAt(list, time, palletPose)) return false
-
-      position.set(palletPose[0], palletPose[1], palletPose[2])
-
-      rotation.setFromAxisAngle(UP, palletPose[3])
-
-      out.compose(position, rotation, ONE)
-
-      return true
+      // 녹화에 없는 템플릿 불량 팔레트(pallet-70~72)는 아래 장비 노드로 붙인다
     }
 
-    const object = find(span.kind === 'pallet' ? palletNodeName(span.parentId) : span.parentId)
+    const object = find(
+      span.kind !== 'pallet'
+        ? span.parentId
+        : pallets?.has(span.parentId ?? '')
+          ? palletNodeName(span.parentId!)
+          : span.parentId,
+    )
 
     if (!object) return false
 

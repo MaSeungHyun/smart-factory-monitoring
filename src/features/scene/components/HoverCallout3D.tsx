@@ -88,8 +88,13 @@ export default function HoverCallout3D() {
       return
     }
 
-    if (shown.current !== active) {
-      shown.current = active
+    const item = dashboardAt(playbackStore.getState())?.equipment.find((entry) => entry.id === active)
+
+    // 같은 장비여도 배터리·상태 문구가 바뀌면 칩을 다시 쓴다
+    const sig = `${active}|${item?.status ?? ''}|${item?.statusLabel ?? ''}|${item?.percent ?? ''}`
+
+    if (shown.current !== sig) {
+      shown.current = sig
 
       writeChip(active, nameEl.current, processEl.current, badgeEl.current, dotEl.current, labelEl.current)
     }

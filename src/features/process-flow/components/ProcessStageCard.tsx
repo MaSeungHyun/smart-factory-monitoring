@@ -20,8 +20,6 @@ const STAGE_ICON = {
 export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
   const Icon = STAGE_ICON[stage.icon]
 
-  const isError = stage.status === 'error'
-
   // KPI 키가 있으면 1Hz 샘플을 보간해 매 프레임 읽고, 없으면 파생값
   const value = useKpiGetter(stage.valueKey, stage.value)
 
@@ -31,7 +29,11 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
     <div
       className={cn(
         'flex min-w-0 flex-col rounded border bg-bg-surface-2 p-3.5',
-        isError ? 'border-status-error bg-status-error/16' : 'border-border-default',
+        stage.status === 'error'
+          ? 'border-status-error bg-status-error/16'
+          : stage.status === 'warning'
+            ? 'border-status-warning/50 bg-status-warning/10'
+            : 'border-border-default',
       )}
     >
       <div className="flex items-center gap-2 text-label font-medium text-text-secondary">

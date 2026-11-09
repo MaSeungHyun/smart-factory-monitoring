@@ -4,6 +4,7 @@ import { AnimatePresence } from "motion/react";
 
 import DashboardLayout from "@/app/layouts/DashboardLayout";
 import {
+  DashboardDialog,
   Header,
   IconRail,
   MainMonitor,
@@ -68,6 +69,8 @@ export default function MonitoringPage() {
           <ViewScreen view={view} />
         </Fragment>
       </AnimatePresence>
+
+      <DashboardDialog />
 
       <WarmupScreen />
     </Suspense>

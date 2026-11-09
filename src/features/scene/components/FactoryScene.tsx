@@ -6,6 +6,7 @@ import { BoxLayer } from "@/features/boxes";
 import { AnimatedPartsDriver, PlaybackDriver, usePlaybackPick } from "@/features/playback";
 import PlaybackStart from "@/features/playback/components/PlaybackStart";
 import { FACTORY_TEMPLATE, parseTemplate } from "@/features/template";
+import { isVisibleEquipment } from "../lib/sceneEquipment";
 import { configureKTX2 } from "@/shared/lib/three/gltfLoader";
 import { graphicsStore, QUALITY_DPR, useGraphics } from "@/shared/stores/useGraphicsStore";
 import { uiStore } from "@/shared/stores/useUiStore";
@@ -62,11 +63,18 @@ registerScenePartHandlers();
 export default function FactoryScene({ children }: { children?: ReactNode }) {
   const template = useMemo(() => parseTemplate(FACTORY_TEMPLATE), []);
 
-  // 팔레트 이벤트(위치 포함)가 있는 run 은 EventPallets 가 팔레트를 그린다 -> 템플릿 고정 팔레트(pallet-60~62 AMR 탑재, 70~72 불량 스테이션)는 렌더하지 않는다
+  // 팔레트 이벤트(위치 포함)가 있는 run 은 EventPallets 가 그린다 → 템플릿 고정 팔레트는 숨긴다
   const eventPallets = usePlaybackPick((state) => !!state.run?.recording?.pallets?.some((row) => row[4]));
 
   const equipment = useMemo(
-    () => (eventPallets ? template.equipment.filter((item) => item.kind !== "pallet") : template.equipment),
+    () =>
+      template.equipment.filter((item) => {
+        if (!isVisibleEquipment(item)) return false
+
+        if (eventPallets && item.kind === "pallet") return false
+
+        return true
+      }),
     [eventPallets, template],
   );
 

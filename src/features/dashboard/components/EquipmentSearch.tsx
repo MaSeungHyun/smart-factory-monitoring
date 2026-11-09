@@ -3,7 +3,7 @@ import { useMemo, useState, type KeyboardEvent } from 'react'
 import { Search } from 'lucide-react'
 
 import { useDashboardView } from '@/features/playback'
-import { FACTORY_TEMPLATE, parseTemplate } from '@/features/template'
+import { sceneEquipment } from '@/features/scene/lib/sceneEquipment'
 import { cn } from '@/shared/lib/cn'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
 
@@ -19,9 +19,7 @@ export default function EquipmentSearch() {
 
   const [active, setActive] = useState(0)
 
-  const scene = useMemo(() => parseTemplate(FACTORY_TEMPLATE).equipment, [])
-
-  const entries = useMemo(() => searchEntries(view?.equipment ?? [], scene), [view?.equipment, scene])
+  const entries = useMemo(() => searchEntries(view?.equipment ?? [], sceneEquipment), [view?.equipment])
 
   const results = filterEntries(entries, query)
 

@@ -19,7 +19,7 @@ export default function CycleBarChart({ bars, average, label }: CycleBarChartPro
   return (
     <div className="rounded border border-border-default bg-bg-surface-2 p-3">
       <div className="flex text-caption text-text-secondary">
-        이번 재생 · 작업 속도
+        작업 속도
 
         <span className="ml-auto text-text-tertiary">단위 초/개</span>
       </div>

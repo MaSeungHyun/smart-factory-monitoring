@@ -31,7 +31,6 @@ export default function RejectZones({ boxes }: { boxes: DecodedBox[] }) {
 
               <meshBasicMaterial color='#ffcc00' />
             </mesh>
-
           </group>
         )
       })}

@@ -64,7 +64,7 @@ export default function MonitorToolbar() {
           }
         >
         {counters.map(({ id, label, value, icon: Icon, className }) => (
-          <Tooltip key={id} content={statusFilter === id ? "필터 해제" : `${label} 장비만 보기`}>
+          <Tooltip key={id} content={statusFilter === id ? "필터 해제" : `${label} 알람·목록만 보기 (씬은 유지)`}>
           <ToggleGroupItem
             value={id as string}
             data-status-chip={id}

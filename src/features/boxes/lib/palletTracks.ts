@@ -35,7 +35,7 @@ export function palletEventAt(events: PalletEvent[], time: number) {
 }
 
 /** robot_IK pallets stream: move 최대 2 Hz */
-const MOVE_STEP = 0.5
+export const MOVE_STEP = 0.5
 
 function lerpAngle(a: number, b: number, k: number) {
   let delta = b - a

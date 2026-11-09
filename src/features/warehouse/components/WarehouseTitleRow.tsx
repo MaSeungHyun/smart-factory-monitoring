@@ -56,7 +56,7 @@ export default function WarehouseTitleRow({ counts }: Props) {
               type="button"
               data-status-chip={id}
               aria-pressed={statusFilter === id}
-              title={statusFilter === id ? "필터 해제" : `${label} 장비만 보기`}
+              title={statusFilter === id ? "필터 해제" : `${label} 알람·목록만 보기 (씬은 유지)`}
               onClick={() => uiStore.getState().toggleFilter(id)}
               className={cn(
                 "flex h-8 w-[88px] items-center justify-center gap-2 rounded border text-label hover:brightness-125",

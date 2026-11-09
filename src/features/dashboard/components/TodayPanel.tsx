@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 
 import {
-  AlertTriangle,
   ArrowDownToLine,
   ArrowUpFromLine,
+  CheckCircle2,
   ChevronDown,
   Gauge,
   MapPin,
@@ -44,13 +44,13 @@ import HistoryList from "./HistoryList";
 
 const KPI_ICONS = {
   oee: <Gauge size={14} />,
-  defect: <AlertTriangle size={14} />,
+  defect: <CheckCircle2 size={14} />,
   inbound: <ArrowDownToLine size={14} />,
   outbound: <ArrowUpFromLine size={14} />,
 };
 
-/** 오늘 처리량 (KPI 없는 예전 녹화) = 적치 + 디팔레타이징 */
-const pickHandled = (frame: StatusFrame) => frame.counts.handled;
+/** 오늘 처리량 (KPI 없는 예전 녹화) = 입고 − 재공 */
+const pickHandled = (frame: StatusFrame) => Math.max(0, frame.counts.inbound - frame.counts.wip);
 
 type TabId = "equipment" | "alarm" | "history";
 

@@ -58,8 +58,8 @@ export default function SceneControls() {
         className={cn(
           "h-11 w-[92px] rounded border text-label hover:border-text-tertiary",
           wireframe
-            ? "border-primary-on-dark bg-bg-surface text-text-primary"
-            : "border-border-default bg-bg-surface text-text-tertiary",
+            ? "border-primary-on-dark bg-bg-surface text-primary-on-dark"
+            : "border-text-tertiary bg-bg-surface text-text-primary",
         )}
       >
         {wireframe ? "Wireframe" : "View"}

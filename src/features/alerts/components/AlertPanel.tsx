@@ -1,7 +1,7 @@
 import { Bell } from 'lucide-react'
 
-import { playbackStore, useDashboardView } from '@/features/playback'
-import { useUi } from '@/shared/stores/useUiStore'
+import { playbackStore, useDashboardView, type ActiveAlarm } from '@/features/playback'
+import { useUi, type StatusFilter } from '@/shared/stores/useUiStore'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 import { cn } from '@/shared/lib/cn'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
@@ -11,13 +11,21 @@ import AlertItemRow from './AlertItemRow'
 
 const VISIBLE = 4
 
-/** 실시간 알림: 재생 데이터의 알람은 확인(ack) 전까지 남는다. 헤더 벨로 여닫음 */
+const ALARM_MATCH: Record<StatusFilter, ActiveAlarm['severity'][]> = {
+  running: ['warning', 'success'],
+  idle: ['success'],
+  error: ['error'],
+}
+
+/** 실시간 알림: 재생 데이터의 알람은 확인(ack) 전까지 남는다. LIVE 칩으로 severity 필터 */
 export default function AlertPanel() {
   const view = useDashboardView()
 
-  const { alarmPanelOpen, selectedId } = useUi()
+  const { alarmPanelOpen, selectedId, statusFilter } = useUi()
 
-  const alarms = view?.alarms ?? null
+  const raw = view?.alarms ?? null
+
+  const alarms = raw && statusFilter ? raw.filter((alarm) => ALARM_MATCH[statusFilter].includes(alarm.severity)) : raw
 
   const activeCount = alarms ? alarms.length : ALERTS.filter((alert) => alert.severity !== 'success').length
 
@@ -65,7 +73,7 @@ export default function AlertPanel() {
 
         {alarms && alarms.length === 0 && (
           <li className="flex h-16 items-center justify-center rounded bg-bg-surface-2 text-caption text-text-tertiary">
-            확인할 알림이 없습니다
+            {statusFilter ? '필터에 맞는 알림이 없습니다' : '확인할 알림이 없습니다'}
           </li>
         )}
 

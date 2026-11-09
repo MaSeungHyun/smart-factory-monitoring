@@ -21,7 +21,7 @@ export default function Header() {
 
   return (
     <header className="flex h-full max-h-16 items-center border-b border-border-default bg-bg-base pr-6 pl-3">
-      <span className="w-[256px] shrink-0 text-h1 font-black tracking-wide text-text-primary">
+      <span className="w-[256px] shrink-0 text-h1 font-black tracking-wide text-text-primary relative">
         <img src={logo} alt="GRAPICAR" height={65} />
       </span>
 

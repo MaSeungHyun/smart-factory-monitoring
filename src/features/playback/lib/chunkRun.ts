@@ -6,6 +6,7 @@ import type { ChunkSnapshotBox } from '@/shared/types/runChunk'
 import type { SimBoxKeyframe, SimBoxParentEvent, SimPalletEvent, SimQuat, SimRecording, SimSuctionEvent, SimVec3 } from '@/shared/types/runEvents'
 
 import { boxesFromRecording } from './chunkBoxes'
+import { injectEquipmentFaults } from './injectEquipmentFaults'
 import { buildKpiTrack } from './kpi'
 
 const DEG = Math.PI / 180
@@ -138,8 +139,17 @@ function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregate
 
     const frame: Record<string, EquipmentStateSample> = { ...equipment }
 
+    // aggregates 분당 가동률을 상태 샘플에 심는다 (장비 행에 없어도 OEE 평균에 쓰이도록)
     for (const [id, robot] of Object.entries(robots ?? {})) {
-      if (frame[id] && frame[id].utilization === undefined) frame[id] = { ...frame[id], utilization: robot.util <= 1 ? robot.util * 100 : robot.util }
+      const utilization = robot.util <= 1 ? robot.util * 100 : robot.util
+
+      const sample = frame[id]
+
+      frame[id] = sample
+        ? sample.utilization === undefined
+          ? { ...sample, utilization }
+          : sample
+        : { state: (robot.state as EquipmentStateSample['state']) ?? 'idle', label: '', count: robot.cycles ?? 0, utilization }
     }
 
     return { t, counts: counts as unknown as RunCounts, equipment: frame }
@@ -156,7 +166,7 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
 
   const recording = shiftRecording(chunk, offset, manifest.duration)
 
-  return {
+  return injectEquipmentFaults({
     meta: {
       source: `robot_IK headless ${manifest.runId}`,
       template: manifest.template ?? '',
@@ -165,6 +175,7 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
       poseHz: chunk.meta.poseHz,
       statusHz: chunk.meta.statusHz,
       jointNames: manifest.jointNames,
+      simTimeOffset: offset,
     },
     equipment: manifest.equipment.map(({ id, kind, name }) => ({ id, kind, name })),
     tracks,
@@ -177,5 +188,5 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
     racks: chunk.snapshot.racks,
     parts: manifest.animatedParts ? buildPartTracks(manifest.animatedParts, chunk.snapshot.parts, chunk.tracks.parts, offset, startOf(chunk, offset)) : undefined,
     kpi: buildKpiTrack(chunk.tracks.kpi, chunk.snapshot.kpi, offset, manifest.kpiSchema),
-  }
+  })
 }
