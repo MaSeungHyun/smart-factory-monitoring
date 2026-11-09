@@ -130,7 +130,8 @@ function toItem(entry: PlaybackEquipment, sample: EquipmentStateSample | undefin
   return {
     ...base,
     type: 'robot',
-    metricLeft: sample?.hasBox ? '박스 이송' : STATE_LABEL[state],
+    // 상태는 배지(고장/작동/대기), 여기선 누적 처리량만 표시 — 고장 중이어도 오늘 완료 건수는 유지됨
+    metricLeft: '처리량',
     metricRight: `${sample?.count ?? 0} 개`,
     // 개인 목표 대비 처리율
     percent: robotPercent(entry.id, sample?.count ?? 0),
