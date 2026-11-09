@@ -67,7 +67,10 @@ export interface DashboardView {
   equipmentTotal: number
   statusCounts: StatusCounts
   stages: ProcessStage[]
+  /** 미확인(오픈) 알람 — 뷰포트 실시간 패널 · 고장 강조 */
   alarms: ActiveAlarm[]
+  /** 발생했던 전체 알람 이력 — 대시보드 알람 탭 (확인·해소 후에도 유지) */
+  alarmHistory: ActiveAlarm[]
 }
 
 /** 0-100 으로 자른 비율. 워밍업 재공(wip)이 입고 수보다 많으면 음수가 나오므로 0 아래도 막는다 */
@@ -248,11 +251,13 @@ export function dashboardView(
 
   const counts = frame?.counts ?? { handled: 0, inbound: 0, placed: 0, passed: 0, palletsShipped: 0, outbound: 0, defects: 0, wip: 0 }
 
-  const alarms = openAlarms(raisedAlarms(run, origins, reached), acked).map((alarm) => {
+  const alarmHistory = raisedAlarms(run, origins, reached).map((alarm) => {
     const message = inspectionBoxMessage(run, alarm)
 
     return message ? { ...alarm, message } : alarm
   })
+
+  const alarms = openAlarms(alarmHistory, acked)
 
   // 확인 전 고장 알람이 있는 장비는 고장으로 유지
   const faulted = new Set(
@@ -390,6 +395,7 @@ export function dashboardView(
     statusCounts,
     stages,
     alarms,
+    alarmHistory,
   }
 
   // v4 녹화: 공장이 기록한 KPI 로 덮어쓴다 (없으면 위 파생값 그대로)

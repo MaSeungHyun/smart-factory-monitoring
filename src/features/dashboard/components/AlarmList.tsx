@@ -1,4 +1,4 @@
-import { playbackStore, type ActiveAlarm } from '@/features/playback'
+import { type ActiveAlarm } from '@/features/playback'
 import { AlertItemRow } from '@/features/alerts'
 import { useUi, type StatusFilter } from '@/shared/stores/useUiStore'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
@@ -11,7 +11,7 @@ const ALARM_MATCH: Record<StatusFilter, ActiveAlarm['severity'][]> = {
   error: ['error'],
 }
 
-/** 오늘 현황 · 알람 탭: 미확인 알람 (상태 칩이 있으면 해당 severity 만). 클릭 = 장비로 이동 */
+/** 대시보드 알람 탭: 발생 이력 유지. 클릭 = 장비로 이동 (확인으로 지우지 않음) */
 export default function AlarmList({ alarms }: { alarms: ActiveAlarm[] }) {
   const { selectedId, statusFilter } = useUi()
 
@@ -22,7 +22,7 @@ export default function AlarmList({ alarms }: { alarms: ActiveAlarm[] }) {
   if (shown.length === 0) {
     return (
       <p className="flex h-16 items-center justify-center rounded bg-bg-surface-2 text-caption text-text-tertiary">
-        {statusFilter ? '필터에 맞는 알림이 없습니다' : '확인할 알림이 없습니다'}
+        {statusFilter ? '필터에 맞는 알림이 없습니다' : '알람 이력이 없습니다'}
       </p>
     )
   }
@@ -35,7 +35,6 @@ export default function AlarmList({ alarms }: { alarms: ActiveAlarm[] }) {
           alert={{ id: alarm.key, severity: alarm.severity, message: alarm.message, time: formatClock(alarm.at, true) }}
           selected={selectedId === alarm.equipmentId}
           onOpen={() => flyToEquipment(alarm.equipmentId)}
-          onAck={() => playbackStore.getState().ack(alarm.key)}
         />
       ))}
     </ul>

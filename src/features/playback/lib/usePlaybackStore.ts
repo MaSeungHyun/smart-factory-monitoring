@@ -70,7 +70,7 @@ function publish(patch: Partial<PlaybackSnapshot>) {
 }
 
 function frame(now: number) {
-  const { run, playing, speed, origins } = playbackStore.getState()
+  const { run, playing, speed, origins, reached } = playbackStore.getState()
 
   if (!run || !playing) {
     lastFrame = now
@@ -86,6 +86,8 @@ function frame(now: number) {
 
   pendingMs -= step
 
+  const previous = simTime
+
   simTime += (step / 1000) * speed * PLAYBACK_TIME_SCALE
 
   let patch: Partial<PlaybackSnapshot> = {}
@@ -98,7 +100,12 @@ function frame(now: number) {
     patch = { origins: [...origins, Date.now()], reached: 0 }
   }
 
-  if (now - lastPublish >= UI_INTERVAL_MS || patch.origins !== undefined) {
+  // 알람 시각을 넘는 즉시 UI·패널에 반영 (0.25초 틱을 기다리지 않음)
+  const alarmHit =
+    patch.origins === undefined &&
+    run.alarms.some((alarm) => alarm.t > Math.max(previous, reached) && alarm.t <= simTime)
+
+  if (now - lastPublish >= UI_INTERVAL_MS || patch.origins !== undefined || alarmHit) {
     lastPublish = now
 
     publish({ ...patch, time: simTime })

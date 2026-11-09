@@ -74,7 +74,7 @@ export default function TodayPanel() {
 
   const equipmentTotal = view?.equipmentTotal ?? EQUIPMENT_TOTAL;
 
-  const alarmTotal = view?.alarms.length ?? ALARM_TOTAL;
+  const alarmTotal = view?.alarmHistory.length ?? ALARM_TOTAL;
 
   // 상태 프레임의 출고 누적을 재생 시각으로 보간해 매 프레임 연속으로 읽는다
   const handled = useContinuousCount(pickHandled, throughput.value);
@@ -220,7 +220,7 @@ export default function TodayPanel() {
           </TabsContent>
 
           <TabsContent value="alarm" className="outline-none">
-            <AlarmList alarms={view?.alarms ?? []} />
+            <AlarmList alarms={view?.alarmHistory ?? []} />
           </TabsContent>
 
           <TabsContent value="history" className="outline-none">

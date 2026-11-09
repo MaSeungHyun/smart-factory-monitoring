@@ -65,6 +65,8 @@ export default function DashboardDialog() {
 
   const alarms = view?.alarms ?? []
 
+  const alarmHistory = view?.alarmHistory ?? []
+
   const status = view?.statusCounts
 
   const oee = kpis.find((item) => item.id === 'oee')
@@ -399,7 +401,7 @@ export default function DashboardDialog() {
             </TabsContent>
 
             <TabsContent value="alarm" className="outline-none">
-              <AlarmList alarms={alarms} />
+              <AlarmList alarms={alarmHistory} />
             </TabsContent>
           </div>
         </Tabs>
