@@ -98,9 +98,9 @@ function statusOf(state: PlaybackState, faulted: boolean, battery: number, kind:
 
   if (state === 'charging') return ['warning', '충전']
 
-  if (state === 'idle') return ['idle', '대기']
-
   if (battery < LOW_BATTERY) return ['warning', `배터리 ${battery}%`]
+
+  if (state === 'idle') return ['idle', '대기']
 
   return ['running', '작동']
 }

@@ -85,8 +85,10 @@ export interface RunMeta {
   statusHz: number
   /** 로봇 관절 이름 (joints 배열 순서) */
   jointNames: string[]
-  /** 창 시작 전 이미 지난 시뮬 초 (없으면 0). 재생 t=0 이 공장 가동 직후가 아님 */
+  /** 창 시작 전 이미 지난 시뮬 초 (없으면 0). 청크 절대시각 보정용 */
   simTimeOffset?: number
+  /** 공장 가동 경과(초). 가상 이력 포함 시계·집계 인덱스. 없으면 simTimeOffset */
+  factoryElapsedAtStart?: number
   boxHz?: number
   boxUnits?: string
 }

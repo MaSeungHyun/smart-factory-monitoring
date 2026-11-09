@@ -17,7 +17,7 @@ export interface KpiItem {
   value: string
   unit?: string
   sub?: string
-  tone?: 'default' | 'error'
+  tone?: 'default' | 'error' | 'success'
   sparkline?: number[]
 }
 

@@ -41,7 +41,7 @@ export default function MonitorToolbar() {
       label: "고장",
       value: counts.error,
       icon: AlertCircle,
-      className: "text-status-error border-status-error",
+      className: "text-status-error border-status-error/40",
     },
   ];
 

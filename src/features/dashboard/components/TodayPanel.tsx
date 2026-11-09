@@ -3,12 +3,12 @@ import { useCallback, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  CheckCircle2,
   ChevronDown,
   Gauge,
   MapPin,
   MoreHorizontal,
   Package,
+  XCircle,
 } from "lucide-react";
 
 import AnimatedNumber from "@/shared/components/AnimatedNumber";
@@ -17,8 +17,7 @@ import Card from "@/shared/components/Card";
 import KpiCard from "@/shared/components/KpiCard";
 import Panel from "@/shared/components/Panel";
 import SegmentBar from "@/shared/components/SegmentBar";
-import { useContinuousCount, useDashboardView, useKpiGetter } from "@/features/playback";
-import { KPI_KEYS } from "@/shared/constants/kpi";
+import { useContinuousCount, useDashboardView } from "@/features/playback";
 import { useScrollToSelected } from "@/shared/hooks/useScrollToSelected";
 import {
   Tabs,
@@ -44,13 +43,13 @@ import HistoryList from "./HistoryList";
 
 const KPI_ICONS = {
   oee: <Gauge size={14} />,
-  defect: <CheckCircle2 size={14} />,
+  defect: <XCircle size={14} />,
   inbound: <ArrowDownToLine size={14} />,
   outbound: <ArrowUpFromLine size={14} />,
 };
 
-/** 오늘 처리량 (KPI 없는 예전 녹화) = 입고 − 재공 */
-const pickHandled = (frame: StatusFrame) => Math.max(0, frame.counts.inbound - frame.counts.wip);
+/** 오늘 처리량: 출고 박스 누적 (일일 목표 대비) */
+const pickHandled = (frame: StatusFrame) => Math.max(0, frame.counts.outbound);
 
 type TabId = "equipment" | "alarm" | "history";
 
@@ -77,11 +76,8 @@ export default function TodayPanel() {
 
   const alarmTotal = view?.alarms.length ?? ALARM_TOTAL;
 
-  // 상태 프레임의 계단식 처리량을 재생 시각으로 보간해 매 프레임 연속으로 읽는다
-  const derived = useContinuousCount(pickHandled, throughput.value);
-
-  // KPI 녹화면 공장 기록 처리량 (팔레타이징 박스, 1Hz 샘플 보간)
-  const handled = useKpiGetter(KPI_KEYS.processed, derived);
+  // 상태 프레임의 출고 누적을 재생 시각으로 보간해 매 프레임 연속으로 읽는다
+  const handled = useContinuousCount(pickHandled, throughput.value);
 
   const target = throughput.target;
 

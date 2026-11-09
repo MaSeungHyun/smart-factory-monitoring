@@ -35,6 +35,9 @@ export interface RunManifest {
   template?: string
   duration: number
   simTimeOffset: number
+  /** UI·집계용 공장 가동 경과(초). 없으면 simTimeOffset. 상세 청크보다 긴 가상 이력을 붙일 때 사용 */
+  factoryElapsedAtStart?: number
+  historyLeadMinutes?: number
   sampleHz?: number | Record<string, number>
   jointNames: string[]
   armMount?: 'pedestal' | 'ground'
@@ -118,6 +121,9 @@ export interface RunAggregateMinute extends Partial<RunCounts> {
 export interface RunAggregates {
   runId: string
   sampleMinutes: number
+  /** 상세 창 앞쪽 가상 이력 분 수 (없으면 0) */
+  historyLeadMinutes?: number
+  syntheticLead?: boolean
   perMinute: RunAggregateMinute[]
   totals: Record<string, number>
   robots: Record<string, { cycles: number; utilization: number }>

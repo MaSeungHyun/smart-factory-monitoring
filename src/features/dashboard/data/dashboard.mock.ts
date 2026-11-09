@@ -6,7 +6,7 @@ export const THROUGHPUT: Throughput = { value: 8420, target: 10800, unit: '박�
 
 export const KPIS: KpiItem[] = [
   { id: 'oee', label: '장비 효율 (OEE)', value: '86.4', unit: '%', sparkline: [70, 74, 72, 78, 76, 82, 80, 86] },
-  { id: 'defect', label: '분류 성공', value: '99.9', unit: '%', sub: '· 불량 12개', tone: 'error' },
+  { id: 'defect', label: '불량', value: '12', unit: '개', tone: 'error' },
   { id: 'inbound', label: '입고', value: '1,240', unit: '박스' },
   { id: 'outbound', label: '출고', value: '1,015', unit: '박스' },
 ]
@@ -26,7 +26,7 @@ export const EQUIPMENT: EquipmentItem[] = [
   {
     id: 'AMR_03',
     name: 'AMR-03',
-    process: 'AMR 이송',
+    process: '랙 보관',
     type: 'amr',
     status: 'warning',
     statusLabel: '배터리 18%',

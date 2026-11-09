@@ -1,4 +1,5 @@
 import type { EquipmentStateSample, PlaybackRun, RunAlarm, StatusFrame } from '@/shared/types/playback'
+import { LOW_BATTERY } from '@/features/warehouse/config/warehouse.config'
 
 /** 로봇 모터 과열 · AMR 배터리 부족 — 각 1대 */
 const ROBOT_FAULT = {
@@ -16,9 +17,9 @@ const AMR_FAULT = {
   /** 창 시작 시(이미 가동 수 시간 지난 상태) 잔량 */
   startBattery: 58,
   lowBattery: 18,
-  /** 알람 종료 후 회복 목표 */
-  recoverBattery: 28,
-  recoverSec: 90,
+  /** 알람 종료 후 회복 목표 (경고 기준 위로 올려 정상 복귀 가능) */
+  recoverBattery: 42,
+  recoverSec: 120,
 } as const
 
 function hasEquipment(run: PlaybackRun, id: string) {
@@ -101,7 +102,7 @@ function withAmrBatteryCurve(status: StatusFrame[], id: string): StatusFrame[] {
 
     const battery = Math.round(batteryAt(frame.t))
 
-    const warn = battery <= AMR_FAULT.lowBattery + 2
+    const warn = battery < LOW_BATTERY
 
     return {
       ...frame,
@@ -110,7 +111,7 @@ function withAmrBatteryCurve(status: StatusFrame[], id: string): StatusFrame[] {
         [id]: {
           ...sample,
           battery,
-          label: warn && sample.state !== 'error' ? 'WARN · 배터리 부족' : sample.label,
+          label: warn && sample.state !== 'error' ? `WARN · 배터리 ${battery}%` : sample.label,
         },
       },
     }
@@ -140,10 +141,22 @@ export function injectEquipmentFaults(run: PlaybackRun): PlaybackRun {
   }
 
   if (amrOk) {
+    // 배터리가 경고 기준(30%) 위로 회복될 때까지 알람 유지
+    let batteryUntil = AMR_FAULT.t + AMR_FAULT.hold
+
+    for (let t = batteryUntil; t <= run.meta.duration; t += 1) {
+      if (batteryAt(t) >= LOW_BATTERY) {
+        batteryUntil = t
+        break
+      }
+
+      batteryUntil = t
+    }
+
     alarms.push({
       id: 'F-battery-1',
       t: AMR_FAULT.t,
-      until: AMR_FAULT.t + AMR_FAULT.hold,
+      until: batteryUntil,
       equipmentId: AMR_FAULT.id,
       severity: 'warning',
       message: AMR_FAULT.message,

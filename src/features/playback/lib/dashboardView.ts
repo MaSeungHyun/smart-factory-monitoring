@@ -10,6 +10,9 @@ import type {
 import { KPI_KEYS, KPI_STAGE_OF, KPI_UNIT_LABEL, kpiKey } from '@/shared/constants/kpi'
 import type { KpiSample } from '@/shared/types/kpi'
 import type { EquipmentStateSample, PlaybackEquipment, PlaybackRun, PlaybackState, StatusFrame } from '@/shared/types/playback'
+import { sceneEquipment } from '@/features/scene'
+import { LOW_BATTERY } from '@/features/warehouse/config/warehouse.config'
+import { rackGrid } from '@/features/warehouse/lib/rackMap'
 
 import { openAlarms, raisedAlarms, type ActiveAlarm } from './alarms'
 import { inspectionBoxMessage, isInspectionAlarm, isInspectionLabel } from './inspection'
@@ -21,8 +24,25 @@ import { scanRecords, type ScanRecord } from '@/features/scan/lib/scanDetail'
 /** 오늘 처리 목표 (박스) — 실제 목표치가 없어 고정값 */
 export const RUN_TARGET = 10800
 
-/** 이 배터리 미만이면 경고 (post-processing 조건 알람과 같은 값) */
-const LOW_BATTERY = 60
+/** 메인 랙 베이 7×3 = 21 */
+const RACK_BAYS = rackGrid(sceneEquipment).flat()
+
+/** 21개 랙 베이 중 1칸이라도 적재된 베이 수 · 점유율 */
+function rackBayOccupancy(run: PlaybackRun) {
+  const total = RACK_BAYS.length || 21
+
+  const byId = new Map((run.racks ?? []).map((rack) => [rack.id, rack.slots]))
+
+  let filled = 0
+
+  for (const bay of RACK_BAYS) {
+    const slots = byId.get(bay.id)
+
+    if (slots?.some((slot) => slot[0])) filled += 1
+  }
+
+  return { filled, total, percent: total ? Math.round((filled / total) * 100) : 0 }
+}
 
 export const STATE_LABEL: Record<PlaybackState, string> = {
   idle: '대기',
@@ -35,7 +55,7 @@ export const STATE_LABEL: Record<PlaybackState, string> = {
 
 const PROCESS_LABEL: Record<string, string> = {
   robot: '팔레트 적재',
-  amr: 'AMR 이송',
+  amr: '랙 보관',
   scanner: '스캔 검사 · 분류',
   conveyor: '컨베이어 투입',
 }
@@ -58,9 +78,10 @@ function statusOf(sample: EquipmentStateSample | undefined, faulted: boolean, in
 
   if (faulted || sample?.state === 'error') return 'error'
 
-  if (!sample || sample.state === 'idle') return 'idle'
+  // 대기여도 배터리 부족이면 경고 (idle 보다 배터리 판정을 먼저)
+  if (sample?.battery !== undefined && sample.battery < LOW_BATTERY) return 'warning'
 
-  if (sample.battery !== undefined && sample.battery < LOW_BATTERY) return 'warning'
+  if (!sample || sample.state === 'idle') return 'idle'
 
   return 'running'
 }
@@ -156,6 +177,38 @@ function utilizationAt(frame: StatusFrame, faulted: ReadonlySet<string> = new Se
   return robots.reduce((sum, [id, sample]) => sum + (faulted.has(id) ? 0 : (sample.utilization ?? 0)), 0) / robots.length
 }
 
+/** 분당 집계 로봇 util 평균 (가상 5h 이력 스파크라인용) */
+function utilizationFromMinute(robots: Record<string, { util: number }> | undefined, faulted: ReadonlySet<string>) {
+  if (!robots) return 0
+
+  const entries = Object.entries(robots)
+
+  if (!entries.length) return 0
+
+  return entries.reduce((sum, [id, robot]) => sum + (faulted.has(id) ? 0 : robot.util), 0) / entries.length
+}
+
+/** 공장 경과 기준 최근 8개 분당 OEE. 집계가 없으면 상태 프레임으로 대체 */
+function oeeSparkline(run: PlaybackRun, time: number, faulted: ReadonlySet<string>) {
+  const aggregates = run.aggregates?.perMinute
+
+  if (aggregates?.length) {
+    const elapsed = (run.meta.factoryElapsedAtStart ?? run.meta.simTimeOffset ?? 0) + time
+
+    const end = Math.min(Math.max(Math.floor(elapsed / 60), 0), aggregates.length - 1)
+
+    const start = Math.max(0, end - 7)
+
+    return aggregates.slice(start, end + 1).map((minute) => utilizationFromMinute(minute.robots, faulted))
+  }
+
+  const history = run.status.filter((entry) => entry.t <= time)
+
+  const step = Math.max(1, Math.floor(history.length / 8))
+
+  return history.filter((_, index) => index % step === 0).slice(-8).map((entry) => utilizationAt(entry, faulted))
+}
+
 function stage(
   id: ProcessStage['icon'],
   name: string,
@@ -222,11 +275,7 @@ export function dashboardView(
     error: everything.filter((item) => item.status === 'error').length,
   }
 
-  const history = run.status.filter((entry) => entry.t <= time)
-
-  const step = Math.max(1, Math.floor(history.length / 8))
-
-  const sparkline = history.filter((_, index) => index % step === 0).slice(-8).map((entry) => utilizationAt(entry, faulted))
+  const sparkline = oeeSparkline(run, time, faulted)
 
   const oee = frame ? utilizationAt(frame, faulted) : 0
 
@@ -234,79 +283,105 @@ export function dashboardView(
 
   const statusScanned = all.filter((item) => item.type === 'scanner').reduce((sum, item) => sum + (frame?.equipment[item.id]?.count ?? 0), 0)
 
-  // 상태 스트림 scanned 가 0 이면(v3) 박스 scanbelt 기록으로 판정 수 산출
-  const scan = statusScanned ? null : scanCounts(run, time)
+  // enter = 벨트 투입, at = 스캐너 도달·판정 완료 (이동 시간만큼 투입이 앞선다)
+  const windowScan = scanCounts(run, time)
 
-  // 스캔된 개수 = 정상 + 불량 판정
-  const scanned = scan ? scan.passed + scan.defects : statusScanned
+  const countsExtra = counts as RunCounts & { scanned?: number; conveyorIn?: number; processed?: number }
 
-  const defectCount = scan ? scan.defects : counts.defects
+  const shiftConveyor = Number(countsExtra.conveyorIn ?? countsExtra.scanned ?? 0)
+
+  const shiftScanned = Number(countsExtra.scanned ?? 0)
+
+  // 컨베이어 투입: 벨트 진입 누계
+  const conveyorIn = shiftConveyor + windowScan.entered
+
+  // 스캔 검사: 실제 판정이 난 누계
+  const scanned = statusScanned > 0 ? statusScanned : shiftScanned + windowScan.passed + windowScan.defects
+
+  // 가상 누계 defects + 창 구간 신규 불량
+  const defectCount = counts.defects + windowScan.defects
 
   const classified = Math.max(scanned, 0)
 
   // 스캔 정상률 = 정상 판정 / 전체 판정
   const classifySuccess = classified > 0 ? ((classified - defectCount) / classified) * 100 : 100
 
-  // 입고 = 오늘 처리량(라인 통과·완료) + 현재 재공(들어오는 중)
-  const processed = Math.max(0, counts.inbound - counts.wip)
+  // 오늘 처리량 = 출고 누적 (일일 목표 대비 출고 달성)
+  const processed = Math.max(0, counts.outbound)
 
   const kpis: KpiItem[] = [
     { id: 'oee', label: '장비 효율 (OEE)', value: oee.toFixed(1), unit: '%', sparkline: sparkline.length > 1 ? sparkline : undefined },
     {
       id: 'defect',
-      label: '분류 성공',
-      value: classifySuccess.toFixed(1),
-      unit: '%',
-      sub: `· 불량 ${defectCount}개`,
+      label: '불량',
+      value: defectCount.toLocaleString('ko-KR'),
+      unit: '개',
       tone: defectCount > 0 ? 'error' : 'default',
     },
     { id: 'inbound', label: '입고', value: counts.inbound.toLocaleString('ko-KR'), unit: '박스' },
     { id: 'outbound', label: '출고', value: counts.outbound.toLocaleString('ko-KR'), unit: '박스' },
   ]
 
-  const amrTrips = all.filter((item) => item.type === 'amr').reduce((sum, item) => sum + (frame?.equipment[item.id]?.count ?? 0), 0)
+  const rackBay = rackBayOccupancy(run)
 
   const stages: ProcessStage[] = [
-    // 입고: 누적 입고, % = 처리 완료 비율 (처리량/입고)
-    stage('inbound', '입고', counts.inbound, pct(processed, counts.inbound), []),
-    // 컨베이어 투입: 스캔된(판정된) 개수 / 입고
-    stage('conveyor', '컨베이어 투입', scanned, pct(scanned, counts.inbound), byKind('conveyor')),
-    // 스캔 검사: 스캔 개수, % = 정상률
-    stage('scan', '스캔 검사 · 분류', scanned, Math.round(classifySuccess), byKind('scanner')),
-    stage('pallet', '팔레트 적재', counts.placed ?? counts.handled, pct(counts.placed ?? counts.handled, counts.inbound), byKind('robot')),
-    stage('amr', 'AMR 이송', amrTrips, pct(amrTrips, counts.inbound), byKind('amr')),
-    stage('outbound', '출고', counts.outbound, pct(counts.outbound, counts.inbound), []),
+    // 입고: 일일 목표 대비 진행률
+    stage('inbound', '입고', counts.inbound, pct(counts.inbound, RUN_TARGET), []),
+    // 컨베이어 투입: 입고 대비
+    stage('conveyor', '컨베이어 투입', conveyorIn, pct(conveyorIn, counts.inbound), byKind('conveyor')),
+    // 스캔 검사: 컨베이어 투입 대비 판정 완료
+    stage('scan', '스캔 검사 · 분류', scanned, pct(scanned, conveyorIn), byKind('scanner')),
+    // 팔레트 적재 = 누적 적재 − 출고 (아직 공장에 남은 적재분)
+    stage(
+      'pallet',
+      '팔레트 적재',
+      Math.max(0, (counts.placed ?? counts.handled) - counts.outbound),
+      pct(Math.max(0, (counts.placed ?? counts.handled) - counts.outbound), scanned || counts.inbound),
+      byKind('robot'),
+    ),
+    // 랙 보관: 메인 베이 7×3=21 중 적재된 칸 수 · 점유율
+    stage('amr', '랙 보관', rackBay.filled, rackBay.percent, byKind('amr')),
+    stage('outbound', '출고', counts.outbound, pct(counts.outbound, RUN_TARGET), []),
   ]
+
+  stages[4] = {
+    ...stages[4],
+    unit: `/${rackBay.total}`,
+    status: rackBay.filled > 0 ? (stages[4].status === 'idle' ? 'running' : stages[4].status) : stages[4].status,
+    statusLabel: `${rackBay.filled}/${rackBay.total} · ${rackBay.percent}%`,
+  }
 
   stages[0] = { ...stages[0], status: counts.inbound > 0 ? 'running' : 'idle', statusLabel: counts.inbound > 0 ? '작동' : '대기' }
 
   stages[1] = {
     ...stages[1],
-    status: scanned > 0 || counts.wip > 0 ? 'running' : 'idle',
-    statusLabel: scanned > 0 ? '작동' : counts.wip > 0 ? `재공 ${counts.wip}` : '대기',
+    status: conveyorIn > 0 || counts.wip > 0 ? 'running' : 'idle',
+    statusLabel: conveyorIn > scanned ? `이동 ${conveyorIn - scanned}` : conveyorIn > 0 ? '작동' : counts.wip > 0 ? `재공 ${counts.wip}` : '대기',
   }
 
-  if (scan) {
-    const active = scan.entered > scanned
+  {
+    const active = windowScan.entered > windowScan.passed + windowScan.defects
+
+    // 분류 성공률이 높으면 정상(녹색). 불량 건수만으로 경고하지 않는다
+    const scanStatus: EquipmentStatus =
+      classifySuccess < 90 ? 'error' : classifySuccess < 95 ? 'warning' : scanned > 0 || active ? 'running' : stages[2].status
 
     stages[2] = {
       ...stages[2],
-      status:
-        defectCount > 0
-          ? classifySuccess < 95
-            ? 'warning'
-            : stages[2].status
-          : stages[2].status === 'idle' && (active || scanned > 0)
-            ? 'running'
-            : stages[2].status,
-      statusLabel: defectCount > 0 ? `정상 ${classifySuccess.toFixed(0)}%` : active ? '판독 중' : scanned > 0 ? '작동' : stages[2].statusLabel,
+      status: scanStatus,
+      statusLabel:
+        classifySuccess >= 95
+          ? `정상 ${classifySuccess.toFixed(0)}%`
+          : classifySuccess >= 90
+            ? `주의 ${classifySuccess.toFixed(0)}%`
+            : `저하 ${classifySuccess.toFixed(0)}%`,
     }
   }
 
   stages[5] = { ...stages[5], status: counts.outbound > 0 ? 'running' : 'idle', statusLabel: counts.outbound > 0 ? '작동' : '대기' }
 
   const view: DashboardView = {
-    // 오늘 처리량 = 입고 − 현재 재공 (입고 = 처리량 + 들어오는 중)
+    // 오늘 처리량 = 출고 박스 누적 / 일일 목표
     throughput: { value: processed, target: RUN_TARGET, unit: '박스' },
     kpis,
     equipment: all,
@@ -332,11 +407,7 @@ const fmt = (value: number) => Math.round(value).toLocaleString('ko-KR')
 function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): DashboardView {
   const num = (key: string) => kpiNumber(kpi, key)
 
-  const processed = num(KPI_KEYS.processed)
-
   const inbound = num(KPI_KEYS.inbound)
-
-  const outbound = num(KPI_KEYS.outbound)
 
   const defects = num(KPI_KEYS.defects)
 
@@ -350,49 +421,44 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
     if (item.id === 'oee' && oee !== undefined) return { ...item, value: oee.toFixed(1) }
 
     if (item.id === 'defect' && defects !== undefined) {
-      const success = Math.max(0, 100 - (defectRate ?? 0))
-
       return {
         ...item,
-        label: '분류 성공',
-        value: success.toFixed(1),
-        unit: '%',
-        sub: `· 불량 ${fmt(defects)}개`,
+        label: '불량',
+        value: fmt(defects),
+        unit: '개',
+        sub: defectRate !== undefined ? `· ${defectRate.toFixed(1)}%` : undefined,
         tone: defects > 0 ? 'error' : 'default',
       }
     }
 
     if (item.id === 'inbound' && inbound !== undefined) return { ...item, value: fmt(inbound) }
 
-    if (item.id === 'outbound' && outbound !== undefined) return { ...item, value: fmt(outbound), unit: '팔레트' }
-
+    // 출고·오늘 처리량은 counts.outbound(박스) 유지 — KPI ship(팔레트)으로 덮지 않음
     return item
   })
 
   const units = new Map(run.kpi?.schema?.stages.map((entry) => [entry.id, entry.unit]) ?? [])
 
-  const stages = view.stages.map((item): ProcessStage => {
+  const stagesRaw = view.stages.map((item): ProcessStage => {
+    // 랙 보관·출고·팔레트 적재(적재−출고)는 counts 기준 유지 — KPI로 덮지 않음
+    if (item.icon === 'amr' || item.icon === 'outbound' || item.icon === 'pallet') return item
+
     const id = KPI_STAGE_OF[item.icon as keyof typeof KPI_STAGE_OF]
 
     if (!id) return item
 
     const valueKey = kpiKey('stageCount', { stage: id })
 
-    const percentKey = kpiKey('stageProgress', { stage: id })
-
     const value = num(valueKey)
-
-    const percent = num(percentKey)
 
     if (value === undefined) return item
 
     const next: ProcessStage = {
       ...item,
       value: Math.round(value),
-      percent: Math.max(0, Math.min(100, Math.round(percent ?? item.percent))),
+      // % 는 아래 공정 체인 기준으로 다시 계산 (KPI stageProgress 덮어쓰기 방지)
       unit: KPI_UNIT_LABEL[units.get(id) ?? (id === 'rackStore' || id === 'ship' ? 'pallets' : 'boxes')],
       valueKey,
-      percentKey: percent === undefined ? undefined : percentKey,
     }
 
     // 장비가 묶이지 않은 입고 · 출고 카드는 수량으로 작동 여부 표시
@@ -401,6 +467,35 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
     }
 
     return next
+  })
+
+  const stageValue = (icon: ProcessStage['icon']) => stagesRaw.find((item) => item.icon === icon)?.value ?? 0
+
+  const inboundValue = stageValue('inbound')
+
+  const conveyorValue = stageValue('conveyor')
+
+  const scannedValue = stageValue('scan')
+
+  const outboundValue = stageValue('outbound')
+
+  // KPI 누적 적재가 있으면 팔레트 적재 = 적재 − 출고 로 재계산
+  const placedRaw = num(kpiKey('stageCount', { stage: KPI_STAGE_OF.pallet }))
+
+  const stages = stagesRaw.map((item) => {
+    if (item.icon === 'inbound' || item.icon === 'outbound') return { ...item, percent: pct(item.value, RUN_TARGET) }
+
+    if (item.icon === 'conveyor') return { ...item, percent: pct(item.value, inboundValue) }
+
+    if (item.icon === 'scan') return { ...item, percent: pct(item.value, conveyorValue) }
+
+    if (item.icon === 'pallet') {
+      const onHand = placedRaw === undefined ? item.value : Math.max(0, Math.round(placedRaw) - outboundValue)
+
+      return { ...item, value: onHand, percent: pct(onHand, scannedValue || inboundValue) }
+    }
+
+    return item
   })
 
   const equipment = view.equipment.map((item): EquipmentItem => {
@@ -425,10 +520,15 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
     return item
   })
 
+  const shipped = stages.find((item) => item.icon === 'outbound')?.value ?? view.throughput.value
+
   return {
     ...view,
-    throughput: processed === undefined ? view.throughput : { ...view.throughput, value: Math.round(processed) },
-    kpis,
+    // 오늘 처리량 = 출고 박스 (공정 출고·KPI 출고와 동일 소스)
+    throughput: { ...view.throughput, value: shipped },
+    kpis: kpis.map((item) =>
+      item.id === 'outbound' ? { ...item, value: shipped.toLocaleString('ko-KR'), unit: '박스' } : item,
+    ),
     stages,
     equipment,
   }

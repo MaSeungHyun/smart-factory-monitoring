@@ -24,7 +24,7 @@ export default function KpiCard({ item, icon }: KpiCardProps) {
           <span
             className={cn(
               'text-h1 tabular-nums',
-              item.tone === 'error' ? 'text-status-error' : 'text-text-primary',
+              item.tone === 'error' ? 'text-status-error' : item.tone === 'success' ? 'text-status-success' : 'text-text-primary',
             )}
           >
             {item.value}

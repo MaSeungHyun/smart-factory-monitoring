@@ -8,6 +8,7 @@ import type { SimBoxKeyframe, SimBoxParentEvent, SimPalletEvent, SimQuat, SimRec
 import { boxesFromRecording } from './chunkBoxes'
 import { injectEquipmentFaults } from './injectEquipmentFaults'
 import { buildKpiTrack } from './kpi'
+import { applyCountsOffset, applyRobotCountOffset, countsOffsetFrom, robotCountOffsetFrom } from './shiftBaseline'
 
 const DEG = Math.PI / 180
 
@@ -114,17 +115,38 @@ function convertTracks(chunk: RunChunk, offset: number): PlaybackRun['tracks'] {
 
 const ZERO_COUNTS: RunCounts = { handled: 0, inbound: 0, placed: 0, passed: 0, palletsShipped: 0, outbound: 0, defects: 0, wip: 0 }
 
-function utilizationOf(aggregates: RunAggregates | undefined, time: number) {
-  const minute = aggregates?.perMinute[Math.min(Math.floor(time / 60), aggregates.perMinute.length - 1)]
+/** 공장 경과 초 기준으로 분당 집계 행을 고른다 (가상 5h + 상세 20m) */
+function utilizationOf(aggregates: RunAggregates | undefined, factoryElapsed: number) {
+  if (!aggregates?.perMinute.length) return undefined
 
-  return minute?.robots
+  const index = Math.min(Math.max(Math.floor(factoryElapsed / 60), 0), aggregates.perMinute.length - 1)
+
+  return aggregates.perMinute[index]?.robots
 }
 
-function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregates): StatusFrame[] {
+function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregates, factoryElapsedAtStart = offset): StatusFrame[] {
   // 뒤 청크는 상태 행이 변화분이어도 스냅샷 누계에서 이어진다
-  let counts: Record<string, number> = { ...ZERO_COUNTS, ...((chunk.snapshot.counts ?? {}) as Record<string, number>) }
+  const snapshot = (chunk.snapshot.counts ?? {}) as Record<string, number>
+
+  // 타임라인은 20분 그대로, KPI·공정·장비 상세만 5시간 가상 누계에서 이어지게 가산
+  const baseline = countsOffsetFrom(snapshot)
+
+  let counts: Record<string, number> = { ...ZERO_COUNTS, ...snapshot }
 
   let equipment: Record<string, EquipmentStateSample> = {}
+
+  // 첫 상태 행의 로봇 count 를 기준으로 가상 5h 오프셋
+  const startRobotCounts: Record<string, number | undefined> = {}
+
+  for (const row of chunk.status) {
+    for (const [id, sample] of Object.entries(row.equipment ?? {})) {
+      if (!id.startsWith('robot-') || startRobotCounts[id] !== undefined) continue
+
+      startRobotCounts[id] = typeof sample.count === 'number' ? sample.count : undefined
+    }
+  }
+
+  const robotBaseline = robotCountOffsetFrom(startRobotCounts)
 
   return chunk.status.map((row) => {
     const t = round(row.t - offset)
@@ -135,9 +157,9 @@ function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregate
 
     equipment = { ...equipment, ...(row.equipment as Record<string, EquipmentStateSample>) }
 
-    const robots = utilizationOf(aggregates, t)
+    const robots = utilizationOf(aggregates, factoryElapsedAtStart + t)
 
-    const frame: Record<string, EquipmentStateSample> = { ...equipment }
+    let frame: Record<string, EquipmentStateSample> = { ...equipment }
 
     // aggregates 분당 가동률을 상태 샘플에 심는다 (장비 행에 없어도 OEE 평균에 쓰이도록)
     for (const [id, robot] of Object.entries(robots ?? {})) {
@@ -152,7 +174,14 @@ function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregate
         : { state: (robot.state as EquipmentStateSample['state']) ?? 'idle', label: '', count: robot.cycles ?? 0, utilization }
     }
 
-    return { t, counts: counts as unknown as RunCounts, equipment: frame }
+    frame = applyRobotCountOffset(frame, robotBaseline) as Record<string, EquipmentStateSample>
+
+    const shown = applyCountsOffset(counts, baseline)
+
+    // 오늘 처리량 = 출고 누적
+    shown.processed = Math.max(0, shown.outbound ?? 0)
+
+    return { t, counts: shown as unknown as RunCounts, equipment: frame }
   })
 }
 
@@ -161,6 +190,8 @@ function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregate
 /** manifest + 청크 1개 또는 mergeChunks 로 이어 붙인 구간 (+ 집계) -> 기존 PlaybackRun. 시간은 청크가 아니라 run 기준 (offset 제거) */
 export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: RunAggregates): PlaybackRun {
   const offset = manifest.simTimeOffset
+
+  const factoryElapsedAtStart = manifest.factoryElapsedAtStart ?? offset
 
   const tracks = convertTracks(chunk, offset)
 
@@ -176,10 +207,11 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
       statusHz: chunk.meta.statusHz,
       jointNames: manifest.jointNames,
       simTimeOffset: offset,
+      factoryElapsedAtStart,
     },
     equipment: manifest.equipment.map(({ id, kind, name }) => ({ id, kind, name })),
     tracks,
-    status: expandStatus(chunk, offset, aggregates),
+    status: expandStatus(chunk, offset, aggregates, factoryElapsedAtStart),
     events: chunk.events.map((event) => ({ ...event, t: round(event.t - offset), from: event.from ?? event.to })),
     alarms: (chunk.alarms ?? []).map((alarm) => ({ ...alarm, t: round(alarm.t - offset), until: alarm.until === undefined ? undefined : round(alarm.until - offset) })) as PlaybackRun['alarms'],
     recording,

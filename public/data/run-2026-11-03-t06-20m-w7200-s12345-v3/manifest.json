@@ -2357,5 +2357,24 @@
   }
  ],
  "aggregates": "aggregates.json",
- "createdAt": "2026-11-03T00:35:58.629Z"
+ "createdAt": "2026-11-03T00:35:58.629Z",
+ "factoryElapsedAtStart": 18000,
+ "historyLeadMinutes": 300,
+ "aggregatesNote": "synthetic 5h cumulative stats for KPI; playback timeline remains the recorded 20m window",
+ "virtualCountsAtStart": {
+  "inbound": 7200,
+  "conveyorIn": 7060,
+  "scanned": 6980,
+  "defects": 72,
+  "placed": 6750,
+  "passed": 6908,
+  "depalletized": 6820,
+  "palletsShipped": 670,
+  "outbound": 2680,
+  "storedToRack": 2140,
+  "shippedPallets": 670,
+  "carrierTrips": 1680,
+  "forkliftStored": 2140,
+  "wip": 96
+ }
 }

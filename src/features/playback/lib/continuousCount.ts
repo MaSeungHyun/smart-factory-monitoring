@@ -41,11 +41,16 @@ export function continuousCount(frames: StatusFrame[], t: number, pick: (frame: 
 
   if (next >= frames.length || pick(frames[next]) === value) return value
 
+  const nextValue = pick(frames[next])
+
+  // 누적 수량은 줄어들지 않는다. 다음 값이 더 작으면 보간하지 않고 현재 값 유지
+  if (nextValue < value) return value
+
   const span = frames[next].t - frames[start].t
 
   if (span <= 0) return value
 
   const ratio = Math.min(Math.max((t - frames[start].t) / span, 0), 1)
 
-  return value + (pick(frames[next]) - value) * ratio
+  return value + (nextValue - value) * ratio
 }

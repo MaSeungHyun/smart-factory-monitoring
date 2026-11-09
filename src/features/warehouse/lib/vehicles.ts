@@ -112,9 +112,11 @@ function statusOf(sample: EquipmentStateSample | undefined, faulted: boolean): [
 
   if (sample?.state === 'charging') return ['warning', '충전 중']
 
-  if (!sample || sample.state === 'idle') return ['warning', '대기']
+  if (sample?.battery !== undefined && sample.battery < LOW_BATTERY) {
+    return ['warning', `배터리 ${Math.round(sample.battery)}%`]
+  }
 
-  if (sample.battery !== undefined && sample.battery < LOW_BATTERY) return ['warning', `배터리 ${Math.round(sample.battery)}%`]
+  if (!sample || sample.state === 'idle') return ['warning', '대기']
 
   return ['running', '작동']
 }
