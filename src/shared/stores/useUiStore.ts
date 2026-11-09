@@ -25,6 +25,7 @@ interface UiActions {
   select: (id: string | null) => void
   toggleSelect: (id: string) => void
   toggleAlarmPanel: () => void
+  openAlarmPanel: () => void
   toggleWireframe: () => void
   toggleSceneExpanded: () => void
   toggleStatus: (status: EquipmentStatus) => void
@@ -66,6 +67,10 @@ export const uiStore = createStore<UiState & UiActions>((set, get) => ({
 
   toggleAlarmPanel() {
     set({ alarmPanelOpen: !get().alarmPanelOpen })
+  },
+
+  openAlarmPanel() {
+    if (!get().alarmPanelOpen) set({ alarmPanelOpen: true })
   },
 
   toggleWireframe() {

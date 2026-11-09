@@ -11,6 +11,7 @@ import { DEFAULT_ROBOT_ID, monitorView, useMonitorState, type MonitorViewState }
 import { uiStore } from '@/shared/stores/useUiStore'
 
 import { cameraArrival } from '../lib/cameraArrival'
+import { cameraBookmarks } from '../lib/cameraBookmarks'
 import { focusPose, zoomPose } from '../lib/focusPose'
 import { useSceneWarm } from '../lib/sceneWarm'
 import { glbCameraPose, type CameraPose } from '../lib/glbCameraPose'
@@ -28,6 +29,12 @@ const CLIP_NAME = 'main_camAction'
 
 /** 시점 이동 비행 시간 (초) */
 const DURATION = 1.4
+
+/** 키보드 시점(1~9) 전환 비행 시간 (초) */
+const BOOKMARK_DURATION = 0.7
+
+/** Shift+0 으로 저장한 사용자 시점 (세션 동안 유지) */
+let slot0: { position: [number, number, number]; target: [number, number, number] } | null = null
 
 /** 휠 줌 비행 시간 (초) */
 const ZOOM_DURATION = 0.35
@@ -540,7 +547,21 @@ export default function GlbCameraRig() {
       }
 
       if (command.kind === 'home') {
-        if (poses.main) fly(poses.main)
+        if (poses.main) fly(poses.main, BOOKMARK_DURATION)
+
+        return
+      }
+
+      if (command.kind === 'look') {
+        // 북마크 전환은 타깃 둘레 호 보간 — 직선 lookAt 이 한쪽으로만 휙 도는 것을 막는다
+        fly(
+          {
+            position: new Vector3(command.position[0], command.position[1], command.position[2]),
+            target: new Vector3(command.target[0], command.target[1], command.target[2]),
+          },
+          BOOKMARK_DURATION,
+          true,
+        )
 
         return
       }
@@ -583,6 +604,92 @@ export default function GlbCameraRig() {
 
     return () => window.removeEventListener('keydown', onKey)
   }, [chase])
+
+  useEffect(() => {
+    // 1 = 초기 시점, 2~9 = 템플릿 bookmarks
+    const bookmarks = cameraBookmarks()
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+
+      const slot = Number(event.key)
+
+      if (!Number.isInteger(slot) || slot < 1 || slot > 1 + bookmarks.length) return
+
+      const field = event.target
+
+      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || (field instanceof HTMLElement && field.isContentEditable)) return
+
+      if (monitorView.getState().view !== 'main') return
+
+      event.preventDefault()
+
+      monitorView.getState().release()
+
+      if (slot === 1) {
+        cameraBus.request({ kind: 'home' })
+
+        return
+      }
+
+      const bookmark = bookmarks[slot - 2]
+
+      if (!bookmark) return
+
+      cameraBus.request({
+        kind: 'look',
+        position: [bookmark.position[0], bookmark.position[1], bookmark.position[2]],
+        target: [bookmark.target[0], bookmark.target[1], bookmark.target[2]],
+      })
+    }
+
+    window.addEventListener('keydown', onKey)
+
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  useEffect(() => {
+    // 0 = 저장 시점 복원, Shift+0 = 현재 시점 캐시
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'Digit0' || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+
+      const field = event.target
+
+      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || (field instanceof HTMLElement && field.isContentEditable)) return
+
+      if (monitorView.getState().view !== 'main') return
+
+      event.preventDefault()
+
+      if (event.shiftKey) {
+        const { camera } = get()
+        const orbit = controls.current
+
+        if (!(camera instanceof PerspectiveCamera) || !orbit) return
+
+        slot0 = {
+          position: [camera.position.x, camera.position.y, camera.position.z],
+          target: [orbit.target.x, orbit.target.y, orbit.target.z],
+        }
+
+        return
+      }
+
+      if (!slot0) return
+
+      monitorView.getState().release()
+
+      cameraBus.request({
+        kind: 'look',
+        position: slot0.position,
+        target: slot0.target,
+      })
+    }
+
+    window.addEventListener('keydown', onKey)
+
+    return () => window.removeEventListener('keydown', onKey)
+  }, [get])
 
   useEffect(() => {
     // F 키: 선택한 오브젝트로 포커싱 (입력 중이거나 조합 키면 무시)

@@ -1,10 +1,6 @@
 import { AlertCircle, CheckCircle2, Clock, Layers } from "lucide-react";
 
-import {
-  playbackStore,
-  useDashboardView,
-  usePlaybackPick,
-} from "@/features/playback";
+import { useDashboardView } from "@/features/playback";
 import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/ToggleGroup";
 import Tooltip from "@/shared/components/ui/Tooltip";
 import { cn } from "@/shared/lib/cn";
@@ -14,8 +10,6 @@ import { STATUS_COUNTS } from "../data/dashboard.mock";
 
 export default function MonitorToolbar() {
   const view = useDashboardView();
-
-  const playing = usePlaybackPick((snap) => snap.playing);
 
   const { statusFilter } = useUi();
 
@@ -88,19 +82,6 @@ export default function MonitorToolbar() {
           </Tooltip>
         ))}
         </ToggleGroup>
-
-        <Tooltip content={playing ? "일시정지" : "재생"}>
-        <button
-          type="button"
-          onClick={() => playbackStore.getState().toggle()}
-          className="flex h-9 w-20 items-center justify-center gap-1 rounded bg-primary-fill text-label font-semibold text-text-primary hover:brightness-110"
-        >
-          <span
-            className={`size-1.5 rounded-full bg-text-primary ${playing ? "animate-pulse" : "opacity-40"}`}
-          />
-          {playing ? "LIVE" : "PAUSE"}
-        </button>
-        </Tooltip>
       </div>
     </div>
   );

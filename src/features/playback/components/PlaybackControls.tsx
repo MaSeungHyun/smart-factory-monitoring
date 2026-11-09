@@ -1,10 +1,6 @@
 import { Pause, Play } from 'lucide-react'
 
-import { cn } from '@/shared/lib/cn'
-
 import { playbackStore, usePlayback } from '../lib/usePlaybackStore'
-
-const SPEEDS = [1, 2, 4]
 
 /** 재생 구간 시계 (20분 창 기준 MM:SS) */
 const clock = (seconds: number) => {
@@ -13,9 +9,9 @@ const clock = (seconds: number) => {
   return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`
 }
 
-/** 재생 / 일시정지 · 배속 · 위치 이동 */
+/** 재생 / 일시정지 · 위치 이동 (배속은 기본 2x, UI 숨김) */
 export default function PlaybackControls() {
-  const { run, playing, speed, time, status } = usePlayback()
+  const { run, playing, time, status } = usePlayback()
 
   if (status !== 'ready' || !run) return null
 
@@ -24,7 +20,7 @@ export default function PlaybackControls() {
   const PlayIcon = playing ? Pause : Play
 
   return (
-    <div className="pointer-events-auto flex h-11 w-[520px] items-center gap-3 rounded border border-border-default bg-bg-surface/90 px-3 backdrop-blur">
+    <div className="pointer-events-auto flex h-11 w-[420px] items-center gap-3 rounded border border-border-default bg-bg-surface/90 px-3 backdrop-blur">
       <button
         type="button"
         aria-label={playing ? '일시정지' : '재생'}
@@ -47,22 +43,6 @@ export default function PlaybackControls() {
       <span className="w-[88px] text-caption text-text-secondary tabular-nums">
         {clock(time)} / {clock(duration)}
       </span>
-
-      <div className="flex gap-1">
-        {SPEEDS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => playbackStore.getState().setSpeed(value)}
-            className={cn(
-              'h-6 rounded px-1.5 text-caption tabular-nums',
-              speed === value ? 'bg-primary-fill text-text-primary' : 'text-text-tertiary',
-            )}
-          >
-            {value}x
-          </button>
-        ))}
-      </div>
     </div>
   )
 }

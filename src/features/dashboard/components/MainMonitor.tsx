@@ -1,5 +1,4 @@
 import { ViewportAlert } from '@/features/alerts'
-import { PlaybackControls } from '@/features/playback'
 import { SceneControls, SceneLegend, SceneSlot } from '@/features/scene'
 import { AnimatedPanel } from '@/shared/components/motion/AnimatedPanel'
 import { INTRO_FADE_DURATION_S } from '@/shared/constants/animation'
@@ -36,10 +35,6 @@ export default function MainMonitor() {
         <AnimatedPanel from="float" className="pointer-events-none absolute inset-0 z-30">
           <div className="absolute bottom-3.5 left-3.5">
             <SceneLegend />
-          </div>
-
-          <div className="absolute bottom-3.5 left-1/2 -translate-x-1/2">
-            <PlaybackControls />
           </div>
 
           <div className="absolute right-3.5 bottom-3.5">

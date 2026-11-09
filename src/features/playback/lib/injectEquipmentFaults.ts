@@ -1,17 +1,18 @@
 import type { EquipmentStateSample, PlaybackRun, RunAlarm, StatusFrame } from '@/shared/types/playback'
 import { LOW_BATTERY } from '@/features/warehouse/config/warehouse.config'
 
-/** 로봇 모터 과열 · AMR 배터리 부족 — 각 1대 */
+/** 로봇 모터 과열 · AMR 배터리 부족 — 각 1대 (시연 때 겹치지 않게 간격 둠) */
 const ROBOT_FAULT = {
   id: 'robot-5',
-  t: 48,
+  t: 50,
   hold: 28,
   message: '로봇 5 — 모터 과열 (J2 82°C)',
 } as const
 
 const AMR_FAULT = {
   id: 'amr-3',
-  t: 72,
+  /** 위험(로봇) 이후 ~2.5분 뒤 — 배속 4× 기준 체감 약 40초 간격 */
+  t: 200,
   hold: 40,
   message: 'AMR 3 — 배터리 부족 (18%)',
   /** 창 시작 시(이미 가동 수 시간 지난 상태) 잔량 */

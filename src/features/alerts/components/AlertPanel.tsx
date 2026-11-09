@@ -1,7 +1,8 @@
 import { Bell } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 
 import { playbackStore, useDashboardView, type ActiveAlarm } from '@/features/playback'
-import { useUi, type StatusFilter } from '@/shared/stores/useUiStore'
+import { uiStore, useUi, type StatusFilter } from '@/shared/stores/useUiStore'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 import { cn } from '@/shared/lib/cn'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
@@ -28,6 +29,16 @@ export default function AlertPanel() {
   const alarms = raw && statusFilter ? raw.filter((alarm) => ALARM_MATCH[statusFilter].includes(alarm.severity)) : raw
 
   const activeCount = alarms ? alarms.length : ALERTS.filter((alert) => alert.severity !== 'success').length
+
+  const prevCount = useRef(0)
+
+  useEffect(() => {
+    const count = view?.alarms.length ?? 0
+
+    if (count > prevCount.current) uiStore.getState().openAlarmPanel()
+
+    prevCount.current = count
+  }, [view?.alarms.length])
 
   return (
     <aside

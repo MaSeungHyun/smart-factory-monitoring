@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { Vector3, type Group } from 'three'
 
 import { TONE_BG, TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
+import { flyToEquipment } from '@/shared/lib/equipmentActions'
 import { cn } from '@/shared/lib/cn'
 
 import type { FaultLabel } from '../lib/faultTargets'
@@ -26,7 +27,16 @@ export default function SceneLabel3D({ label }: { label: FaultLabel }) {
   return (
     <group ref={group}>
       <Html zIndexRange={[5, 0]} style={{ pointerEvents: 'none', transform: 'translate(-50%, -100%)' }}>
-        <div data-viewport-annotation="hide" className="flex flex-col items-center whitespace-nowrap">
+        <button
+          type="button"
+          data-viewport-annotation="hide"
+          onClick={(event) => {
+            event.stopPropagation()
+
+            flyToEquipment(label.id)
+          }}
+          className="flex cursor-pointer flex-col items-center whitespace-nowrap pointer-events-auto"
+        >
           <span className={cn('rounded border bg-bg-surface/90 px-2 py-1 text-caption text-text-primary', TONE_BORDER[label.status])}>
             <span className={TONE_TEXT[label.status]}>● </span>
             {label.text}
@@ -35,7 +45,7 @@ export default function SceneLabel3D({ label }: { label: FaultLabel }) {
           <span className="h-6 w-px bg-border-default" />
 
           <span className={cn('size-2 rounded-full', TONE_BG[label.status])} />
-        </div>
+        </button>
       </Html>
     </group>
   )

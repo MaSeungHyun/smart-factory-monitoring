@@ -19,13 +19,33 @@ const round = (value: number) => Math.round(value * 1000) / 1000
 /** 청크 (또는 이어 붙인 청크 구간) 시작 스냅샷의 재생 시각. 첫 청크면 0 */
 const startOf = (chunk: RunChunk, offset: number) => Math.max(round(chunk.meta.t0 - offset), 0)
 
+/** 출하 도크 끝(문 직전) z — 스냅샷에만 있고 이후 이벤트가 없는 장식용 적재 박스 */
+const OUTBOUND_STAGING_Z_CM = -6400
+
+/** 녹화에 등장하지 않는 출하 대기 팔레트 위 박스는 숨긴다 (GLB가 아니라 스냅샷 잔존) */
+function liveSnapshotBoxes(chunk: RunChunk): ChunkSnapshotBox[] {
+  const active = new Set<string>()
+
+  for (const event of chunk.recording.pallets) active.add(event[1])
+
+  for (const event of chunk.recording.palletParents ?? []) active.add(event[1])
+
+  return chunk.snapshot.boxes.filter((row) => {
+    const [, kind, parentId, , , z] = row
+
+    if (kind !== 'pallet' || !parentId || z > OUTBOUND_STAGING_Z_CM) return true
+
+    return active.has(parentId)
+  })
+}
+
 /** 스냅샷 박스의 부모 local 회전은 없으므로 같은 부모의 다음 이벤트 회전을 빌린다 */
 function snapshotParents(chunk: RunChunk, events: SimBoxParentEvent[], start: number): SimBoxParentEvent[] {
   const later = new Map<string, SimBoxParentEvent>()
 
   for (const event of events) if (!later.has(event[1])) later.set(event[1], event)
 
-  return chunk.snapshot.boxes.map((row) => {
+  return liveSnapshotBoxes(chunk).map((row) => {
     const [id, kind, parentId, x, y, z] = row
 
     // v2: 팔레트 위 박스는 팔레트 포즈 기준 local (cm) + local 쿼터니언이 붙어 있다
@@ -83,7 +103,7 @@ function shiftRecording(chunk: RunChunk, offset: number, duration: number): SimR
     contacts: source.contacts.map((contact) => ({ ...contact, t: at(contact.t) })),
     boxParents: [...snapshotParents(chunk, boxParents, start), ...boxParents],
     boxKeyframes: [
-      { t: start, boxes: chunk.snapshot.boxes.map(snapshotKeyRow) },
+      { t: start, boxes: liveSnapshotBoxes(chunk).map(snapshotKeyRow) },
       ...source.boxKeyframes.map((frame) => ({ ...frame, t: at(frame.t) })),
     ],
     pallets: [...snapshotPallets(chunk, start), ...source.pallets.map((event) => [at(event[0]), ...event.slice(1)] as SimPalletEvent)],

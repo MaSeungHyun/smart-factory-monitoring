@@ -19,8 +19,8 @@ export default function KpiCard({ item, icon }: KpiCardProps) {
         {item.label}
       </div>
 
-      <div className="mt-2 flex items-end justify-between">
-        <p className="flex items-baseline gap-1">
+      <div className="mt-2 flex items-end justify-between gap-2">
+        <p className="flex min-w-0 items-baseline gap-1">
           <span
             className={cn(
               'text-h1 tabular-nums',
@@ -31,11 +31,20 @@ export default function KpiCard({ item, icon }: KpiCardProps) {
           </span>
 
           {item.unit && <span className="text-caption text-text-tertiary">{item.unit}</span>}
-
-          {item.sub && <span className="text-caption text-text-tertiary tabular-nums">{item.sub}</span>}
         </p>
 
-        {item.sparkline && <Sparkline points={item.sparkline} />}
+        {item.sub ? (
+          <span
+            className={cn(
+              'shrink-0 pb-0.5 text-caption tabular-nums',
+              item.tone === 'error' ? 'text-status-error' : 'text-text-tertiary',
+            )}
+          >
+            {item.sub}
+          </span>
+        ) : item.sparkline ? (
+          <Sparkline points={item.sparkline} />
+        ) : null}
       </div>
     </Card>
   )

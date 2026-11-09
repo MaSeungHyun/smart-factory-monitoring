@@ -316,6 +316,7 @@ export function dashboardView(
       label: '불량',
       value: defectCount.toLocaleString('ko-KR'),
       unit: '개',
+      sub: `${classified > 0 ? ((defectCount / classified) * 100).toFixed(1) : '0.0'}%`,
       tone: defectCount > 0 ? 'error' : 'default',
     },
     { id: 'inbound', label: '입고', value: counts.inbound.toLocaleString('ko-KR'), unit: '박스' },
@@ -426,7 +427,7 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
         label: '불량',
         value: fmt(defects),
         unit: '개',
-        sub: defectRate !== undefined ? `· ${defectRate.toFixed(1)}%` : undefined,
+        sub: defectRate !== undefined ? `${defectRate.toFixed(1)}%` : item.sub,
         tone: defects > 0 ? 'error' : 'default',
       }
     }

@@ -63,7 +63,7 @@ export interface CameraView {
 
 export interface TemplateCamera {
   view?: CameraView
-  bookmarks?: unknown[]
+  bookmarks?: CameraView[]
 }
 
 export interface SceneTemplate {
