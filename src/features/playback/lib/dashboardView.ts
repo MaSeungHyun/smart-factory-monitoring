@@ -19,6 +19,7 @@ import { inspectionBoxMessage, isInspectionAlarm, isInspectionLabel } from './in
 import { statusAt } from './frameAt'
 import { kpiAt, kpiNumber } from './kpi'
 
+import { SCAN_TARGET, SCANNER_SHIFT_AT_START } from '@/features/scan/config/scan.config'
 import { scanRecords, type ScanRecord } from '@/features/scan/lib/scanDetail'
 
 /** 오늘 처리 목표 (박스) — 실제 목표치가 없어 고정값 */
@@ -118,12 +119,15 @@ function toItem(entry: PlaybackEquipment, sample: EquipmentStateSample | undefin
   }
 
   if (entry.kind === 'scanner') {
+    const count = SCANNER_SHIFT_AT_START + (sample?.count ?? 0)
+
     return {
       ...base,
       type: 'scanner',
-      metricLeft: inspecting ? `스캔 ${sample?.count ?? 0}` : (sample?.label ?? '—'),
-      metricRight: `${sample?.count ?? 0} 개`,
-      percent: pct(sample?.count ?? 0, inbound),
+      metricLeft: inspecting ? `스캔 ${count}` : (sample?.label ?? '—'),
+      metricRight: `${count} 개`,
+      // 개인 일일 검사 목표 대비
+      percent: pct(count, SCAN_TARGET),
     }
   }
 

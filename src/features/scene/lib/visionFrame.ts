@@ -8,7 +8,7 @@ import type { PlaybackRun } from '@/shared/types/playback'
 
 import { AMR_DECK, BASE_PALLET_POINT, SCAN_TUNNEL_LIFT } from '../constants/modelPlacement'
 import { PALLET_CAM_FALLBACK_LOOK_Y, PALLET_CAM_FOV_DEG, PALLET_CAM_HEIGHT_M, PALLET_CAM_SIDE_M, PALLET_CAM_TOWARD_ROBOT_M } from '../constants/visionCamera'
-import { activeGroup, palletPlan, pickPlan, robotRole, type PalletPlan, type RobotRole } from './palletPlan'
+import { activeGroup, activeSlot, palletPlan, pickPlan, robotRole, type PalletPlan, type RobotRole } from './palletPlan'
 import { paintPallet, paintPick } from './visionPallet'
 import { visionPort, type VisionKind } from './visionPort'
 import { applyVisionOverride, recordVisionCamera } from './visionDebug'
@@ -32,6 +32,7 @@ const TONE = {
 type Tone = keyof typeof TONE
 
 interface Hit {
+  boxId: string
   label: string
   tone: Tone
   left: number
@@ -43,6 +44,47 @@ interface Hit {
   defect: boolean
   /** 다음 집기 대상 */
   target?: boolean
+}
+
+/** 재생 그립/적재 계획상 다음에 집을 박스 id (카메라 중심 최근접이 아님) */
+function plannedBoxId(robotId: string, time: number, role: RobotRole | null) {
+  if (role === 'depalletizing') {
+    const plan = pickPlan(decoded, robotId)
+
+    if (!plan) return null
+
+    const slot = activeSlot(plan, time)
+
+    if (!slot) return null
+
+    // 집는 중이면 그다음 슬롯, 접근 중이면 현재 슬롯
+    if (slot.at <= time && time < slot.leave) {
+      const index = plan.slots.indexOf(slot)
+
+      return plan.slots[index + 1]?.boxId ?? null
+    }
+
+    return slot.boxId
+  }
+
+  if (role === 'palletizing') {
+    let next: { id: string; at: number } | null = null
+
+    for (const box of decoded) {
+      for (const grip of box.grips) {
+        if (grip.robot !== robotId || grip.synthetic) continue
+
+        // 아직 집기 전인 그립만 (집는 중은 held 배지로 표시)
+        if (time >= grip.start) continue
+
+        if (!next || grip.claimed < next.at) next = { id: box.id, at: grip.claimed }
+      }
+    }
+
+    return next?.id ?? null
+  }
+
+  return null
 }
 
 const camera = new PerspectiveCamera(38, 1, 0.08, 80)
@@ -432,6 +474,7 @@ function collect(scene: Scene, kind: VisionKind, id: string, cssWidth: number, c
     const record = records ? recordAt(records, boxId, time) : null
 
     const hit: Hit = {
+      boxId,
       label: boxId,
       tone: 'info',
       ...rect,
@@ -461,12 +504,17 @@ function collect(scene: Scene, kind: VisionKind, id: string, cssWidth: number, c
   if (kind === 'robot') {
     const role = robotRole(run, id)
 
-    let pick: Hit | null = null
+    const planned = plannedBoxId(id, time, role)
 
-    for (const hit of hits) {
-      if (hit.held || hit.defect) continue
+    // 계획 박스가 화면에 없으면 시야 안 최근접으로 폴백
+    let pick: Hit | null = planned ? hits.find((hit) => hit.boxId === planned && !hit.defect) ?? null : null
 
-      if (!pick || hit.dist < pick.dist) pick = hit
+    if (!pick) {
+      for (const hit of hits) {
+        if (hit.held || hit.defect) continue
+
+        if (!pick || hit.dist < pick.dist) pick = hit
+      }
     }
 
     for (const hit of hits) {
@@ -703,7 +751,14 @@ export function drawVision(gl: WebGLRenderer, scene: Scene) {
   // 인식 개수: 화면에 실제로 렌더된 박스(집는 중인 박스 포함, 불량 제외)
   const seen = hits.filter((hit) => !hit.defect)
 
-  const idOf = (hit: Hit | undefined) => hit?.label.split(' · ').pop() ?? null
-
-  paintPick(layerOf(overlay, 'pick'), picking, getExactTime(), project, seen.length, idOf(hits.find((hit) => hit.target)), idOf(hits.find((hit) => hit.held && !hit.defect)), picking ? activeGroup(picking, getExactTime()) : null)
+  paintPick(
+    layerOf(overlay, 'pick'),
+    picking,
+    getExactTime(),
+    project,
+    seen.length,
+    hits.find((hit) => hit.target)?.boxId ?? null,
+    hits.find((hit) => hit.held && !hit.defect)?.boxId ?? null,
+    picking ? activeGroup(picking, getExactTime()) : null,
+  )
 }

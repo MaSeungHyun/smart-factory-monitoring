@@ -1,7 +1,15 @@
+import { FACTORY_DAY_TARGET, VIRTUAL_COUNTS_AT_START } from '@/features/playback/lib/shiftBaseline'
+
 /** 스캔 검사 목표 / 목업 값 (재생 데이터에 없는 값) */
 
-/** 재생 1회(약 200초) 기준 스캐너당 목표 검사 수 */
-export const SCAN_TARGET = 8
+/** 템플릿 스캐너 대수 */
+export const SCANNER_COUNT = 3
+
+/** 스캐너당 일일 검사 목표 (= 공장 일일 목표 / 대수) */
+export const SCAN_TARGET = Math.round(FACTORY_DAY_TARGET / SCANNER_COUNT)
+
+/** 시연 시작 시점 스캐너당 가상 누적 검사 수 */
+export const SCANNER_SHIFT_AT_START = Math.round(VIRTUAL_COUNTS_AT_START.scanned / SCANNER_COUNT)
 
 /** 정상 판독률 목표 (%) */
 export const PASS_TARGET = 99.5

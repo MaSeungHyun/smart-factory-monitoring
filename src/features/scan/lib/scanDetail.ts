@@ -4,7 +4,7 @@ import { inspectionBoxMessage, isInspectionAlarm, isInspectionLabel } from '@/fe
 import type { EquipmentStatus } from '@/shared/types'
 import type { BoxTrack, PlaybackRun } from '@/shared/types/playback'
 
-import { DEFECT_BUCKETS, PASS_TARGET, SCAN_TARGET } from '../config/scan.config'
+import { DEFECT_BUCKETS, PASS_TARGET, SCAN_TARGET, SCANNER_SHIFT_AT_START } from '../config/scan.config'
 
 /** 스캐너 중심에서 이 거리 안을 지나면 판정이 난 것으로 본다 (m) */
 const SCAN_REACH = 1.5
@@ -281,7 +281,10 @@ export function scanDetail(
   // v4: 공장이 기록한 스캐너별 집계 (없으면 박스 트랙으로 계산)
   const recorded = kpiAt(run.kpi, time)?.scan?.byScanner?.[id]
 
-  const scans = recorded ? Math.round(recorded.scanned) : done.length
+  // 시프트 가상 누적 + 재생 구간 증가분 (로봇 처리량과 같은 스케일)
+  const windowScans = recorded ? Math.round(recorded.scanned) : done.length
+
+  const scans = SCANNER_SHIFT_AT_START + windowScans
 
   const defectCount = recorded ? Math.round(recorded.defect) : defects.length
 
@@ -296,7 +299,7 @@ export function scanDetail(
     statusLabel,
     scans,
     target: SCAN_TARGET,
-    percent: Math.round((scans / SCAN_TARGET) * 100),
+    percent: Math.min(100, Math.round((scans / SCAN_TARGET) * 100)),
     speed,
     speedDelta,
     passRate,

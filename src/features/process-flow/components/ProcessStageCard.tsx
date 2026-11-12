@@ -1,11 +1,14 @@
+import { useCallback } from 'react'
+
 import AnimatedNumber from '@/shared/components/AnimatedNumber'
-import { useKpiGetter } from '@/features/playback'
+import { RUN_TARGET, useContinuousCount, useKpiGetter } from '@/features/playback'
 import { ArrowDownToLine, ArrowUpFromLine, ClipboardList, Layers, ScanLine, Truck, Workflow } from 'lucide-react'
 
 import SegmentBar from '@/shared/components/SegmentBar'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { cn } from '@/shared/lib/cn'
 import type { ProcessStage } from '@/shared/types'
+import type { StatusFrame } from '@/shared/types/playback'
 
 const STAGE_ICON = {
   inbound: ArrowDownToLine,
@@ -17,13 +20,22 @@ const STAGE_ICON = {
   order: ClipboardList,
 }
 
+const pickOutbound = (frame: StatusFrame) => Math.max(0, frame.counts.outbound)
+
 export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
   const Icon = STAGE_ICON[stage.icon]
 
-  // KPI 키가 있으면 1Hz 샘플을 보간해 매 프레임 읽고, 없으면 파생값
-  const value = useKpiGetter(stage.valueKey, stage.value)
+  // 출고는 오늘 처리량과 동일하게 status 프레임 보간값 사용
+  const liveOutbound = useContinuousCount(pickOutbound, stage.value)
 
-  const percent = useKpiGetter(stage.percentKey, stage.percent)
+  const outboundPercent = useCallback(
+    () => Math.min(100, (liveOutbound() / RUN_TARGET) * 100),
+    [liveOutbound],
+  )
+
+  const value = useKpiGetter(stage.valueKey, stage.icon === 'outbound' ? liveOutbound : stage.value)
+
+  const percent = useKpiGetter(stage.percentKey, stage.icon === 'outbound' ? outboundPercent : stage.percent)
 
   return (
     <div

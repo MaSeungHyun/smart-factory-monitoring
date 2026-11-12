@@ -1,6 +1,6 @@
 import { PALLET_SCAN_SWEEP_S, PALLET_TARGET_PULSE_S } from '@/shared/constants/animation'
 
-import type { PalletGroup, PalletPlan } from './palletPlan'
+import { activeSlot, type PalletGroup, type PalletPlan } from './palletPlan'
 
 /** 화면 좌표 투영 (카메라 뒤면 null) */
 export type Project = (x: number, y: number, z: number) => [number, number] | null
@@ -97,9 +97,10 @@ export function paintPallet(host: HTMLElement, plan: PalletPlan | null, time: nu
 
   if (!nodes || nodes.plan !== plan) nodes = build(host, plan)
 
-  const nextIndex = plan.slots.findIndex((slot) => slot.at > time)
+  // 지금 적재 중인 칸(또는 다음 칸) — 미래 칸만 고르면 로봇이 놓는 곳과 녹색이 어긋남
+  const target = activeSlot(plan, time)
 
-  const target = nextIndex >= 0 ? plan.slots[nextIndex] : null
+  const targetIndex = target ? plan.slots.indexOf(target) : -1
 
   const layer = target?.layer ?? plan.layers - 1
 
@@ -109,9 +110,13 @@ export function paintPallet(host: HTMLElement, plan: PalletPlan | null, time: nu
     if (slot.at <= time && time < slot.leave) top.set(slot.cell, Math.max(top.get(slot.cell) ?? -1, slot.layer))
   }
 
-  const previous = nextIndex > 0 ? plan.slots[nextIndex - 1].at : (target?.at ?? time) - 6
+  const previous = targetIndex > 0 ? plan.slots[targetIndex - 1].at : (target?.at ?? time) - 6
 
-  const progress = target ? Math.min(1, Math.max(0, (time - previous) / Math.max(target.at - previous, 0.5))) : 1
+  const progress = target
+    ? time >= target.at
+      ? 1
+      : Math.min(1, Math.max(0, (time - previous) / Math.max(target.at - previous, 0.5)))
+    : 1
 
   const pulse = 0.55 + 0.45 * Math.abs(Math.sin((time / PALLET_TARGET_PULSE_S) * Math.PI))
 

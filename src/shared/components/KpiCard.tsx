@@ -1,16 +1,20 @@
 import type { ReactNode } from 'react'
 
+import AnimatedNumber from '@/shared/components/AnimatedNumber'
 import Card from '@/shared/components/Card'
 import Sparkline from '@/shared/components/Sparkline'
 import { cn } from '@/shared/lib/cn'
+import type { SmoothTarget } from '@/shared/hooks/useSmoothValue'
 import type { KpiItem } from '@/shared/types'
 
 interface KpiCardProps {
   item: KpiItem
   icon: ReactNode
+  /** 있으면 문자열 value 대신 연속 수량(오늘 처리량과 동일 소스) */
+  liveValue?: SmoothTarget
 }
 
-export default function KpiCard({ item, icon }: KpiCardProps) {
+export default function KpiCard({ item, icon, liveValue }: KpiCardProps) {
   return (
     <Card>
       <div className="flex items-center gap-1 text-caption text-text-secondary">
@@ -27,7 +31,7 @@ export default function KpiCard({ item, icon }: KpiCardProps) {
               item.tone === 'error' ? 'text-status-error' : item.tone === 'success' ? 'text-status-success' : 'text-text-primary',
             )}
           >
-            {item.value}
+            {liveValue !== undefined ? <AnimatedNumber value={liveValue} grouped /> : item.value}
           </span>
 
           {item.unit && <span className="text-caption text-text-tertiary">{item.unit}</span>}

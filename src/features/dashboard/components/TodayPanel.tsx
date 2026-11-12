@@ -166,6 +166,7 @@ export default function TodayPanel() {
           <AnimatedItem key={item.id}>
             <KpiCard
               item={item}
+              liveValue={item.id === "outbound" ? handled : undefined}
               icon={KPI_ICONS[item.id as keyof typeof KPI_ICONS]}
             />
           </AnimatedItem>
