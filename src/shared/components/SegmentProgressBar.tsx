@@ -108,7 +108,7 @@ export default function SegmentProgressBar({
 }: SegmentProgressBarProps) {
   const { ref, layout } = useDeviceLayout()
 
-  const segments = Math.max(1, Math.floor(count))
+  const requested = Math.max(1, Math.floor(count))
 
   const { cssW, dpr, offset } = layout
 
@@ -120,17 +120,12 @@ export default function SegmentProgressBar({
 
   let gap = Math.max(1, Math.round(gapCss * dpr))
 
-  let cell = segmentWidth
-    ? Math.max(1, Math.round(segmentWidth * dpr))
-    : Math.floor((usable - gap * (segments - 1)) / segments)
+  const fixedCell = segmentWidth ? Math.max(1, Math.round(segmentWidth * dpr)) : undefined
+  const minimumCell = fixedCell ?? Math.max(1, Math.round(2 * dpr))
+  if (!fixedCell && usable < requested * minimumCell + (requested - 1) * gap) gap = 1
 
-  if (!segmentWidth && cell < 2 && gap > 1) {
-    gap = 1
-
-    cell = Math.floor((usable - gap * (segments - 1)) / segments)
-  }
-
-  cell = Math.max(1, cell)
+  const segments = Math.min(requested, usable > 0 ? Math.max(1, Math.floor((usable + gap) / (minimumCell + gap))) : 0)
+  const cell = segments > 0 ? Math.min(usable, fixedCell ?? Math.floor((usable + gap) / segments) - gap) : 0
 
   const fills = useRef<SVGGElement>(null)
 
@@ -167,11 +162,11 @@ export default function SegmentProgressBar({
       aria-valuemax={100}
       style={{
         height: heightCss,
-        width: segmentWidth ? segments * segmentWidth + (segments - 1) * gapCss : undefined,
+        width: segmentWidth ? requested * segmentWidth + (requested - 1) * gapCss : undefined,
       }}
-      className={cn('min-w-0 overflow-hidden', !segmentWidth && 'w-full', className)}
+      className={cn('min-w-0 max-w-full overflow-hidden', !segmentWidth && 'w-full', className)}
     >
-      {cssW > 0 && (
+      {segments > 0 && (
         <svg
           width={cssW}
           height={heightCss}
