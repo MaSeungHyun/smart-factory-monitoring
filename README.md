@@ -1,4 +1,18 @@
-# React + TypeScript + Vite
+# Smart Factory Monitoring
+
+## Windows에서 Electron으로 실행
+
+```powershell
+npm ci
+npm run electron:start
+```
+
+Windows용 무설치 실행 파일을 만들려면 `npm run electron:build`를 실행합니다.
+빌드가 끝나면 `release` 폴더의 `smart-factory-monitoring-<arch>.exe`를 실행할 수 있습니다.
+첫 실행 또는 패키징 시 Electron과 패키징 도구를 내려받기 위해 인터넷 연결이 필요합니다.
+3D 모델, 재생 데이터, Pretendard Variable 웹폰트는 앱에 포함됩니다.
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

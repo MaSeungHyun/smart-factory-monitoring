@@ -147,8 +147,8 @@ export function robotCountOffsetFrom(startCounts: Record<string, number | undefi
   return offset
 }
 
-export function applyRobotCountOffset(
-  equipment: Record<string, { count?: number; [key: string]: unknown }>,
+export function applyRobotCountOffset<Sample extends { count?: number }>(
+  equipment: Record<string, Sample>,
   offset: Record<string, number>,
 ) {
   const next = { ...equipment }

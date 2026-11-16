@@ -9,7 +9,7 @@ export default function WarmupScreen() {
   if (ready) return null
 
   return (
-    <div className="fixed inset-0 z-[60]">
+    <div className="absolute inset-0 z-[60]">
       <LoadingScreen />
     </div>
   )

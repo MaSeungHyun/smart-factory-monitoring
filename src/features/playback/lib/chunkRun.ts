@@ -194,7 +194,7 @@ function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregate
         : { state: (robot.state as EquipmentStateSample['state']) ?? 'idle', label: '', count: robot.cycles ?? 0, utilization }
     }
 
-    frame = applyRobotCountOffset(frame, robotBaseline) as Record<string, EquipmentStateSample>
+    frame = applyRobotCountOffset(frame, robotBaseline)
 
     const shown = applyCountsOffset(counts, baseline)
 

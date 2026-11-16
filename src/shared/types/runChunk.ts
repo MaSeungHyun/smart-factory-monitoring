@@ -112,6 +112,7 @@ export interface RunChunk {
 export interface RunAggregateMinute extends Partial<RunCounts> {
   m: number
   tSim: number
+  scanned?: number
   robots: Record<string, { cycles: number; util: number; state: string }>
   amrBusy?: Record<string, number>
   rackOccupancy?: number

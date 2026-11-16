@@ -26,7 +26,7 @@ export default function DetailLayout({ rail, header, main, aside }: DetailLayout
   const { sceneExpanded } = useUi()
 
   return (
-    <div className="grid h-screen w-screen grid-cols-[64px_minmax(0,1fr)] grid-rows-[64px_minmax(0,1fr)] overflow-hidden bg-bg-base text-text-primary">
+    <div className="grid h-full w-full grid-cols-[64px_minmax(0,1fr)] grid-rows-[64px_minmax(0,1fr)] overflow-hidden bg-bg-base text-text-primary">
       <RailRegion>{rail}</RailRegion>
 
       <HeaderRegion>{header}</HeaderRegion>

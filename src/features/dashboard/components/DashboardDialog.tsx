@@ -117,7 +117,7 @@ export default function DashboardDialog() {
   })
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-16 bottom-0 z-[500]">
+    <div className="pointer-events-none absolute inset-x-0 top-16 bottom-0 z-[500]">
       <button
         type="button"
         aria-label="대시보드 닫기"

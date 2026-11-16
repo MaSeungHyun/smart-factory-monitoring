@@ -17,7 +17,7 @@ export default function LoadingScreen() {
   return (
     <div
       data-factory-loader
-      className="fixed inset-0 z-[60] overflow-hidden bg-black"
+      className="absolute inset-0 z-[60] overflow-hidden bg-black"
     >
       <img
         src={LOADING_BG_SRC}

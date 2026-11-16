@@ -20,7 +20,7 @@ interface DashboardLayoutProps {
 }
 
 /**
- * 화면 분할 (h-screen, 페이지 스크롤 없음)
+ * 화면 분할 (콘텐츠 영역 전체, 페이지 스크롤 없음)
  * ┌──────┬──────────────────────────────┐
  * │      │ header 64px                  │
  * │ rail ├─────────┬────────────────────┤
@@ -35,7 +35,7 @@ export default function DashboardLayout({ rail, header, sidebar, main, bottom, o
   const { sceneExpanded } = useUi()
 
   return (
-    <div className="grid h-screen w-screen grid-cols-[64px_minmax(0,1fr)] grid-rows-[64px_minmax(0,1fr)] overflow-hidden bg-bg-base text-text-primary">
+    <div className="grid h-full w-full grid-cols-[64px_minmax(0,1fr)] grid-rows-[64px_minmax(0,1fr)] overflow-hidden bg-bg-base text-text-primary">
       <RailRegion>{rail}</RailRegion>
 
       <HeaderRegion>{header}</HeaderRegion>

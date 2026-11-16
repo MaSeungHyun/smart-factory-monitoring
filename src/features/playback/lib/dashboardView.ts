@@ -9,7 +9,7 @@ import type {
 } from '@/shared/types'
 import { KPI_KEYS, KPI_STAGE_OF, KPI_UNIT_LABEL, kpiKey } from '@/shared/constants/kpi'
 import type { KpiSample } from '@/shared/types/kpi'
-import type { EquipmentStateSample, PlaybackEquipment, PlaybackRun, PlaybackState, StatusFrame } from '@/shared/types/playback'
+import type { EquipmentStateSample, PlaybackEquipment, PlaybackRun, PlaybackState, RunCounts, StatusFrame } from '@/shared/types/playback'
 import { sceneEquipment } from '@/features/scene'
 import { LOW_BATTERY } from '@/features/warehouse/config/warehouse.config'
 import { rackGrid } from '@/features/warehouse/lib/rackMap'
@@ -90,7 +90,7 @@ function statusOf(sample: EquipmentStateSample | undefined, faulted: boolean, in
   return 'running'
 }
 
-function toItem(entry: PlaybackEquipment, sample: EquipmentStateSample | undefined, faulted: boolean, inbound: number): EquipmentItem {
+function toItem(entry: PlaybackEquipment, sample: EquipmentStateSample | undefined, faulted: boolean): EquipmentItem {
   const inspecting = entry.kind === 'scanner' && isInspectionLabel(sample?.label)
 
   const status = statusOf(sample, faulted, inspecting)
@@ -271,11 +271,11 @@ export function dashboardView(
 
   const all = run.equipment
     .filter((entry) => entry.kind !== 'conveyor')
-    .map((entry) => toItem(entry, frame?.equipment[entry.id], faulted.has(entry.id), counts.inbound))
+    .map((entry) => toItem(entry, frame?.equipment[entry.id], faulted.has(entry.id)))
 
   const conveyors = run.equipment
     .filter((entry) => entry.kind === 'conveyor')
-    .map((entry) => toItem(entry, frame?.equipment[entry.id], faulted.has(entry.id), counts.inbound))
+    .map((entry) => toItem(entry, frame?.equipment[entry.id], faulted.has(entry.id)))
 
   const everything = [...all, ...conveyors]
 
@@ -473,8 +473,8 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
       valueKey,
     }
 
-    // 장비가 묶이지 않은 입고 · 출고 카드는 수량으로 작동 여부 표시
-    if (item.icon === 'inbound' || item.icon === 'outbound') {
+    // 입고 카드는 수량으로 작동 여부 표시
+    if (item.icon === 'inbound') {
       return { ...next, status: value > 0 ? 'running' : 'idle', statusLabel: value > 0 ? '작동' : '대기' }
     }
 

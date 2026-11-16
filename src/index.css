@@ -1,5 +1,13 @@
 @import 'tailwindcss';
 
+@font-face {
+  font-family: 'Pretendard Variable';
+  src: url('/fonts/PretendardVariable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 45 920;
+  font-display: swap;
+}
+
 /*
  * Design tokens (GRAPICAR)
  * Tint rule: 선택 행 · 상태 배지 · 알림 배경은 같은 색을 16% 불투명도로 사용
@@ -75,6 +83,16 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+.window-title-bar {
+  height: calc(env(titlebar-area-height, 32px) + 1px);
+}
+
+.window-title-bar__drag {
+  margin-left: env(titlebar-area-x, 0px);
+  width: env(titlebar-area-width, 100%);
+  -webkit-app-region: drag;
 }
 
 /* 상호작용 피드백: 키보드 포커스 링 · 150ms 전환 · 누름 */
