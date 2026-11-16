@@ -10,6 +10,8 @@ async function createWindow() {
   const window = new BrowserWindow({
     width: 1600,
     height: 1000,
+    minWidth: 1400,
+    minHeight: 771,
     icon: path.join(__dirname, 'icon.ico'),
     autoHideMenuBar: true,
     backgroundColor: '#121417',
