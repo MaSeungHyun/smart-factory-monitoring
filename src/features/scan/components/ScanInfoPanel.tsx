@@ -1,7 +1,7 @@
 import { MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
 
-import { DetailTabs, EventList, HeroKpi, RunButtons, type DetailTabId } from '@/features/equipment-detail'
+import { DetailTabs, EventList, HeroKpi, type DetailTabId } from '@/features/equipment-detail'
 import { usePlaybackPick } from '@/features/playback'
 import Panel from '@/shared/components/Panel'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
@@ -58,15 +58,15 @@ export default function ScanInfoPanel() {
             label={(t) => formatClock(origin + t * 1000)}
           /></div>}
 
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto bg-black px-1 py-1 rounded-md">
         <EventList events={events} />
       </div>
 
-      <div className="shrink-0">
+      {/* <div className="shrink-0">
         <RunButtons stopLabel="멈춤" />
 
         <p className="mt-1.5 text-[10px] text-text-tertiary">* 시연용 버튼 · 실제 장비 제어와 연동되지 않음</p>
-      </div>
+      </div> */}
     </Panel>
   )
 }

@@ -14,9 +14,9 @@ function isView(value: unknown): value is CameraView {
   )
 }
 
-/** 템플릿 camera.bookmarks (2~9번 시점). 1번은 기존 홈(main_cam) */
-export function cameraBookmarks(): CameraView[] {
+/** 템플릿 camera.bookmarks. 인덱스 0 = 1번 키 … 8 = 9번 키, 빈 칸(null·잘못된 값)은 자리를 지켜 null */
+export function cameraBookmarks(): (CameraView | null)[] {
   const raw = FACTORY_TEMPLATE.camera?.bookmarks ?? []
 
-  return raw.filter(isView)
+  return raw.map((entry) => (isView(entry) ? entry : null))
 }

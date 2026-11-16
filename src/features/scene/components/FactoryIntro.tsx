@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import type { MeshStandardMaterial } from 'three'
 
 import { FACTORY_INTRO_SAFETY_S, FACTORY_INTRO_WARM_WAIT_S } from '@/shared/constants/animation'
+import { isAppWindowShown } from '@/shared/lib/appWindow'
 import { sceneReady } from '@/shared/stores/sceneReady'
 
 import { FACTORY_INTRO_DURATION, armFactoryIntro, factoryIntroArmed, factoryIntroDone, finishFactoryIntro, paintFactorySurface, paintFactoryWire, type IntroWire } from '../lib/factoryIntro'
@@ -39,7 +40,8 @@ export default function FactoryIntro({ materials, wires }: { materials: MeshStan
     }
 
     if (!factoryIntroArmed()) {
-      if (!sceneReady.getState().ready || document.querySelector('[data-factory-loader]')) return
+      // 일렉트론에서 메인 창이 아직 숨어 있으면 와이어프레임을 시작하지 않는다
+      if (!sceneReady.getState().ready || document.querySelector('[data-factory-loader]') || !isAppWindowShown()) return
 
       armFactoryIntro()
     }

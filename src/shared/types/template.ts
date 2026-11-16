@@ -63,7 +63,8 @@ export interface CameraView {
 
 export interface TemplateCamera {
   view?: CameraView
-  bookmarks?: CameraView[]
+  /** 숫자 키 1~9 시점 (인덱스 0 = 1번 키). null 은 빈 칸 */
+  bookmarks?: (CameraView | null)[]
 }
 
 export interface SceneTemplate {

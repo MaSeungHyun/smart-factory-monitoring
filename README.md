@@ -7,6 +7,9 @@ npm ci
 npm run electron:start
 ```
 
+React와 CSS를 수정하면서 Electron에서 바로 확인하려면 `npm run electron:dev`를 실행합니다.
+Electron 메인 프로세스 코드(`electron/main.cjs`)를 수정하면 창을 닫고 명령을 다시 실행합니다.
+
 Windows용 무설치 실행 파일을 만들려면 `npm run electron:build`를 실행합니다.
 빌드가 끝나면 `release` 폴더의 `smart-factory-monitoring-<arch>.exe`를 실행할 수 있습니다.
 첫 실행 또는 패키징 시 Electron과 패키징 도구를 내려받기 위해 인터넷 연결이 필요합니다.

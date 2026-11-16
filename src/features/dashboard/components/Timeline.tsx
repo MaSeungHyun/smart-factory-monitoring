@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 
 import { playbackStore, usePlayback } from '@/features/playback'
 import { useNow } from '@/shared/hooks/useNow'
@@ -17,6 +17,9 @@ const TONE_DOT = { error: 'bg-status-error', warning: 'bg-status-warning', info:
 
 /** 기본으로 보여주는 창 길이 (우측=최신) */
 const DEFAULT_SPAN_MS = 6 * TIMELINE_HOUR_MS
+
+/** 재생 구간 막대의 최소 폭 (타임라인 너비 대비 비율) */
+const MIN_PLAY_SPAN_WIDTH = 0.004
 
 /**
  * 타임라인: 최신 시각은 항상 우측.
@@ -52,19 +55,25 @@ export default function Timeline() {
 
   const rangeRef = useRef(range)
 
-  rangeRef.current = range
-
   const lockedRef = useRef(locked)
-
-  lockedRef.current = locked
 
   const spanRef = useRef(spanMs)
 
-  spanRef.current = spanMs
+  // 휠 핸들러가 최신 값을 읽도록 커밋 직후 ref 동기화
+  useLayoutEffect(() => {
+    rangeRef.current = range
+
+    lockedRef.current = locked
+
+    spanRef.current = spanMs
+  }, [range, locked, spanMs])
 
   const root = useRef<HTMLDivElement>(null)
 
   const clamp = (value: number) => `${Math.min(Math.max(value, 0), 1) * 100}%`
+
+  /** 눈금과 같은 0..1 좌표를 그대로 % 로 (창 밖이면 시크 영역이 잘라냄) */
+  const percent = (value: number) => `${value * 100}%`
 
   const onSeek = (event: PointerEvent<HTMLDivElement>) => {
     if (!run) return
@@ -124,9 +133,10 @@ export default function Timeline() {
     return () => node.removeEventListener('wheel', onWheel)
   }, [])
 
+  // 재생 구간: 눈금과 같은 시간→x 변환. 스크롤로 창 밖에 나간 부분은 시크 영역 경계에서 잘린다
   const spanLeft = range.position(origin)
 
-  const spanWidth = range.position(origin + duration * 1000) - spanLeft
+  const spanWidth = Math.max(range.position(origin + duration * 1000) - spanLeft, MIN_PLAY_SPAN_WIDTH)
 
   return (
     <div ref={root} className="relative mt-[18px] h-9 shrink-0 touch-none border-b border-border-default text-caption text-text-tertiary tabular-nums">
@@ -161,23 +171,23 @@ export default function Timeline() {
             onSeek(event)
           }}
           onPointerMove={onSeek}
-          className="group absolute inset-x-0 bottom-0 h-5 cursor-pointer"
+          className="group absolute inset-x-0 bottom-0 h-5 cursor-pointer overflow-hidden"
         >
           <div
-            style={{ left: clamp(spanLeft), width: `${Math.max(spanWidth, 0.004) * 100}%` }}
+            style={{ left: percent(spanLeft), width: percent(spanWidth) }}
             className="absolute bottom-1.5 h-1 rounded-full bg-primary-on-dark/40"
           />
 
           {run.alarms.map((alarm) => (
             <span
               key={alarm.id}
-              style={{ left: clamp(range.position(origin + alarm.t * 1000)) }}
+              style={{ left: percent(range.position(origin + alarm.t * 1000)) }}
               className={cn('absolute bottom-1 size-2 -translate-x-1/2 rounded-full', TONE_DOT[alarm.severity])}
             />
           ))}
 
           <span
-            style={{ left: clamp(range.position(origin + time * 1000)) }}
+            style={{ left: percent(range.position(origin + time * 1000)) }}
             className="absolute bottom-0 h-3 w-0.5 -translate-x-1/2 bg-text-primary transition-[height] duration-150 group-hover:h-4"
           />
         </div>

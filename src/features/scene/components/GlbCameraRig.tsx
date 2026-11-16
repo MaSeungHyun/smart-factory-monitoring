@@ -33,6 +33,9 @@ const DURATION = 1.4
 /** 키보드 시점(1~9) 전환 비행 시간 (초) */
 const BOOKMARK_DURATION = 0.7
 
+/** 시점 북마크 키 (윗줄 숫자 + 숫자패드 1~9). NumLock 과 무관하게 물리 키로 판별 */
+const BOOKMARK_KEY = /^(?:Digit|Numpad)([1-9])$/
+
 /** Shift+0 으로 저장한 사용자 시점 (세션 동안 유지) */
 let slot0: { position: [number, number, number]; target: [number, number, number] } | null = null
 
@@ -606,15 +609,15 @@ export default function GlbCameraRig() {
   }, [chase])
 
   useEffect(() => {
-    // 1 = 초기 시점, 2~9 = 템플릿 bookmarks
+    // 1~9 (윗줄·숫자패드) = 템플릿 bookmarks[0~8], 빈 칸이면 무시
     const bookmarks = cameraBookmarks()
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return
 
-      const slot = Number(event.key)
+      const match = BOOKMARK_KEY.exec(event.code)
 
-      if (!Number.isInteger(slot) || slot < 1 || slot > 1 + bookmarks.length) return
+      if (!match) return
 
       const field = event.target
 
@@ -622,19 +625,13 @@ export default function GlbCameraRig() {
 
       if (monitorView.getState().view !== 'main') return
 
+      const bookmark = bookmarks[Number(match[1]) - 1]
+
+      if (!bookmark) return
+
       event.preventDefault()
 
       monitorView.getState().release()
-
-      if (slot === 1) {
-        cameraBus.request({ kind: 'home' })
-
-        return
-      }
-
-      const bookmark = bookmarks[slot - 2]
-
-      if (!bookmark) return
 
       cameraBus.request({
         kind: 'look',

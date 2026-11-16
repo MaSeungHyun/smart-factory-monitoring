@@ -30,7 +30,7 @@ export default function DetailTabs({ tab, alarmCount, onChange, logLabel }: Deta
         >
           {item.id === 'log' && logLabel ? logLabel : item.label}
 
-          {item.id === 'alarm' && alarmCount > 0 && (
+          {item.id === 'alarm' && alarmCount > 0 && (        
             <span className="rounded bg-status-error/16 px-1 text-caption text-status-error tabular-nums">{alarmCount}</span>
           )}
         </button>

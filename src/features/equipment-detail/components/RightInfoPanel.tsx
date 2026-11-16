@@ -15,7 +15,6 @@ import DetailTabs, { type DetailTabId } from './DetailTabs'
 import EquipmentSelector from './EquipmentSelector'
 import EventList from './EventList'
 import HeroKpi from './HeroKpi'
-import RunButtons from './RunButtons'
 import VehicleKpiGrid from './VehicleKpiGrid'
 import VehicleTrend from './VehicleTrend'
 
@@ -77,13 +76,13 @@ export default function RightInfoPanel() {
         {/* 그래프는 고정, 아래 동작 리스트만 스크롤 */}
         {tab === 'trend' && <div className="shrink-0"><VehicleTrend chart={vehicle.chart} label={(t) => formatClock(origin + t * 1000)} /></div>}
 
-        <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+        <div className="scroll-thin min-h-0 flex-1 overflow-y-auto bg-black px-1 py-1 rounded-md">
           <EventList events={vehicleEvents} />
         </div>
 
-        <div className="shrink-0">
+        {/* <div className="shrink-0">
           <RunButtons stopLabel="멈춤" />
-        </div>
+        </div> */}
       </Panel>
     )
   }
@@ -122,13 +121,13 @@ export default function RightInfoPanel() {
       {/* 그래프는 고정, 아래 동작 리스트만 스크롤 */}
       {tab === 'trend' && <div className="shrink-0"><CycleBarChart bars={detail.bars} average={detail.average} label={(t) => formatClock(origin + t * 1000)} /></div>}
 
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto bg-black px-1 py-1 rounded-md">
         <EventList events={events} />
       </div>
 
-      <div className="shrink-0">
+      {/* <div className="shrink-0">
         <RunButtons />
-      </div>
+      </div> */}
     </Panel>
   )
 }

@@ -145,6 +145,23 @@ body {
   background-color: #4fa8d4;
 }
 
+/* 일렉트론 스플래시: 진행 막대 조각이 왼쪽에서 오른쪽으로 지나간다 (1.4초 · ease-out, 오버슈트 없음) */
+@keyframes splash-progress {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .splash-progress-segment {
+    animation: splash-progress 1.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+}
+
 /* AI 분석 스켈레톤 샤머 */
 .insight-shimmer {
   background: linear-gradient(90deg, #1a1d21 0%, #28343a 45%, #1a1d21 90%);

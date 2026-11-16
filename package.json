@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "electron:dev": "node scripts/electron-dev.mjs",
     "electron:start": "npm run build && electron .",
     "electron:build": "npm run build && electron-builder --win portable"
   },
@@ -21,6 +22,8 @@
     "files": [
       "dist/**/*",
       "electron/main.cjs",
+      "electron/preload.cjs",
+      "electron/splashWindow.cjs",
       "electron/icon.ico",
       "!node_modules/**/*"
     ],
