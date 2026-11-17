@@ -21,8 +21,15 @@ export default function SceneLabels() {
 
   const sig = useRef(labelKey(labels))
 
+  // dashboardAt 은 상태 샘플이 그대로면 같은 객체를 돌려준다. 그때는 라벨 목록 · 키 문자열을 매 프레임 만들지 않는다
+  const seenView = useRef<ReturnType<typeof dashboardAt> | undefined>(undefined)
+
   useFrame(() => {
     const view = dashboardAt(playbackStore.getState())
+
+    if (view === seenView.current) return
+
+    seenView.current = view
 
     const next = view ? faultLabels(view.alarms, view.equipment) : []
 

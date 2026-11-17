@@ -51,12 +51,18 @@ const extendLoader: ExtendLoader = (loader) => {
   loader.setMeshoptDecoder(MeshoptDecoder as unknown as LoaderMeshopt)
 }
 
-/** drei useGLTF + KTX2/Meshopt (Draco 기본값 유지) */
+/**
+ * Draco 디코더 사용 여부. 모든 GLB 가 Meshopt 라서 끈다.
+ * 켜 두면 drei 가 디코더를 gstatic CDN 에서 받으려 해서 오프라인 exe 에서 깨질 수 있다
+ */
+const USE_DRACO = false
+
+/** drei useGLTF + KTX2/Meshopt */
 export function useGLTF(url: string) {
-  return useDreiGLTF(url, true, true, extendLoader)
+  return useDreiGLTF(url, USE_DRACO, true, extendLoader)
 }
 
 /** Canvas 밖 Suspense 에서도 같은 캐시 키로 먼저 받는다 */
 export function preloadGLTF(url: string) {
-  return useDreiGLTF.preload(url, true, true, extendLoader)
+  return useDreiGLTF.preload(url, USE_DRACO, true, extendLoader)
 }

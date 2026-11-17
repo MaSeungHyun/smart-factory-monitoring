@@ -4,6 +4,7 @@ import { decodeBoxes, type DecodedBox } from '@/features/boxes/lib/decodeBoxes'
 import { getExactTime, playbackStore } from '@/features/playback'
 import { scanRecords, type ScanRecord } from '@/features/scan/lib/scanDetail'
 import { findGripPoint } from '@/shared/lib/three/findGripPoint'
+import { renderSecondary } from '@/shared/lib/three/secondaryRender'
 import type { PlaybackRun } from '@/shared/types/playback'
 
 import { AMR_DECK, BASE_PALLET_POINT, SCAN_TUNNEL_LIFT } from '../constants/modelPlacement'
@@ -136,6 +137,9 @@ let recordedRun: PlaybackRun | null = null
 let recordedId = ''
 
 let recorded: ScanRecord[] = []
+
+/** 인셋 때문에 가려 둔 관제 그림이 있는지. 없으면 매 프레임 DOM 을 뒤지지 않는다 */
+let annotationsClipped = false
 
 function tracks(run: PlaybackRun) {
   if (decodedRun === run) return
@@ -594,25 +598,46 @@ function paint(overlay: HTMLElement, hits: Hit[]) {
   }
 }
 
-/** 센서 화면 위에 겹치면 안 되는 관제 그림 (호버 칩 · 선택 카드 · 고장 라벨) */
+function unclip(node: HTMLElement) {
+  if (node.dataset.sensorClipped === undefined) return
+
+  if (node.dataset.viewportAnnotation === 'hide') node.style.visibility = ''
+  else node.style.clipPath = ''
+
+  delete node.dataset.sensorClipped
+}
+
+/**
+ * 센서 화면 위에 겹치면 안 되는 관제 그림 (호버 칩 · 선택 카드 · 고장 라벨).
+ * 위치를 먼저 모두 읽고 스타일은 그다음에 쓴다 (읽기 · 쓰기를 섞으면 노드마다 강제 레이아웃이 돈다).
+ * clip-path · visibility 는 getBoundingClientRect 에 영향이 없어 미리 풀지 않아도 된다
+ */
 function concealAnnotations(hole: HTMLElement) {
-  for (const node of document.querySelectorAll<HTMLElement>('[data-sensor-clipped]')) {
-    if (node.dataset.viewportAnnotation === 'hide') node.style.visibility = ''
-    else node.style.clipPath = ''
-
-    delete node.dataset.sensorClipped
-  }
-
   const holeRect = hole.getBoundingClientRect()
 
-  for (const node of document.querySelectorAll<HTMLElement>('[data-viewport-annotation]')) {
-    const rect = node.getBoundingClientRect()
+  const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-viewport-annotation]'))
 
-    if (rect.width < 1 || rect.height < 1) continue
+  const rects = nodes.map((node) => node.getBoundingClientRect())
 
-    const overlaps = rect.right > holeRect.left && rect.left < holeRect.right && rect.bottom > holeRect.top && rect.top < holeRect.bottom
+  // 주석 속성이 빠진 채 남은 노드 정리
+  if (annotationsClipped) for (const node of document.querySelectorAll<HTMLElement>('[data-sensor-clipped]:not([data-viewport-annotation])')) unclip(node)
 
-    if (!overlaps) continue
+  annotationsClipped = false
+
+  for (let index = 0; index < nodes.length; index += 1) {
+    const node = nodes[index]
+
+    const rect = rects[index]
+
+    const overlaps = rect.width >= 1 && rect.height >= 1 && rect.right > holeRect.left && rect.left < holeRect.right && rect.bottom > holeRect.top && rect.top < holeRect.bottom
+
+    if (!overlaps) {
+      unclip(node)
+
+      continue
+    }
+
+    annotationsClipped = true
 
     if (node.dataset.viewportAnnotation === 'cut') {
       const x = holeRect.left - rect.left
@@ -629,12 +654,11 @@ function concealAnnotations(hole: HTMLElement) {
 }
 
 function revealAnnotations() {
-  for (const node of document.querySelectorAll<HTMLElement>('[data-sensor-clipped]')) {
-    if (node.dataset.viewportAnnotation === 'hide') node.style.visibility = ''
-    else node.style.clipPath = ''
+  if (!annotationsClipped) return
 
-    delete node.dataset.sensorClipped
-  }
+  annotationsClipped = false
+
+  for (const node of document.querySelectorAll<HTMLElement>('[data-sensor-clipped]')) unclip(node)
 }
 
 /** 호버·선택 외곽선은 관제 화면용이라 센서 카메라에는 그리지 않는다 */
@@ -720,7 +744,7 @@ export function drawVision(gl: WebGLRenderer, scene: Scene) {
   gl.setScissor(view.x, view.y, view.width, view.height)
 
   try {
-    withoutSensorChrome(scene, () => withRealMaterials(() => gl.render(scene, camera)), kind === 'robot' && !overheadPlan ? subject : null)
+    withoutSensorChrome(scene, () => withRealMaterials(() => renderSecondary(gl, scene, () => gl.render(scene, camera))), kind === 'robot' && !overheadPlan ? subject : null)
   } finally {
     gl.setViewport(savedView)
 

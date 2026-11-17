@@ -64,6 +64,13 @@ const MAX_ZOOM_OUT_DISTANCE = INTRO_END_POSE.position.distanceTo(INTRO_END_POSE.
 /** 한 프레임에 클립이 통째로 건너뛰지 않게 하는 상한(초) */
 const CLIP_STEP = 0.05
 
+/**
+ * 시점 비행에 한 프레임으로 반영할 최대 시간 (초).
+ * 패널 갱신 · GC 등으로 프레임 하나가 길게 걸려도 카메라가 그만큼 한 번에 건너뛰지 않고 이어서 움직인다.
+ * 30fps 이상에서는 비행 시간이 그대로다
+ */
+const FLIGHT_STEP = 1 / 30
+
 /** ease-out (cubic): 빠르게 출발해 오버슈트 없이 멈춘다 */
 const ease = (k: number) => 1 - (1 - k) ** 3
 
@@ -795,7 +802,7 @@ export default function GlbCameraRig() {
 
     if (!active) return
 
-    active.elapsed = Math.min(active.elapsed + delta, active.duration)
+    active.elapsed = Math.min(active.elapsed + Math.min(delta, FLIGHT_STEP), active.duration)
 
     const k = ease(active.elapsed / active.duration)
 

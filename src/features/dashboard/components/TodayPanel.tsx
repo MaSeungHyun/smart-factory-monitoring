@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 
 import {
   ArrowDownToLine,
@@ -26,6 +26,8 @@ import {
   TabsTrigger,
 } from "@/shared/components/ui/Tabs";
 import { formatNumber } from "@/shared/lib/format";
+import { sameEquipmentItem } from "@/shared/lib/sameEquipmentItem";
+import type { EquipmentItem } from "@/shared/types";
 import type { StatusFrame } from "@/shared/types/playback";
 import { statusVisible, useUi } from "@/shared/stores/useUiStore";
 
@@ -52,6 +54,18 @@ const KPI_ICONS = {
 const pickHandled = (frame: StatusFrame) => Math.max(0, frame.counts.outbound);
 
 type TabId = "equipment" | "alarm" | "history";
+
+/** 장비 목록 한 줄. 재생 중 대시보드가 갱신돼도 값이 같은 줄은 등장 애니메이션 래퍼까지 다시 그리지 않는다 */
+const EquipmentRow = memo(
+  function EquipmentRow({ item, selected }: { item: EquipmentItem; selected: boolean }) {
+    return (
+      <AnimatedItem>
+        <EquipmentCard item={item} selected={selected} />
+      </AnimatedItem>
+    );
+  },
+  (prev, next) => prev.selected === next.selected && sameEquipmentItem(prev.item, next.item),
+);
 
 export default function TodayPanel() {
   const [tab, setTab] = useState<TabId>("equipment");
@@ -204,12 +218,11 @@ export default function TodayPanel() {
               className="flex flex-col gap-2.5"
             >
               {equipment.map((item) => (
-                <AnimatedItem key={item.id}>
-                  <EquipmentCard
-                    item={item}
-                    selected={item.id === ui.selectedId}
-                  />
-                </AnimatedItem>
+                <EquipmentRow
+                  key={item.id}
+                  item={item}
+                  selected={item.id === ui.selectedId}
+                />
               ))}
 
               {equipment.length === 0 && (

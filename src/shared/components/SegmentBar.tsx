@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { TONE_BG, type Tone } from '@/shared/constants/status'
 import { useSmoothValue, type SmoothTarget } from '@/shared/hooks/useSmoothValue'
@@ -15,11 +15,37 @@ interface SegmentBarProps {
   className?: string
 }
 
+/** 칸 채움 비율을 쓴다. painted 에 칸마다 마지막으로 쓴 비율을 두고, 바뀐 칸(보통 1칸)만 스타일을 쓴다 */
+function paintCells(element: HTMLDivElement | null, painted: number[], value: number) {
+  const fills = element?.children
+
+  if (!fills) return
+
+  const amount = (Math.min(Math.max(value, 0), 100) / 100) * fills.length
+
+  if (painted.length !== fills.length) painted.length = 0
+
+  for (let index = 0; index < fills.length; index += 1) {
+    const scale = Math.min(Math.max(amount - index, 0), 1)
+
+    if (painted[index] === scale) continue
+
+    const fill = fills[index].firstElementChild as HTMLElement | null
+
+    if (!fill) continue
+
+    painted[index] = scale
+
+    fill.style.transform = `scaleX(${scale})`
+  }
+}
+
 /**
  * 칸 너비와 간격을 유지하고, 컨테이너에 들어가는 칸만 표시한다.
- * 마지막 칸은 부분적으로 채워 연속으로 차오른다. 채움 너비는 rAF 에서 직접 쓴다
+ * 마지막 칸은 부분적으로 채워 연속으로 차오른다. 채움 너비는 rAF 에서 직접 쓴다.
+ * 재생 시각이 갱신될 때마다 부모 카드가 다시 그려져도, 값이 같으면 칸을 다시 만들지 않는다
  */
-export default function SegmentBar({
+function SegmentBar({
   percent,
   tone = 'running',
   segments = 30,
@@ -45,30 +71,29 @@ export default function SegmentBar({
 
   const fillClass = tone === 'primary' ? 'bg-primary-on-dark' : TONE_BG[tone]
 
-  const paint = (value: number) => {
-    const fills = root.current?.children
+  // 칸마다 마지막으로 쓴 채움 비율
+  const painted = useRef<number[]>([])
 
-    if (!fills) return
-
-    const amount = (Math.min(Math.max(value, 0), 100) / 100) * fills.length
-
-    for (let index = 0; index < fills.length; index += 1) {
-      const fill = (fills[index].firstElementChild as HTMLElement | null)
-
-      if (fill) fill.style.transform = `scaleX(${Math.min(Math.max(amount - index, 0), 1)})`
-    }
-  }
+  const paint = (value: number) => paintCells(root.current, painted.current, value)
 
   const smooth = useSmoothValue(percent, paint)
   useLayoutEffect(() => paint(smooth.current.value))
 
-  return (
-    <div ref={root} style={{ gap, height, width: preferredWidth }} className={cn('flex min-w-0 max-w-full', className)}>
-      {Array.from({ length: count }, (_, index) => (
+  const cells = useMemo(
+    () =>
+      Array.from({ length: count }, (_, index) => (
         <span key={index} style={{ width: Math.min(segmentWidth, width) }} className="relative shrink-0 overflow-hidden bg-border-default">
           <span style={{ transform: 'scaleX(0)' }} className={cn('absolute inset-0 origin-left', fillClass)} />
         </span>
-      ))}
+      )),
+    [count, segmentWidth, width, fillClass],
+  )
+
+  return (
+    <div ref={root} style={{ gap, height, width: preferredWidth }} className={cn('flex min-w-0 max-w-full', className)}>
+      {cells}
     </div>
   )
 }
+
+export default memo(SegmentBar)

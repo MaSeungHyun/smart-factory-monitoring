@@ -1,5 +1,5 @@
 import AnimatedNumber from '@/shared/components/AnimatedNumber'
-import type { KeyboardEvent } from 'react'
+import { memo, type KeyboardEvent } from 'react'
 
 import { Bot, ScanLine, Truck } from 'lucide-react'
 
@@ -7,6 +7,7 @@ import Card from '@/shared/components/Card'
 import SegmentBar from '@/shared/components/SegmentBar'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { openEquipment } from '@/shared/lib/equipmentActions'
+import { sameEquipmentItem } from '@/shared/lib/sameEquipmentItem'
 import { uiStore } from '@/shared/stores/useUiStore'
 import type { EquipmentItem } from '@/shared/types'
 
@@ -18,7 +19,7 @@ interface EquipmentCardProps {
 }
 
 /** 클릭: 선택 (3D 외곽 · 콜아웃), 더블클릭 / Enter: 그 장비로 이동 */
-export default function EquipmentCard({ item, selected }: EquipmentCardProps) {
+function EquipmentCard({ item, selected }: EquipmentCardProps) {
   const Icon = TYPE_ICON[item.type]
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -67,3 +68,6 @@ export default function EquipmentCard({ item, selected }: EquipmentCardProps) {
     </Card>
   )
 }
+
+// 표시 값이 같은 카드는 대시보드 갱신 때 다시 그리지 않는다
+export default memo(EquipmentCard, (prev, next) => prev.selected === next.selected && sameEquipmentItem(prev.item, next.item))

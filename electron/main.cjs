@@ -4,7 +4,8 @@ const path = require('node:path')
 const { createSplashWindow } = require('./splashWindow.cjs')
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'monitor', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  // fetch · 워커 · wasm(basis transcoder) · 데이터 청크가 배포 exe 안의 dist 에서 그대로 읽히도록 권한을 연다
+  { scheme: 'monitor', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
 ])
 
 /**
@@ -16,8 +17,26 @@ const MAIN_READY_TIMEOUT_MS = 20_000
 /** 렌더러가 첫 화면 준비를 알리는 IPC 채널 (electron/preload.cjs 와 같아야 한다) */
 const READY_CHANNEL = 'monitor:renderer-ready'
 
+/** 배포 exe 의 userData 폴더 이름 (%APPDATA% 아래). 개발용 `electron .` 과 캐시 폴더를 나눠 같은 PC 에서 함께 켜도 캐시 잠금이 충돌하지 않는다 */
+const PACKAGED_USER_DATA_DIR = 'GRAPICAR Smart Factory Monitoring'
+
+if (app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), PACKAGED_USER_DATA_DIR))
+
 let mainWindow = null
 let splash = null
+
+// exe 를 두 번 실행하면 창을 새로 띄우지 않고 이미 켜진 창을 앞으로 가져온다
+const hasInstanceLock = app.requestSingleInstanceLock()
+
+if (!hasInstanceLock) app.quit()
+
+app.on('second-instance', () => {
+  const window = mainWindow && mainWindow.isVisible() ? mainWindow : splash
+  if (!window || window.isDestroyed()) return
+
+  if (window.isMinimized()) window.restore()
+  window.focus()
+})
 
 let painted = false
 let rendererReady = false
@@ -151,6 +170,8 @@ function start() {
 }
 
 app.whenReady().then(() => {
+  if (!hasInstanceLock) return
+
   protocol.registerSource('monitor', {
     routes: [{
       match: { host: 'app' },
