@@ -7,7 +7,7 @@ import { getExactTime } from '@/features/playback'
 import { TONE_BG, TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
 import { cn } from '@/shared/lib/cn'
 
-import { boxPoseAt } from '../lib/boxPoseAt'
+import { boxOwnerAt, boxPoseAt } from '../lib/boxPoseAt'
 import type { DecodedBox } from '../lib/decodeBoxes'
 
 const pose = [0, 0, 0, 0]
@@ -29,7 +29,10 @@ function DefectMark({ box }: { box: DecodedBox }) {
 
     const time = getExactTime()
 
-    const visible = time >= box.start && time >= box.defectAt && time < box.end
+    // 라벨은 판정 뒤 컨베이어 · 로봇 구간만. 불량 팔레트에 실린 뒤(팔레트 · AMR)에는 박스 색만 남긴다
+    const owner = boxOwnerAt(box, time)
+
+    const visible = time >= box.start && time >= box.defectAt && time < box.end && owner !== 'pallet' && owner !== 'amr'
 
     node.visible = visible
 
