@@ -8,6 +8,7 @@ import type { SimBoxKeyframe, SimBoxParentEvent, SimPalletEvent, SimQuat, SimRec
 import { boxesFromRecording } from './chunkBoxes'
 import { injectEquipmentFaults } from './injectEquipmentFaults'
 import { buildKpiTrack } from './kpi'
+import { markScanDefects } from './scanDefects'
 import { applyCountsOffset, applyRobotCountOffset, countsOffsetFrom, robotCountOffsetFrom } from './shiftBaseline'
 
 const DEG = Math.PI / 180
@@ -217,6 +218,8 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
 
   const recording = shiftRecording(chunk, offset, manifest.duration)
 
+  const kpi = buildKpiTrack(chunk.tracks.kpi, chunk.snapshot.kpi, offset, manifest.kpiSchema)
+
   return injectEquipmentFaults({
     meta: {
       source: `robot_IK headless ${manifest.runId}`,
@@ -235,10 +238,11 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
     events: chunk.events.map((event) => ({ ...event, t: round(event.t - offset), from: event.from ?? event.to })),
     alarms: (chunk.alarms ?? []).map((alarm) => ({ ...alarm, t: round(alarm.t - offset), until: alarm.until === undefined ? undefined : round(alarm.until - offset) })) as PlaybackRun['alarms'],
     recording,
-    boxes: boxesFromRecording(recording, tracks.t),
+    // 스캐너 불량 판정은 KPI 누계에만 있어 박스 트랙에 옮겨 붙인다 (컨베이어 위 불량 표시)
+    boxes: markScanDefects(boxesFromRecording(recording, tracks.t), kpi, manifest.equipment, tracks.t),
     aggregates,
     racks: chunk.snapshot.racks,
     parts: manifest.animatedParts ? buildPartTracks(manifest.animatedParts, chunk.snapshot.parts, chunk.tracks.parts, offset, startOf(chunk, offset)) : undefined,
-    kpi: buildKpiTrack(chunk.tracks.kpi, chunk.snapshot.kpi, offset, manifest.kpiSchema),
+    kpi,
   })
 }
