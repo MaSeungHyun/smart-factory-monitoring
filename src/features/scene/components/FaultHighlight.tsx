@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import { Color, Mesh, MeshStandardMaterial, type Material, type Object3D } from 'three'
 
 import { dashboardAt, playbackStore } from '@/features/playback'
+import { renderActivity } from '@/shared/lib/three/renderActivity'
 import type { DashboardView } from '@/features/playback/lib/dashboardView'
 
 import { faultedIds } from '../lib/faultTargets'
@@ -86,6 +87,9 @@ export default function FaultHighlight() {
 
       if (root) current.set(id, highlight(root))
     }
+
+    // 맥동 중에는 일시정지여도 렌더 온디맨드 게이트가 멈추지 않게
+    if (current.size) renderActivity.keepAlive()
 
     const intensity = 0.6 + 0.4 * Math.sin(clock.elapsedTime * 5)
 

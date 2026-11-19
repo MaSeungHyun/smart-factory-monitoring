@@ -18,6 +18,7 @@ import {
   WIREFRAME_RESCAN_S,
   WIREFRAME_SURFACE_OPACITY,
 } from '@/shared/constants/animation'
+import { renderActivity } from '@/shared/lib/three/renderActivity'
 import { uiStore } from '@/shared/stores/useUiStore'
 
 import { dashboardAt, playbackStore } from '@/features/playback'
@@ -320,6 +321,9 @@ export default function FactoryWireframe() {
     k.current += (target - k.current) * (1 - Math.exp(-Math.min(delta, 0.1) / WIREFRAME_FADE_TAU_S))
 
     if (Math.abs(target - k.current) < 0.002) k.current = target
+
+    // 페이드 중에는 렌더 온디맨드 게이트가 멈추지 않게
+    if (k.current !== target) renderActivity.keepAlive()
 
     if (k.current === 0) {
       wireState.active = false

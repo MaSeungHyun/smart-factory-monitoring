@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber'
 import { Box3, BoxGeometry, Color, EdgesGeometry, LineBasicMaterial, LineSegments, Matrix4, Quaternion, Vector3, type Object3D } from 'three'
 
+import { renderActivity } from '@/shared/lib/three/renderActivity'
 import { getHover, uiStore } from '@/shared/stores/useUiStore'
 
 import { equipmentById, equipmentLocalBox, OUTLINE_PAD, refreshRobotBox } from '../lib/boundsRaycast'
@@ -96,6 +97,9 @@ export default function SelectionHighlight() {
 
       placeOutline(lines, target, local)
     }
+
+    // 선택 외곽선이 맥동하는 동안은 렌더 온디맨드 게이트가 멈추지 않게
+    if (selected.visible) renderActivity.keepAlive()
 
     selectedMaterial.opacity = 0.65 + 0.35 * Math.sin(clock.elapsedTime * 4)
   })

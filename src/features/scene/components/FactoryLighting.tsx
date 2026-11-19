@@ -46,8 +46,7 @@ export default function FactoryLighting() {
     if (gl.shadowMap) {
       gl.shadowMap.enabled = shadow !== 'off'
 
-      gl.shadowMap.autoUpdate = true
-
+      // autoUpdate 는 ShadowUpdateGate 가 맡는다 (WebGL: 움직인 프레임만 갱신). 설정이 바뀌면 한 번은 다시 그린다
       gl.shadowMap.needsUpdate = true
     }
 

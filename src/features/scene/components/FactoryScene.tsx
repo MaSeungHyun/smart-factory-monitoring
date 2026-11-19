@@ -18,11 +18,13 @@ import FactoryProps from "./FactoryProps";
 import FactoryWarmup from "./FactoryWarmup";
 import FactoryWireframe from "./FactoryWireframe";
 import FaultHighlight from "./FaultHighlight";
+import FrameLoopGate from "./FrameLoopGate";
 import GlbCameraRig from "./GlbCameraRig";
 import SceneBloom from "./SceneBloom";
 import SceneLabels from "./SceneLabels";
 import SceneReady from "./SceneReady";
 import SelectionLayer from "./SelectionLayer";
+import ShadowUpdateGate from "./ShadowUpdateGate";
 import VisionInset from "./VisionInset";
 
 const CAMERA = { fov: 45, near: 0.5, far: 2000 };
@@ -133,6 +135,11 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
         <SceneReady />
 
         <FactoryWarmup />
+
+        {/* 성능 게이트: 일시정지 · 다이얼로그일 때 렌더 쉬기 / 그림자는 움직인 프레임만 */}
+        <FrameLoopGate />
+
+        <ShadowUpdateGate />
 
         {children}
       </Suspense>

@@ -2,6 +2,7 @@ import { useThree } from '@react-three/fiber'
 import { useEffect, useLayoutEffect } from 'react'
 import { Group, Mesh, type Object3D, MeshStandardMaterial, Texture, WebGLRenderer } from 'three'
 
+import { applyAnisotropy, maxAnisotropy, TEXTURE_ANISOTROPY } from '@/shared/lib/three/anisotropy'
 import { initTexturesInBatches } from '@/shared/lib/three/compileInBatches'
 
 import { restMaterial } from '../lib/factoryIntro'
@@ -84,6 +85,9 @@ export default function FactoryWarmup() {
 
     const seen = new Set<string>()
 
+    // 바닥 · 벽 텍스처는 비스듬히 보이므로 이방성 필터를 GPU 업로드 전에 건다 (GPU 최대값으로 자름)
+    const anisotropy = Math.min(TEXTURE_ANISOTROPY, maxAnisotropy(gl))
+
     scene.getObjectByName('factory-props')?.traverse((object) => {
       if (!isMesh(object)) return
 
@@ -95,6 +99,10 @@ export default function FactoryWarmup() {
         seen.add(material.uuid)
 
         const rest = restMaterial(material)
+
+        applyAnisotropy(material, anisotropy)
+
+        applyAnisotropy(rest, anisotropy)
 
         keptMaterials.push(rest)
 
