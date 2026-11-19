@@ -1,11 +1,13 @@
 import { FACTORY_TEMPLATE, parseTemplate } from '@/features/template'
+import { ACTIVE_RUN } from '@/shared/constants/activeRun'
 import type { SceneEquipment } from '@/shared/types'
 
 /**
  * 창고 D라인 (x≈34.9). 미사용이라 씬·맵에서만 숨긴다.
  * id 순번은 재생 데이터와 맞춰야 해서 템플릿에서 지우지 않는다.
+ * 템플릿 06 에만 해당 (템플릿 10 의 rack-20~28 은 실제 사용 랙).
  */
-const HIDDEN_EQUIPMENT_IDS = new Set([
+const HIDDEN_EQUIPMENT_IDS = new Set(ACTIVE_RUN.layout !== 'v2' ? [] : [
   'rack-20',
   'rack-21',
   'rack-22',

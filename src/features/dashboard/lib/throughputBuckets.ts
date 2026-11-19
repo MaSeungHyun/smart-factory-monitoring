@@ -1,4 +1,5 @@
 import { VIRTUAL_COUNTS_AT_START } from '@/features/playback/lib/shiftBaseline'
+import { ACTIVE_RUN } from '@/shared/constants/activeRun'
 import type { PlaybackRun } from '@/shared/types/playback'
 
 export interface ThroughputBucket {
@@ -28,6 +29,9 @@ function clockLabel(seconds: number) {
 }
 
 function scaleOf(actual: number, target: number) {
+  // 실제 이력 녹화는 분당 집계를 그대로 쓴다
+  if (ACTIVE_RUN.realHistory) return 1
+
   if (actual <= 0 || target <= 0) return 1
 
   return target / actual

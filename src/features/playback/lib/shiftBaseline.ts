@@ -1,3 +1,4 @@
+import { ACTIVE_RUN } from '@/shared/constants/activeRun'
 import type { RunCounts } from '@/shared/types/playback'
 
 /**
@@ -102,6 +103,9 @@ export function virtualRobotCountsAtStart(weights: Record<string, number> = ROBO
 export function countsOffsetFrom(snapshot: Record<string, number> | undefined) {
   const offset: Record<string, number> = {}
 
+  // 실제 이력 녹화: 스냅샷 누계가 곧 공장 누계라 보정 없음
+  if (ACTIVE_RUN.realHistory) return offset
+
   for (const [key, target] of Object.entries(VIRTUAL_COUNTS_AT_START)) {
     if (key === 'handled') continue
 
@@ -130,6 +134,9 @@ export function applyCountsOffset(counts: Record<string, number>, offset: Record
  *      = recorded + (share - recordedAtStart)
  */
 export function robotCountOffsetFrom(startCounts: Record<string, number | undefined>) {
+  // 실제 이력 녹화: 로봇 count 가 이미 하루 누계
+  if (ACTIVE_RUN.realHistory) return {} as Record<string, number>
+
   const weights = { ...ROBOT_WEIGHTS }
 
   for (const [id, count] of Object.entries(startCounts)) {

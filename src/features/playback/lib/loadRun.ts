@@ -1,3 +1,4 @@
+import { ACTIVE_RUN } from '@/shared/constants/activeRun'
 import { unwrapDegrees } from '@/shared/lib/angles'
 import type { PlaybackRun } from '@/shared/types/playback'
 import type { RunAggregates, RunChunk, RunManifest } from '@/shared/types/runChunk'
@@ -6,7 +7,8 @@ import { ChunkWindow } from './chunkWindow'
 
 export { chunkIndexAt } from './chunkWindow'
 
-export const RUN_URL = '/data/run-2026-11-03-t06-20m-w7200-s12345-v3/manifest.json'
+/** 재생 녹화 manifest (shared/constants/activeRun.ts 에서 고른다) */
+export const RUN_URL = ACTIVE_RUN.url
 
 const isManifest = (url: string) => url.endsWith('manifest.json')
 
