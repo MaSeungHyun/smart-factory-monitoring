@@ -1,0 +1,2822 @@
+{
+ "version": 1,
+ "runId": "run-2026-11-19-t10-8h-s12345",
+ "template": "factory-glb-v2-optimized",
+ "seed": 12345,
+ "duration": 28800,
+ "simTimeOffset": 0,
+ "rackOccupancyAtStart": {
+  "stored": 0,
+  "slots": 324,
+  "ratio": 0
+ },
+ "countsAtStart": {
+  "inbound": 16,
+  "scanned": 0,
+  "defects": 0,
+  "placed": 0,
+  "passed": 0,
+  "depalletized": 0,
+  "palletsShipped": 0,
+  "outbound": 0,
+  "storedToRack": 0,
+  "shippedPallets": 0,
+  "carrierTrips": 0,
+  "forkliftStored": 0,
+  "wip": 0
+ },
+ "statusEncoding": "status[].equipment holds only entries changed since previous row (first row per chunk is full)",
+ "timeBase": "all t are absolute sim seconds; subtract simTimeOffset for playback time",
+ "sampleHz": {
+  "joints": 10,
+  "amrs": 10,
+  "status": 2,
+  "boxKeyframes": 1,
+  "parts": 10,
+  "kpi": 1
+ },
+ "kpiSchema": {
+  "version": 1,
+  "sampleHz": 1,
+  "encoding": "chunk tracks.kpi = rows [t, kpi] (t absolute sim s, one row per second, full object each row); snapshot.kpi = kpi at chunk start. Counts are day totals since sim t=0 (warm-up included).",
+  "placeholders": {
+   "<stage>": "inbound|depalletize|scan|palletize|rackStore|outbound|ship",
+   "<scannerId>": "manifest.equipment id of kind scanner",
+   "<deviceId>": "robot, vehicle (AMR / forklift / cycle vehicle) or scanner id",
+   "<vehicleId>": "vehicle id (equipment[] rows of the sim's agents)",
+   "<robotId>": "robot arm id"
+  },
+  "stages": [
+   {
+    "id": "inbound",
+    "unit": "boxes",
+    "count": "boxes arrived (spawned on inbound pallets / infeed)",
+    "wip": "arrived boxes not yet depalletized",
+    "progressOf": "inbound boxes (always 100 once any arrived)"
+   },
+   {
+    "id": "depalletize",
+    "unit": "boxes",
+    "count": "boxes taken off inbound pallets onto the line",
+    "wip": "depalletized boxes not yet scanned (no scanners: not yet palletized/passed)",
+    "progressOf": "inbound boxes"
+   },
+   {
+    "id": "scan",
+    "unit": "boxes",
+    "count": "boxes with a scan result (first scan per box)",
+    "wip": "scanned boxes not yet palletized or passed (0 without scanners)",
+    "progressOf": "inbound boxes"
+   },
+   {
+    "id": "palletize",
+    "unit": "boxes",
+    "count": "boxes placed on output pallets by robots",
+    "wip": "boxes on pallets still loading at stations",
+    "progressOf": "inbound boxes"
+   },
+   {
+    "id": "rackStore",
+    "unit": "pallets",
+    "count": "full pallets stored into racks",
+    "wip": "full pallets not yet stored (waiting / being carried)",
+    "progressOf": "full pallets"
+   },
+   {
+    "id": "outbound",
+    "unit": "pallets",
+    "count": "outbound (shipping) orders drawn from stored pallets",
+    "wip": "drawn orders not yet shipped",
+    "progressOf": "full pallets"
+   },
+   {
+    "id": "ship",
+    "unit": "pallets",
+    "count": "pallets shipped out through the stage door",
+    "wip": "always 0 (sink)",
+    "progressOf": "full pallets"
+   }
+  ],
+  "keys": [
+   {
+    "key": "t",
+    "unit": "s",
+    "type": "number",
+    "meaning": "sim time of the sample (absolute)"
+   },
+   {
+    "key": "throughput.processed",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "processed today = boxes palletized (stages.palletize.count)"
+   },
+   {
+    "key": "throughput.perHour",
+    "unit": "boxes/h",
+    "type": "number",
+    "meaning": "processed in the last 3600 s (scaled up while t < 3600)"
+   },
+   {
+    "key": "throughput.perMinute",
+    "unit": "boxes/min",
+    "type": "number",
+    "meaning": "processed in the last 60 s"
+   },
+   {
+    "key": "throughput.avgPerHour",
+    "unit": "boxes/h",
+    "type": "number",
+    "meaning": "processed / day elapsed"
+   },
+   {
+    "key": "stages.<stage>.count",
+    "unit": "boxes|pallets (KPI_STAGES unit)",
+    "type": "int",
+    "meaning": "day total through the stage"
+   },
+   {
+    "key": "stages.<stage>.wip",
+    "unit": "boxes|pallets (KPI_STAGES unit)",
+    "type": "int",
+    "meaning": "units queued at / inside the stage (KPI_STAGES wip)"
+   },
+   {
+    "key": "stages.<stage>.progress",
+    "unit": "%",
+    "type": "number",
+    "meaning": "count / reference (KPI_STAGES progressOf) * 100"
+   },
+   {
+    "key": "wip.boxes",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "boxes in process = inbound - palletized - passed (not yet on a pallet)"
+   },
+   {
+    "key": "wip.pallets",
+    "unit": "pallets",
+    "type": "int",
+    "meaning": "full pallets not yet stored + open outbound orders"
+   },
+   {
+    "key": "pallets.full",
+    "unit": "pallets",
+    "type": "int",
+    "meaning": "output pallets completed (filled) today"
+   },
+   {
+    "key": "boxes.passed",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "boxes that ran off the line end unpicked"
+   },
+   {
+    "key": "scan.scanned",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "boxes scanned (one result per box)"
+   },
+   {
+    "key": "scan.pass",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "scan result normal"
+   },
+   {
+    "key": "scan.defect",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "scan result defect"
+   },
+   {
+    "key": "scan.passRate",
+    "unit": "%",
+    "type": "number|null",
+    "meaning": "pass / scanned * 100 (null before the first scan)"
+   },
+   {
+    "key": "scan.defectRate",
+    "unit": "%",
+    "type": "number|null",
+    "meaning": "defect / scanned * 100 (null before the first scan)"
+   },
+   {
+    "key": "scan.scanners",
+    "unit": "count",
+    "type": "int",
+    "meaning": "registered scanners (0 = scan KPIs not available)"
+   },
+   {
+    "key": "scan.byScanner.<scannerId>.scanned",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "boxes this scanner scanned"
+   },
+   {
+    "key": "scan.byScanner.<scannerId>.pass",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "normal results of this scanner"
+   },
+   {
+    "key": "scan.byScanner.<scannerId>.defect",
+    "unit": "boxes",
+    "type": "int",
+    "meaning": "defect results of this scanner"
+   },
+   {
+    "key": "scan.byScanner.<scannerId>.passRate",
+    "unit": "%",
+    "type": "number|null",
+    "meaning": "pass / scanned * 100"
+   },
+   {
+    "key": "scan.byScanner.<scannerId>.defectRate",
+    "unit": "%",
+    "type": "number|null",
+    "meaning": "defect / scanned * 100"
+   },
+   {
+    "key": "rack.stored",
+    "unit": "slots",
+    "type": "int",
+    "meaning": "rack slots holding a pallet"
+   },
+   {
+    "key": "rack.reserved",
+    "unit": "slots",
+    "type": "int",
+    "meaning": "rack slots booked by a delivery in progress"
+   },
+   {
+    "key": "rack.slots",
+    "unit": "slots",
+    "type": "int",
+    "meaning": "rack slots total"
+   },
+   {
+    "key": "rack.occupancy",
+    "unit": "%",
+    "type": "number",
+    "meaning": "stored / slots * 100"
+   },
+   {
+    "key": "vehicles.total",
+    "unit": "count",
+    "type": "int",
+    "meaning": "vehicles"
+   },
+   {
+    "key": "vehicles.busy",
+    "unit": "count",
+    "type": "int",
+    "meaning": "vehicles busy now (not idle / waiting / charging / disabled)"
+   },
+   {
+    "key": "vehicles.utilization",
+    "unit": "%",
+    "type": "number",
+    "meaning": "fleet mean of vehicles.byId.<vehicleId>.utilization"
+   },
+   {
+    "key": "vehicles.byId.<vehicleId>.utilization",
+    "unit": "%",
+    "type": "number",
+    "meaning": "busy seconds / day elapsed * 100"
+   },
+   {
+    "key": "vehicles.byId.<vehicleId>.state",
+    "unit": "enum",
+    "type": "string",
+    "meaning": "sim state (idle|waiting|charging|disabled|pickup|dispatch|loading|...)"
+   },
+   {
+    "key": "devices.<deviceId>.kind",
+    "unit": "enum",
+    "type": "string",
+    "meaning": "robot|vehicle|scanner"
+   },
+   {
+    "key": "devices.<deviceId>.state",
+    "unit": "enum",
+    "type": "string",
+    "meaning": "typed operation state (robots/vehicles: equipment operation; scanners: scanning (scan within 2 s) | idle)"
+   },
+   {
+    "key": "devices.<deviceId>.utilization",
+    "unit": "%",
+    "type": "number|null",
+    "meaning": "robots: busy s / elapsed; vehicles: as vehicles.byId; scanners: null"
+   },
+   {
+    "key": "robots.<robotId>.cycles",
+    "unit": "count",
+    "type": "int",
+    "meaning": "completed robot cycles (boxes moved)"
+   },
+   {
+    "key": "robots.<robotId>.cycleTimeLast",
+    "unit": "s",
+    "type": "number|null",
+    "meaning": "time between the last two completed cycles"
+   },
+   {
+    "key": "robots.<robotId>.cycleTimeAvg",
+    "unit": "s",
+    "type": "number|null",
+    "meaning": "mean of the last 10 cycle intervals"
+   },
+   {
+    "key": "robots.<robotId>.busyPerCycle",
+    "unit": "s",
+    "type": "number|null",
+    "meaning": "busy seconds / cycles (day)"
+   },
+   {
+    "key": "robots.<robotId>.utilization",
+    "unit": "%",
+    "type": "number",
+    "meaning": "busy seconds / day elapsed * 100"
+   }
+  ]
+ },
+ "kpiEncoding": "chunk tracks.kpi rows [t, kpiSample] at 1 Hz (full sample each row, keys per kpiSchema); snapshot.kpi = latest sample at chunk start. Counts are day totals since t=0 (warm-up included)",
+ "animatedParts": [
+  {
+   "i": 0,
+   "deviceId": "amr-56",
+   "kind": "forklift",
+   "partName": "Forklift.Fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 0.5199,
+   "threshold": 0.001
+  },
+  {
+   "i": 1,
+   "deviceId": "amr-57",
+   "kind": "forklift",
+   "partName": "Forklift.Fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 0.5199,
+   "threshold": 0.001
+  },
+  {
+   "i": 2,
+   "deviceId": "amr-81",
+   "kind": "forklift",
+   "partName": "Forklift.Fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 0.5199,
+   "threshold": 0.001
+  },
+  {
+   "i": 3,
+   "deviceId": "amr-82",
+   "kind": "forklift",
+   "partName": "Forklift.Fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 0.5199,
+   "threshold": 0.001
+  },
+  {
+   "i": 4,
+   "deviceId": "amr-83",
+   "kind": "forklift",
+   "partName": "Forklift.Fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 0.5199,
+   "threshold": 0.001
+  },
+  {
+   "i": 5,
+   "deviceId": "amr-89",
+   "kind": "forklift",
+   "partName": "Forklift.Fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 0.5199,
+   "threshold": 0.001
+  },
+  {
+   "i": 6,
+   "deviceId": "amr-91",
+   "kind": "forklift",
+   "partName": "Forklift.Fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 0.5199,
+   "threshold": 0.001
+  },
+  {
+   "i": 7,
+   "deviceId": "transfer-74",
+   "kind": "transfer",
+   "partName": "Transfer_Forklift_fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.2753,
+   "threshold": 0.001
+  },
+  {
+   "i": 8,
+   "deviceId": "transfer-74",
+   "kind": "transfer",
+   "partName": "stopper-x",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.03,
+   "threshold": 0.001,
+   "procedural": true,
+   "parent": "carriage",
+   "restPos": [
+    -0.73915,
+    1.03,
+    1.73
+   ]
+  },
+  {
+   "i": 9,
+   "deviceId": "transfer-74",
+   "kind": "transfer",
+   "partName": "stopper+x",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.03,
+   "threshold": 0.001,
+   "procedural": true,
+   "parent": "carriage",
+   "restPos": [
+    0.6191500000000001,
+    1.03,
+    1.73
+   ]
+  },
+  {
+   "i": 10,
+   "deviceId": "transfer-75",
+   "kind": "transfer",
+   "partName": "Transfer_Forklift_fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.2753,
+   "threshold": 0.001
+  },
+  {
+   "i": 11,
+   "deviceId": "transfer-75",
+   "kind": "transfer",
+   "partName": "stopper-x",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.03,
+   "threshold": 0.001,
+   "procedural": true,
+   "parent": "carriage",
+   "restPos": [
+    -0.73915,
+    1.03,
+    1.73
+   ]
+  },
+  {
+   "i": 12,
+   "deviceId": "transfer-75",
+   "kind": "transfer",
+   "partName": "stopper+x",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.03,
+   "threshold": 0.001,
+   "procedural": true,
+   "parent": "carriage",
+   "restPos": [
+    0.6191500000000001,
+    1.03,
+    1.73
+   ]
+  },
+  {
+   "i": 13,
+   "deviceId": "transfer-76",
+   "kind": "transfer",
+   "partName": "Transfer_Forklift_fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.2753,
+   "threshold": 0.001
+  },
+  {
+   "i": 14,
+   "deviceId": "transfer-76",
+   "kind": "transfer",
+   "partName": "stopper-x",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.03,
+   "threshold": 0.001,
+   "procedural": true,
+   "parent": "carriage",
+   "restPos": [
+    -0.73915,
+    1.03,
+    1.73
+   ]
+  },
+  {
+   "i": 15,
+   "deviceId": "transfer-76",
+   "kind": "transfer",
+   "partName": "stopper+x",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.03,
+   "threshold": 0.001,
+   "procedural": true,
+   "parent": "carriage",
+   "restPos": [
+    0.6191500000000001,
+    1.03,
+    1.73
+   ]
+  },
+  {
+   "i": 16,
+   "deviceId": "transfer-77",
+   "kind": "transfer",
+   "partName": "Transfer_Forklift_fork",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.2753,
+   "threshold": 0.001
+  },
+  {
+   "i": 17,
+   "deviceId": "transfer-77",
+   "kind": "transfer",
+   "partName": "stopper-x",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.03,
+   "threshold": 0.001,
+   "procedural": true,
+   "parent": "carriage",
+   "restPos": [
+    -0.73915,
+    1.03,
+    1.73
+   ]
+  },
+  {
+   "i": 18,
+   "deviceId": "transfer-77",
+   "kind": "transfer",
+   "partName": "stopper+x",
+   "channel": "posY",
+   "unit": "m",
+   "rest": 1.03,
+   "threshold": 0.001,
+   "procedural": true,
+   "parent": "carriage",
+   "restPos": [
+    0.6191500000000001,
+    1.03,
+    1.73
+   ]
+  },
+  {
+   "i": 19,
+   "deviceId": "door-64",
+   "kind": "door",
+   "partName": "curtain",
+   "channel": "fraction",
+   "unit": "0..1",
+   "rest": 1,
+   "threshold": 0.005,
+   "procedural": true
+  },
+  {
+   "i": 20,
+   "deviceId": "door-65",
+   "kind": "door",
+   "partName": "curtain",
+   "channel": "fraction",
+   "unit": "0..1",
+   "rest": 1,
+   "threshold": 0.005,
+   "procedural": true
+  },
+  {
+   "i": 21,
+   "deviceId": "door-66",
+   "kind": "door",
+   "partName": "curtain",
+   "channel": "fraction",
+   "unit": "0..1",
+   "rest": 1,
+   "threshold": 0.005,
+   "procedural": true
+  },
+  {
+   "i": 22,
+   "deviceId": "door-67",
+   "kind": "door",
+   "partName": "curtain",
+   "channel": "fraction",
+   "unit": "0..1",
+   "rest": 1,
+   "threshold": 0.005,
+   "procedural": true
+  },
+  {
+   "i": 23,
+   "deviceId": "door-68",
+   "kind": "door",
+   "partName": "curtain",
+   "channel": "fraction",
+   "unit": "0..1",
+   "rest": 1,
+   "threshold": 0.005,
+   "procedural": true
+  },
+  {
+   "i": 24,
+   "deviceId": "door-69",
+   "kind": "door",
+   "partName": "curtain",
+   "channel": "fraction",
+   "unit": "0..1",
+   "rest": 1,
+   "threshold": 0.005,
+   "procedural": true
+  },
+  {
+   "i": 25,
+   "deviceId": "door-70",
+   "kind": "door",
+   "partName": "curtain",
+   "channel": "fraction",
+   "unit": "0..1",
+   "rest": 1,
+   "threshold": 0.005,
+   "procedural": true
+  },
+  {
+   "i": 26,
+   "deviceId": "door-71",
+   "kind": "door",
+   "partName": "curtain",
+   "channel": "fraction",
+   "unit": "0..1",
+   "rest": 1,
+   "threshold": 0.005,
+   "procedural": true
+  },
+  {
+   "i": 27,
+   "deviceId": "conveyor-4",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 28,
+   "deviceId": "conveyor-41",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 29,
+   "deviceId": "conveyor-42",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 30,
+   "deviceId": "conveyor-43",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 31,
+   "deviceId": "conveyor-44",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 32,
+   "deviceId": "conveyor-45",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 33,
+   "deviceId": "conveyor-46",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 34,
+   "deviceId": "scanbelt:scanner-16",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 35,
+   "deviceId": "scanbelt:scanner-17",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 36,
+   "deviceId": "scanbelt:scanner-18",
+   "kind": "conveyor",
+   "partName": "belt",
+   "channel": "speed",
+   "unit": "m/s",
+   "rest": 0,
+   "threshold": 0.001,
+   "procedural": true
+  },
+  {
+   "i": 37,
+   "deviceId": "robot-1",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 38,
+   "deviceId": "robot-1",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 39,
+   "deviceId": "robot-1",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 40,
+   "deviceId": "robot-1",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 41,
+   "deviceId": "robot-1",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 42,
+   "deviceId": "robot-5",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 43,
+   "deviceId": "robot-5",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 44,
+   "deviceId": "robot-5",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 45,
+   "deviceId": "robot-5",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 46,
+   "deviceId": "robot-5",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 47,
+   "deviceId": "robot-6",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 48,
+   "deviceId": "robot-6",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 49,
+   "deviceId": "robot-6",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 50,
+   "deviceId": "robot-6",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 51,
+   "deviceId": "robot-6",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 52,
+   "deviceId": "robot-7",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 53,
+   "deviceId": "robot-7",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 54,
+   "deviceId": "robot-7",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 55,
+   "deviceId": "robot-7",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 56,
+   "deviceId": "robot-7",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 57,
+   "deviceId": "robot-8",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 58,
+   "deviceId": "robot-8",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 59,
+   "deviceId": "robot-8",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 60,
+   "deviceId": "robot-8",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 61,
+   "deviceId": "robot-8",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 62,
+   "deviceId": "robot-9",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 63,
+   "deviceId": "robot-9",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 64,
+   "deviceId": "robot-9",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 65,
+   "deviceId": "robot-9",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 66,
+   "deviceId": "robot-9",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 67,
+   "deviceId": "robot-58",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 68,
+   "deviceId": "robot-58",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 69,
+   "deviceId": "robot-58",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 70,
+   "deviceId": "robot-58",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 71,
+   "deviceId": "robot-58",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 72,
+   "deviceId": "robot-59",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 73,
+   "deviceId": "robot-59",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 74,
+   "deviceId": "robot-59",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 75,
+   "deviceId": "robot-59",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 76,
+   "deviceId": "robot-59",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 77,
+   "deviceId": "robot-60",
+   "kind": "robot",
+   "partName": "hand00",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    0,
+    -0.7071,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 78,
+   "deviceId": "robot-60",
+   "kind": "robot",
+   "partName": "hand01",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.5,
+    0,
+    0,
+    0.866
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 79,
+   "deviceId": "robot-60",
+   "kind": "robot",
+   "partName": "hand02",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.866,
+    0,
+    0,
+    0.5
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 80,
+   "deviceId": "robot-60",
+   "kind": "robot",
+   "partName": "hand04",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    -0.7071,
+    0,
+    0,
+    0.7071
+   ],
+   "threshold": 0.00175
+  },
+  {
+   "i": 81,
+   "deviceId": "robot-60",
+   "kind": "robot",
+   "partName": "hand03",
+   "channel": "quat",
+   "unit": "quaternion [x,y,z,w] local",
+   "rest": [
+    1,
+    0,
+    0,
+    0
+   ],
+   "threshold": 0.00175
+  }
+ ],
+ "animatedPartsEncoding": "chunk tracks.parts rows [t, i, value] emitted when |value - last emitted| >= threshold (quat: rotation angle rad) or when the part settles; snapshot.parts[i] = value at chunk start (null = not present yet). Values are local to the GLB node partName (m, rad; quat [x,y,z,w]); procedural parts are built by the viewer (see docs/sim-recording.md)",
+ "jointNames": [
+  "hand00",
+  "hand01",
+  "hand02",
+  "hand03",
+  "hand04"
+ ],
+ "armMount": "pedestal",
+ "chunkSeconds": 600,
+ "equipment": [
+  {
+   "id": "robot-1",
+   "kind": "robot",
+   "name": "로봇 1",
+   "pos": [
+    -20.9,
+    20.44
+   ],
+   "yaw": 3.1416,
+   "elevation": 1.193
+  },
+  {
+   "id": "dock-2",
+   "kind": "dock",
+   "name": "팔레트 적치장",
+   "pos": [
+    13,
+    -17.4
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-3",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    -9.9,
+    -2.1
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-4",
+   "kind": "conveyor",
+   "name": "컨베이어 4",
+   "pos": [
+    1.232,
+    11.223
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "robot-5",
+   "kind": "robot",
+   "name": "로봇 5",
+   "pos": [
+    3,
+    20.438
+   ],
+   "yaw": 0,
+   "elevation": 1.193
+  },
+  {
+   "id": "robot-6",
+   "kind": "robot",
+   "name": "로봇 6",
+   "pos": [
+    22.9,
+    20.438
+   ],
+   "yaw": 0,
+   "elevation": 1.193
+  },
+  {
+   "id": "robot-7",
+   "kind": "robot",
+   "name": "로봇 7",
+   "pos": [
+    -18.678,
+    37.135
+   ],
+   "yaw": 0,
+   "elevation": 1.192
+  },
+  {
+   "id": "robot-8",
+   "kind": "robot",
+   "name": "로봇 8",
+   "pos": [
+    1.254,
+    37.135
+   ],
+   "yaw": 0,
+   "elevation": 1.192
+  },
+  {
+   "id": "robot-9",
+   "kind": "robot",
+   "name": "로봇 9",
+   "pos": [
+    21.26,
+    37.135
+   ],
+   "yaw": 0,
+   "elevation": 1.192
+  },
+  {
+   "id": "amr-10",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    3.1,
+    -1.86
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-11",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    12.3,
+    -1.6
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-12",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    -22.5,
+    56.802
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-13",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    -8.956,
+    56.802
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-14",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    11.109,
+    56.802
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-15",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    24.653,
+    56.802
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "scanner-16",
+   "kind": "scanner",
+   "name": "스캐너 16",
+   "pos": [
+    -18.677,
+    30.088
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "scanner-17",
+   "kind": "scanner",
+   "name": "스캐너 17",
+   "pos": [
+    1.214,
+    30.088
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "scanner-18",
+   "kind": "scanner",
+   "name": "스캐너 18",
+   "pos": [
+    21.105,
+    30.088
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-19",
+   "kind": "rack",
+   "name": "랙 19",
+   "pos": [
+    4.219,
+    -9.689
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-20",
+   "kind": "rack",
+   "name": "랙 20",
+   "pos": [
+    4.184,
+    -14.623
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-21",
+   "kind": "rack",
+   "name": "랙 21",
+   "pos": [
+    4.184,
+    -19.422
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-22",
+   "kind": "rack",
+   "name": "랙 22",
+   "pos": [
+    4.184,
+    -24.222
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-23",
+   "kind": "rack",
+   "name": "랙 23",
+   "pos": [
+    4.184,
+    -29.021
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-24",
+   "kind": "rack",
+   "name": "랙 24",
+   "pos": [
+    4.184,
+    -33.821
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-25",
+   "kind": "rack",
+   "name": "랙 25",
+   "pos": [
+    4.184,
+    -38.62
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-26",
+   "kind": "rack",
+   "name": "랙 26",
+   "pos": [
+    -3.82,
+    -9.823
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-27",
+   "kind": "rack",
+   "name": "랙 27",
+   "pos": [
+    -3.82,
+    -14.623
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-28",
+   "kind": "rack",
+   "name": "랙 28",
+   "pos": [
+    -3.82,
+    -19.422
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-29",
+   "kind": "rack",
+   "name": "랙 29",
+   "pos": [
+    -3.82,
+    -24.222
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-30",
+   "kind": "rack",
+   "name": "랙 30",
+   "pos": [
+    -3.82,
+    -29.021
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-31",
+   "kind": "rack",
+   "name": "랙 31",
+   "pos": [
+    -3.82,
+    -33.821
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-32",
+   "kind": "rack",
+   "name": "랙 32",
+   "pos": [
+    -3.82,
+    -38.62
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-33",
+   "kind": "rack",
+   "name": "랙 33",
+   "pos": [
+    -11.824,
+    -9.823
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-34",
+   "kind": "rack",
+   "name": "랙 34",
+   "pos": [
+    -11.824,
+    -14.623
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-35",
+   "kind": "rack",
+   "name": "랙 35",
+   "pos": [
+    -11.824,
+    -19.422
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-36",
+   "kind": "rack",
+   "name": "랙 36",
+   "pos": [
+    -11.824,
+    -24.222
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-37",
+   "kind": "rack",
+   "name": "랙 37",
+   "pos": [
+    -11.824,
+    -29.021
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-38",
+   "kind": "rack",
+   "name": "랙 38",
+   "pos": [
+    -11.824,
+    -33.821
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-39",
+   "kind": "rack",
+   "name": "랙 39",
+   "pos": [
+    -11.824,
+    -38.62
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "floor-40",
+   "kind": "floor",
+   "name": "바닥/벽 40",
+   "pos": [
+    1.5,
+    0
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-41",
+   "kind": "conveyor",
+   "name": "컨베이어 41",
+   "pos": [
+    -13.24,
+    11.793
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-42",
+   "kind": "conveyor",
+   "name": "컨베이어 42",
+   "pos": [
+    14.041,
+    15.603
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-43",
+   "kind": "conveyor",
+   "name": "컨베이어 43",
+   "pos": [
+    -22.492,
+    63.688
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-44",
+   "kind": "conveyor",
+   "name": "컨베이어 44",
+   "pos": [
+    -8.986,
+    63.688
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-45",
+   "kind": "conveyor",
+   "name": "컨베이어 45",
+   "pos": [
+    11.169,
+    63.688
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-46",
+   "kind": "conveyor",
+   "name": "컨베이어 46",
+   "pos": [
+    24.674,
+    63.658
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-47",
+   "kind": "conveyor",
+   "name": "컨베이어 47",
+   "pos": [
+    -22.492,
+    -64.053
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-48",
+   "kind": "conveyor",
+   "name": "컨베이어 48",
+   "pos": [
+    -8.986,
+    -64.053
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-49",
+   "kind": "conveyor",
+   "name": "컨베이어 49",
+   "pos": [
+    11.169,
+    -64.053
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "conveyor-50",
+   "kind": "conveyor",
+   "name": "컨베이어 50",
+   "pos": [
+    24.674,
+    -64.082
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-51",
+   "kind": "pallet",
+   "name": "팔레트 51",
+   "pos": [
+    12.3,
+    -1.6
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-52",
+   "kind": "pallet",
+   "name": "팔레트 52",
+   "pos": [
+    3.1,
+    -1.86
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-53",
+   "kind": "pallet",
+   "name": "팔레트 53",
+   "pos": [
+    -9.9,
+    -2.1
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "dock-54",
+   "kind": "dock",
+   "name": "팔레트 적치장",
+   "pos": [
+    -2.3,
+    52
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "dock-55",
+   "kind": "dock",
+   "name": "팔레트 적치장",
+   "pos": [
+    4.6,
+    52
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-56",
+   "kind": "amr",
+   "name": "Forklift",
+   "pos": [
+    4.3,
+    56.6
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-57",
+   "kind": "amr",
+   "name": "Forklift",
+   "pos": [
+    -2.4,
+    56.6
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "robot-58",
+   "kind": "robot",
+   "name": "로봇 58",
+   "pos": [
+    -9.8,
+    -0.2
+   ],
+   "yaw": -3.1416,
+   "elevation": 1.193
+  },
+  {
+   "id": "robot-59",
+   "kind": "robot",
+   "name": "로봇 59",
+   "pos": [
+    2.8,
+    -0.05
+   ],
+   "yaw": 0,
+   "elevation": 1.193
+  },
+  {
+   "id": "robot-60",
+   "kind": "robot",
+   "name": "로봇 60",
+   "pos": [
+    12.07,
+    0.1
+   ],
+   "yaw": 0,
+   "elevation": 1.193
+  },
+  {
+   "id": "pallet-61",
+   "kind": "pallet",
+   "name": "팔레트 61",
+   "pos": [
+    2.9,
+    18.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-62",
+   "kind": "pallet",
+   "name": "팔레트 62",
+   "pos": [
+    22.8,
+    18.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "pallet-63",
+   "kind": "pallet",
+   "name": "팔레트 63",
+   "pos": [
+    -21,
+    18.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "door-64",
+   "kind": "door",
+   "name": "문 64",
+   "pos": [
+    24.8,
+    69
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "door-65",
+   "kind": "door",
+   "name": "문 65",
+   "pos": [
+    11.2,
+    69
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "door-66",
+   "kind": "door",
+   "name": "문 66",
+   "pos": [
+    -8.9,
+    69
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "door-67",
+   "kind": "door",
+   "name": "문 67",
+   "pos": [
+    -22.5,
+    69
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "door-68",
+   "kind": "door",
+   "name": "문 68",
+   "pos": [
+    -22.4,
+    -69
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "door-69",
+   "kind": "door",
+   "name": "문 69",
+   "pos": [
+    -8.9,
+    -69
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "door-70",
+   "kind": "door",
+   "name": "문 70",
+   "pos": [
+    11.3,
+    -69
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "door-71",
+   "kind": "door",
+   "name": "문 71",
+   "pos": [
+    24.8,
+    -69
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rail-72",
+   "kind": "rail",
+   "name": "팔레트 분배 레일 72",
+   "pos": [
+    -8.661,
+    36.986
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rail-73",
+   "kind": "rail",
+   "name": "팔레트 분배 레일 73",
+   "pos": [
+    11.304,
+    36.986
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "transfer-74",
+   "kind": "transfer",
+   "name": "트랜스퍼 리프트 74",
+   "pos": [
+    -16.523,
+    35.324
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "transfer-75",
+   "kind": "transfer",
+   "name": "트랜스퍼 리프트 75",
+   "pos": [
+    -0.694,
+    35.324
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "transfer-76",
+   "kind": "transfer",
+   "name": "트랜스퍼 리프트 76",
+   "pos": [
+    3.442,
+    35.324
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "transfer-77",
+   "kind": "transfer",
+   "name": "트랜스퍼 리프트 77",
+   "pos": [
+    19.271,
+    35.324
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "rack-78",
+   "kind": "rack",
+   "name": "Moving Rack",
+   "pos": [
+    -15.652,
+    -67.665
+   ],
+   "yaw": -1.5708,
+   "elevation": 0
+  },
+  {
+   "id": "rack-79",
+   "kind": "rack",
+   "name": "Moving Rack",
+   "pos": [
+    -15.652,
+    -64.413
+   ],
+   "yaw": -1.754,
+   "elevation": 0
+  },
+  {
+   "id": "rack-80",
+   "kind": "rack",
+   "name": "Moving Rack",
+   "pos": [
+    -2.234,
+    -57.313
+   ],
+   "yaw": -3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-81",
+   "kind": "amr",
+   "name": "Forklift",
+   "pos": [
+    6,
+    -50
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-82",
+   "kind": "amr",
+   "name": "Forklift",
+   "pos": [
+    12.9,
+    -12.3
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-83",
+   "kind": "amr",
+   "name": "Forklift",
+   "pos": [
+    -17.8,
+    -11.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-84",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    -22.492,
+    -55.106
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-85",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    -8.986,
+    -55.106
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-86",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    11.169,
+    -55.106
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "amr-87",
+   "kind": "amr",
+   "name": "AMR",
+   "pos": [
+    24.674,
+    -55.135
+   ],
+   "yaw": 3.1416,
+   "elevation": 0
+  },
+  {
+   "id": "dock-88",
+   "kind": "dock",
+   "name": "팔레트 적치장",
+   "pos": [
+    -19.2,
+    -1.5
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-89",
+   "kind": "amr",
+   "name": "Forklift",
+   "pos": [
+    -21.01,
+    12.3
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "dock-90",
+   "kind": "dock",
+   "name": "팔레트 적치장",
+   "pos": [
+    -4.5,
+    -0.7
+   ],
+   "yaw": 0,
+   "elevation": 0
+  },
+  {
+   "id": "amr-91",
+   "kind": "amr",
+   "name": "Forklift",
+   "pos": [
+    -5.9,
+    -9.8
+   ],
+   "yaw": 0,
+   "elevation": 0
+  }
+ ],
+ "chunks": [
+  {
+   "i": 0,
+   "t0": 0,
+   "t1": 600,
+   "file": "chunk-000.json",
+   "bytes": 8561486
+  },
+  {
+   "i": 1,
+   "t0": 600,
+   "t1": 1200,
+   "file": "chunk-001.json",
+   "bytes": 8259483
+  },
+  {
+   "i": 2,
+   "t0": 1200,
+   "t1": 1800,
+   "file": "chunk-002.json",
+   "bytes": 8184617
+  },
+  {
+   "i": 3,
+   "t0": 1800,
+   "t1": 2400,
+   "file": "chunk-003.json",
+   "bytes": 8168895
+  },
+  {
+   "i": 4,
+   "t0": 2400,
+   "t1": 3000,
+   "file": "chunk-004.json",
+   "bytes": 8184302
+  },
+  {
+   "i": 5,
+   "t0": 3000,
+   "t1": 3600,
+   "file": "chunk-005.json",
+   "bytes": 8311977
+  },
+  {
+   "i": 6,
+   "t0": 3600,
+   "t1": 4200,
+   "file": "chunk-006.json",
+   "bytes": 8191834
+  },
+  {
+   "i": 7,
+   "t0": 4200,
+   "t1": 4800,
+   "file": "chunk-007.json",
+   "bytes": 8343865
+  },
+  {
+   "i": 8,
+   "t0": 4800,
+   "t1": 5400,
+   "file": "chunk-008.json",
+   "bytes": 8167985
+  },
+  {
+   "i": 9,
+   "t0": 5400,
+   "t1": 6000,
+   "file": "chunk-009.json",
+   "bytes": 8396089
+  },
+  {
+   "i": 10,
+   "t0": 6000,
+   "t1": 6600,
+   "file": "chunk-010.json",
+   "bytes": 8316827
+  },
+  {
+   "i": 11,
+   "t0": 6600,
+   "t1": 7200,
+   "file": "chunk-011.json",
+   "bytes": 8138563
+  },
+  {
+   "i": 12,
+   "t0": 7200,
+   "t1": 7800,
+   "file": "chunk-012.json",
+   "bytes": 8267200
+  },
+  {
+   "i": 13,
+   "t0": 7800,
+   "t1": 8400,
+   "file": "chunk-013.json",
+   "bytes": 8306555
+  },
+  {
+   "i": 14,
+   "t0": 8400,
+   "t1": 9000,
+   "file": "chunk-014.json",
+   "bytes": 8304538
+  },
+  {
+   "i": 15,
+   "t0": 9000,
+   "t1": 9600,
+   "file": "chunk-015.json",
+   "bytes": 8399585
+  },
+  {
+   "i": 16,
+   "t0": 9600,
+   "t1": 10200,
+   "file": "chunk-016.json",
+   "bytes": 8313661
+  },
+  {
+   "i": 17,
+   "t0": 10200,
+   "t1": 10800,
+   "file": "chunk-017.json",
+   "bytes": 8349188
+  },
+  {
+   "i": 18,
+   "t0": 10800,
+   "t1": 11400,
+   "file": "chunk-018.json",
+   "bytes": 8035277
+  },
+  {
+   "i": 19,
+   "t0": 11400,
+   "t1": 12000,
+   "file": "chunk-019.json",
+   "bytes": 8416735
+  },
+  {
+   "i": 20,
+   "t0": 12000,
+   "t1": 12600,
+   "file": "chunk-020.json",
+   "bytes": 8256225
+  },
+  {
+   "i": 21,
+   "t0": 12600,
+   "t1": 13200,
+   "file": "chunk-021.json",
+   "bytes": 8190732
+  },
+  {
+   "i": 22,
+   "t0": 13200,
+   "t1": 13800,
+   "file": "chunk-022.json",
+   "bytes": 8391480
+  },
+  {
+   "i": 23,
+   "t0": 13800,
+   "t1": 14400,
+   "file": "chunk-023.json",
+   "bytes": 8305422
+  },
+  {
+   "i": 24,
+   "t0": 14400,
+   "t1": 15000,
+   "file": "chunk-024.json",
+   "bytes": 8415068
+  },
+  {
+   "i": 25,
+   "t0": 15000,
+   "t1": 15600,
+   "file": "chunk-025.json",
+   "bytes": 8312488
+  },
+  {
+   "i": 26,
+   "t0": 15600,
+   "t1": 16200,
+   "file": "chunk-026.json",
+   "bytes": 8342919
+  },
+  {
+   "i": 27,
+   "t0": 16200,
+   "t1": 16800,
+   "file": "chunk-027.json",
+   "bytes": 8455448
+  },
+  {
+   "i": 28,
+   "t0": 16800,
+   "t1": 17400,
+   "file": "chunk-028.json",
+   "bytes": 8406327
+  },
+  {
+   "i": 29,
+   "t0": 17400,
+   "t1": 18000,
+   "file": "chunk-029.json",
+   "bytes": 8398824
+  },
+  {
+   "i": 30,
+   "t0": 18000,
+   "t1": 18600,
+   "file": "chunk-030.json",
+   "bytes": 8516802
+  },
+  {
+   "i": 31,
+   "t0": 18600,
+   "t1": 19200,
+   "file": "chunk-031.json",
+   "bytes": 8341693
+  },
+  {
+   "i": 32,
+   "t0": 19200,
+   "t1": 19800,
+   "file": "chunk-032.json",
+   "bytes": 8387971
+  },
+  {
+   "i": 33,
+   "t0": 19800,
+   "t1": 20400,
+   "file": "chunk-033.json",
+   "bytes": 8542186
+  },
+  {
+   "i": 34,
+   "t0": 20400,
+   "t1": 21000,
+   "file": "chunk-034.json",
+   "bytes": 8397514
+  },
+  {
+   "i": 35,
+   "t0": 21000,
+   "t1": 21600,
+   "file": "chunk-035.json",
+   "bytes": 8756227
+  },
+  {
+   "i": 36,
+   "t0": 21600,
+   "t1": 22200,
+   "file": "chunk-036.json",
+   "bytes": 8386376
+  },
+  {
+   "i": 37,
+   "t0": 22200,
+   "t1": 22800,
+   "file": "chunk-037.json",
+   "bytes": 8278832
+  },
+  {
+   "i": 38,
+   "t0": 22800,
+   "t1": 23400,
+   "file": "chunk-038.json",
+   "bytes": 8362522
+  },
+  {
+   "i": 39,
+   "t0": 23400,
+   "t1": 24000,
+   "file": "chunk-039.json",
+   "bytes": 8031144
+  },
+  {
+   "i": 40,
+   "t0": 24000,
+   "t1": 24600,
+   "file": "chunk-040.json",
+   "bytes": 8258345
+  },
+  {
+   "i": 41,
+   "t0": 24600,
+   "t1": 25200,
+   "file": "chunk-041.json",
+   "bytes": 8279244
+  },
+  {
+   "i": 42,
+   "t0": 25200,
+   "t1": 25800,
+   "file": "chunk-042.json",
+   "bytes": 8260037
+  },
+  {
+   "i": 43,
+   "t0": 25800,
+   "t1": 26400,
+   "file": "chunk-043.json",
+   "bytes": 8333488
+  },
+  {
+   "i": 44,
+   "t0": 26400,
+   "t1": 27000,
+   "file": "chunk-044.json",
+   "bytes": 8596904
+  },
+  {
+   "i": 45,
+   "t0": 27000,
+   "t1": 27600,
+   "file": "chunk-045.json",
+   "bytes": 8129789
+  },
+  {
+   "i": 46,
+   "t0": 27600,
+   "t1": 28200,
+   "file": "chunk-046.json",
+   "bytes": 8196424
+  },
+  {
+   "i": 47,
+   "t0": 28200,
+   "t1": 28800,
+   "file": "chunk-047.json",
+   "bytes": 8436758
+  }
+ ],
+ "aggregates": "aggregates.json",
+ "factoryElapsedAtStart": 0,
+ "historyLeadMinutes": 0,
+ "realHistory": true,
+ "historyNote": "aggregates.perMinute covers the real simulation from t=0 (row i = minute ending at (i+1)*60 s); counts/KPI are real day totals, no synthetic baseline",
+ "createdAt": "2026-11-19T02:13:37.439Z"
+}

@@ -13,9 +13,9 @@ export interface ActiveRunConfig {
   realHistory: boolean
 }
 
-/** 템플릿 06, 시뮬 2:00:00 ~ 2:20:00 (워밍업 7200s, 녹화 1200s, seed 12345), 가상 5시간 누계 보정 */
+/** 템플릿 10, 시뮬 0:00:00 ~ 8:00:00 전 구간 실제 이력 (워밍업 없음, 녹화 28800s = 10분 청크 48개, seed 12345) */
 export const ACTIVE_RUN: ActiveRunConfig = {
-  url: '/data/run-2026-11-03-t06-20m-w7200-s12345-v3/manifest.json',
-  layout: 'v2',
-  realHistory: false,
+  url: '/data/run-2026-11-19-t10-8h-s12345/manifest.json',
+  layout: 'v2-optimized',
+  realHistory: true,
 }
