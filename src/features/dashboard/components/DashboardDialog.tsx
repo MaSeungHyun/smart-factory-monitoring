@@ -177,10 +177,10 @@ export default function DashboardDialog() {
               ) : (
                 <div className="flex min-h-full flex-1 flex-col gap-4">
                   <div className="grid shrink-0 grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
-                    <KpiTile label="오늘 처리량" value={formatNumber(processed)} unit="박스" sub={`목표 대비 ${progress}%`} />
+                    <KpiTile label="오늘 처리량" value={formatNumber(processed)} unit="팔레트" sub={`목표 대비 ${progress}%`} />
                     <KpiTile label="시간당 적재" value={formatNumber(hourRate)} unit="개/h" sub="시간 버킷 평균" />
                     <KpiTile label="입고 누적" value={inbound?.value ?? '0'} unit="박스" />
-                    <KpiTile label="출고 누적" value={outbound?.value ?? '0'} unit="박스" />
+                    <KpiTile label="출고 누적" value={outbound?.value ?? '0'} unit="팔레트" />
                     <KpiTile
                       label="불량"
                       value={defect?.value ?? '0'}

@@ -6,5 +6,5 @@ export const PROCESS_STAGES: ProcessStage[] = [
   { id: 'scan', name: '스캔 검사 · 분류', icon: 'scan', value: 1080, unit: '박스', percent: 64, status: 'error', statusLabel: '불량' },
   { id: 'pallet', name: '팔레트 적재', icon: 'pallet', value: 1040, unit: '박스', percent: 46, status: 'warning', statusLabel: '대기' },
   { id: 'amr', name: '랙 보관', icon: 'amr', value: 7, unit: '/21', percent: 33, status: 'running', statusLabel: '7/21 · 33%' },
-  { id: 'outbound', name: '출고', icon: 'outbound', value: 1015, unit: '박스', percent: 80, status: 'running', statusLabel: '작동' },
+  { id: 'outbound', name: '출고', icon: 'outbound', value: 85, unit: '팔레트', percent: 80, status: 'running', statusLabel: '작동' },
 ]

@@ -15,6 +15,7 @@ const activity = (value: number): Pick<ProcessStage, 'status' | 'statusLabel'> =
 /** 입고 · 출고 (재생 counts) + 출고 대기 (완성 팔레트 대기 장비) + 주문 (목업). 카드는 공정 흐름과 같다 */
 export function warehouseKpis(counts: RunCounts | undefined, frame: StatusFrame | null, kpi?: KpiSample | null): ProcessStage[] {
   // v4 KPI 가 있으면 공장 기록값 (입고 박스 · 출하 팔레트 · 적치 대기 완성 팔레트)
+  // 출고는 KPI 유무와 관계없이 팔레트 수 (counts.outbound = cycle.stats.outboundPallets)
   const inbound = Math.round(kpiNumber(kpi, KPI_KEYS.inbound) ?? counts?.inbound ?? 0)
 
   const shipped = kpiNumber(kpi, KPI_KEYS.outbound)
@@ -31,7 +32,7 @@ export function warehouseKpis(counts: RunCounts | undefined, frame: StatusFrame 
 
   return [
     { id: 'in', name: '입고', icon: 'inbound', value: inbound, unit: '박스', percent: pct(inbound, INBOUND_TARGET), ...activity(inbound) },
-    { id: 'out', name: '출고', icon: 'outbound', value: outbound, unit: shipped === undefined ? '박스' : '팔레트', percent: shipped === undefined ? pct(outbound, inbound) : Math.round(kpiNumber(kpi, kpiKey('stageProgress', { stage: 'ship' })) ?? 0), ...activity(outbound) },
+    { id: 'out', name: '출고', icon: 'outbound', value: outbound, unit: '팔레트', percent: shipped === undefined ? pct(outbound, counts?.palletsShipped ?? 0) : Math.round(kpiNumber(kpi, kpiKey('stageProgress', { stage: 'ship' })) ?? 0), ...activity(outbound) },
     {
       id: 'wait',
       name: '출고 대기',

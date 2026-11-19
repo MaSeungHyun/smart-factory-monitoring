@@ -330,7 +330,8 @@ export function dashboardView(
       tone: defectCount > 0 ? 'error' : 'default',
     },
     { id: 'inbound', label: '입고', value: counts.inbound.toLocaleString('ko-KR'), unit: '박스' },
-    { id: 'outbound', label: '출고', value: counts.outbound.toLocaleString('ko-KR'), unit: '박스' },
+    // 출고 = 출하 팔레트 수 (recorder counts.outbound = cycle.stats.outboundPallets)
+    { id: 'outbound', label: '출고', value: counts.outbound.toLocaleString('ko-KR'), unit: '팔레트' },
   ]
 
   const rackBay = rackBayOccupancy(run)
@@ -389,11 +390,11 @@ export function dashboardView(
     }
   }
 
-  stages[5] = { ...stages[5], status: counts.outbound > 0 ? 'running' : 'idle', statusLabel: counts.outbound > 0 ? '작동' : '대기' }
+  stages[5] = { ...stages[5], unit: '팔레트', status: counts.outbound > 0 ? 'running' : 'idle', statusLabel: counts.outbound > 0 ? '작동' : '대기' }
 
   const view: DashboardView = {
-    // 오늘 처리량 = 출고 박스 누적 / 일일 목표
-    throughput: { value: processed, target: RUN_TARGET, unit: '박스' },
+    // 오늘 처리량 = 출고(팔레트) 누적 / 일일 목표
+    throughput: { value: processed, target: RUN_TARGET, unit: '팔레트' },
     kpis,
     equipment: all,
     equipmentTotal: all.length,
@@ -445,7 +446,7 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
 
     if (item.id === 'inbound' && inbound !== undefined) return { ...item, value: fmt(inbound) }
 
-    // 출고·오늘 처리량은 counts.outbound(박스) 유지 — KPI ship(팔레트)으로 덮지 않음
+    // 출고·오늘 처리량은 counts.outbound(팔레트) 유지 — KPI ship(팔레트)으로 덮지 않음
     return item
   })
 
@@ -536,10 +537,10 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
 
   return {
     ...view,
-    // 오늘 처리량 = 출고 박스 (공정 출고·KPI 출고와 동일 소스)
+    // 오늘 처리량 = 출고 팔레트 (공정 출고·KPI 출고와 동일 소스)
     throughput: { ...view.throughput, value: shipped },
     kpis: kpis.map((item) =>
-      item.id === 'outbound' ? { ...item, value: shipped.toLocaleString('ko-KR'), unit: '박스' } : item,
+      item.id === 'outbound' ? { ...item, value: shipped.toLocaleString('ko-KR'), unit: '팔레트' } : item,
     ),
     stages,
     equipment,
