@@ -1,8 +1,7 @@
 import { Bell } from 'lucide-react'
-import { useEffect, useRef } from 'react'
 
 import { playbackStore, useDashboardView } from '@/features/playback'
-import { uiStore, useUi } from '@/shared/stores/useUiStore'
+import { useUi } from '@/shared/stores/useUiStore'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 import { cn } from '@/shared/lib/cn'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
@@ -12,7 +11,7 @@ import AlertItemRow from './AlertItemRow'
 
 const VISIBLE = 4
 
-/** 뷰포트 실시간 알림: 상태 칩 필터와 무관하게 미확인 알람을 즉시 표시 */
+/** 뷰포트 실시간 알림: 상태 칩 필터와 무관하게 미확인 알람 표시. 새 알람은 토스트로 알리고, 패널은 토스트·종 버튼으로 연다 */
 export default function AlertPanel() {
   const view = useDashboardView()
 
@@ -22,15 +21,6 @@ export default function AlertPanel() {
 
   const activeCount = alarms ? alarms.length : ALERTS.filter((alert) => alert.severity !== 'success').length
 
-  const prevCount = useRef(0)
-
-  useEffect(() => {
-    const count = alarms?.length ?? 0
-
-    if (count > prevCount.current) uiStore.getState().openAlarmPanel()
-
-    prevCount.current = count
-  }, [alarms?.length])
 
   return (
     <aside
