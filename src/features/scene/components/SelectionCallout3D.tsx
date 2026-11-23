@@ -5,6 +5,7 @@ import { Vector3, type Group } from 'three'
 
 import { dashboardAt, playbackStore } from '@/features/playback'
 import InfoCard from '@/shared/components/InfoCard'
+import { PinCoreSvg, PinRingsSvg } from '@/shared/components/LabelPin'
 import { TONE_COLOR } from '@/shared/constants/status'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { LEADER_OVERLAP, LEADER_RISE, LEADER_RUN } from '@/shared/lib/leaderLine'
@@ -65,6 +66,8 @@ export default function SelectionCallout3D({ id }: { id: string }) {
         {/* ㄱ자 리더선: 점에서 위로 LEADER_RISE, 오른쪽으로 LEADER_RUN 꺾인 뒤 카드 옆면 세로 가운데에 붙는다 (상세 · 스캔 콜아웃과 같은 길이) */}
         <div data-viewport-annotation="hide" className="relative">
           <svg className="pointer-events-none absolute top-0 left-0 overflow-visible" width={1} height={1}>
+            <PinRingsSvg color={color} />
+
             <polyline
               points={`0,0 0,${-LEADER_RISE} ${LEADER_RUN + LEADER_OVERLAP},${-LEADER_RISE}`}
               fill="none"
@@ -72,7 +75,7 @@ export default function SelectionCallout3D({ id }: { id: string }) {
               strokeWidth={1.5}
             />
 
-            <circle r={4} fill={color} />
+            <PinCoreSvg color={color} />
           </svg>
 
           <div className="absolute -translate-y-1/2" style={{ left: LEADER_RUN, top: -LEADER_RISE }}>

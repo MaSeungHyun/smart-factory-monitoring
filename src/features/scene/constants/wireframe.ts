@@ -12,16 +12,16 @@ export interface WireStyle {
 }
 
 export const WIRE_STYLE: Record<WireCategory, WireStyle> = {
-  // 로봇 팔 · 받침대: 청록
-  robot: { color: '#2ee6c8', opacity: 0.2 },
-  // AMR · AGV · 지게차 · 이송 지게차: 주황
-  vehicle: { color: '#ff9a3c', opacity: 0.2 },
-  // 컨베이어 · 레일: 파랑
-  conveyor: { color: '#3d8bff', opacity: 0.2 },
-  // 랙 · 창고: 회색
-  storage: { color: '#9aa3ad', opacity: 0.2 },
-  // 스캔 터널: 보라
-  scanner: { color: '#b07cff', opacity: 0.2 },
+  // Wire/Robot · 로봇팔 (로봇 팔 · 받침대)
+  robot: { color: '#9a7be0', opacity: 0.2 },
+  // Wire/Mobile · AMR · 무인지게차 (AMR · AGV · 지게차 · 이송 지게차)
+  vehicle: { color: '#f2f5f6', opacity: 0.2 },
+  // Wire/Machine · 공정 설비 (컨베이어 · 레일)
+  conveyor: { color: '#2478a0', opacity: 0.2 },
+  // Wire/Machine · 공정 설비 (랙 · 창고)
+  storage: { color: '#2478a0', opacity: 0.2 },
+  // Wire/Machine · 공정 설비 (스캔 터널)
+  scanner: { color: '#2478a0', opacity: 0.2 },
   // 건물 · 바닥 · 문 · 도크: 아주 옅은 회색
   building: { color: '#c8ccd2', opacity: 0.05 },
   // 미확인 고장(error) 알람 장비: 빨강 (종류 색보다 우선)

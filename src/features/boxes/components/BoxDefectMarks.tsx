@@ -4,7 +4,8 @@ import { useRef } from 'react'
 import { Vector3, type Group } from 'three'
 
 import { getExactTime } from '@/features/playback'
-import { TONE_BG, TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
+import LabelPin from '@/shared/components/LabelPin'
+import { TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
 import { cn } from '@/shared/lib/cn'
 
 import { boxOwnerAt, boxPoseAt } from '../lib/boxPoseAt'
@@ -63,9 +64,7 @@ function DefectMark({ box }: { box: DecodedBox }) {
             {text}
           </span>
 
-          <span className="h-6 w-px bg-border-default" />
-
-          <span className={cn('size-2 rounded-full', TONE_BG.error)} />
+          <LabelPin tone="error" />
         </div>
       </Html>
     </group>

@@ -3,7 +3,8 @@ import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import { Vector3, type Group } from 'three'
 
-import { TONE_BG, TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
+import LabelPin from '@/shared/components/LabelPin'
+import { TONE_BORDER, TONE_TEXT } from '@/shared/constants/status'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
 import { cn } from '@/shared/lib/cn'
 
@@ -42,9 +43,7 @@ export default function SceneLabel3D({ label }: { label: FaultLabel }) {
             {label.text}
           </span>
 
-          <span className="h-6 w-px bg-border-default" />
-
-          <span className={cn('size-2 rounded-full', TONE_BG[label.status])} />
+          <LabelPin tone={label.status} />
         </button>
       </Html>
     </group>

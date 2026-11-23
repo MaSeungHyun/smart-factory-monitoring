@@ -17,6 +17,12 @@ const MAIN_READY_TIMEOUT_MS = 20_000
 /** 렌더러가 첫 화면 준비를 알리는 IPC 채널 (electron/preload.cjs 와 같아야 한다) */
 const READY_CHANNEL = 'monitor:renderer-ready'
 
+/** 메인 창이 실제 로딩 진행률(0~100)을 보내는 IPC 채널 (electron/preload.cjs 와 같아야 한다) */
+const PROGRESS_CHANNEL = 'monitor:loading-progress'
+
+/** 스플래시가 100% 를 채우고 알려 오기를 기다리는 최대 시간 (ms). 응답이 없어도 이 시간이 지나면 메인 창을 띄운다 */
+const SPLASH_FINISH_TIMEOUT_MS = 1500
+
 /** 배포 exe 의 userData 폴더 이름 (%APPDATA% 아래). 개발용 `electron .` 과 캐시 폴더를 나눠 같은 PC 에서 함께 켜도 캐시 잠금이 충돌하지 않는다 */
 const PACKAGED_USER_DATA_DIR = 'GRAPICAR Smart Factory Monitoring'
 
@@ -48,16 +54,35 @@ function revealMainWindow() {
   if (revealed || !painted || !rendererReady || !mainWindow || mainWindow.isDestroyed()) return
 
   revealed = true
-  mainWindow.show()
-  mainWindow.focus()
 
-  // 숨김 상태 로딩용으로 껐던 백그라운드 스로틀링을 원래대로 되돌린다
-  mainWindow.webContents.setBackgroundThrottling(true)
+  // 스플래시 진행률을 100% 까지 채운 뒤에 메인 창으로 넘어간다
+  finishSplash().then(() => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
 
-  if (splash && !splash.isDestroyed()) splash.close()
+    mainWindow.show()
+    mainWindow.focus()
 
-  for (const resolve of revealWaiters) resolve()
-  revealWaiters = []
+    // 숨김 상태 로딩용으로 껐던 백그라운드 스로틀링을 원래대로 되돌린다
+    mainWindow.webContents.setBackgroundThrottling(true)
+
+    if (splash && !splash.isDestroyed()) splash.close()
+
+    for (const resolve of revealWaiters) resolve()
+    revealWaiters = []
+  })
+}
+
+/** 스플래시 창에 100% 채우기를 요청하고 끝날 때까지 기다린다. 스플래시가 없거나 응답이 없으면 바로(또는 시간 초과 뒤) 넘어간다 */
+function finishSplash() {
+  if (!splash || splash.isDestroyed()) return Promise.resolve()
+
+  const finish = splash.webContents
+    .executeJavaScript('window.__splashFinish ? window.__splashFinish() : null', true)
+    .catch(() => undefined)
+
+  const timeout = new Promise((resolve) => setTimeout(resolve, SPLASH_FINISH_TIMEOUT_MS))
+
+  return Promise.race([finish, timeout])
 }
 
 function markRendererReady() {
@@ -148,6 +173,19 @@ ipcMain.handle(READY_CHANNEL, (event) => {
 
   // 창이 실제로 보일 때 응답해서, 렌더러가 인트로를 숨은 창에서 시작하지 않게 한다
   return new Promise((resolve) => revealWaiters.push(resolve))
+})
+
+// 메인 창 진행률을 스플래시 창으로 넘긴다. 숫자만 받아 0~100 으로 자른다
+ipcMain.on(PROGRESS_CHANNEL, (event, value) => {
+  if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== event.sender.mainFrame) return
+
+  if (typeof value !== 'number' || !Number.isFinite(value) || !splash || splash.isDestroyed()) return
+
+  const percent = Math.max(0, Math.min(100, value))
+
+  splash.webContents
+    .executeJavaScript(`window.__splashProgress && window.__splashProgress(${percent})`, true)
+    .catch(() => undefined)
 })
 
 function start() {

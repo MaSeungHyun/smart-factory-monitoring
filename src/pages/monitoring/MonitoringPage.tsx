@@ -23,6 +23,7 @@ import ScanPage from "@/pages/scan/ScanPage";
 import WarehousePage from "@/pages/warehouse/WarehousePage";
 
 import { useIntroGate } from "./useIntroGate";
+import { useSplashProgress } from "./useSplashProgress";
 import ViewOverlays3D from "./ViewOverlays3D";
 
 /** 대시보드 다이얼로그(차트 포함)는 첫 화면에 필요 없어 별도 청크로 받는다 */
@@ -77,6 +78,9 @@ export default function MonitoringPage() {
 
   // 화면이 모두 준비된 뒤에 인트로 시작
   useIntroGate();
+
+  // 일렉트론 스플래시에 실제 로딩 진행률을 보낸다
+  useSplashProgress();
 
   const view = useMonitorView();
 

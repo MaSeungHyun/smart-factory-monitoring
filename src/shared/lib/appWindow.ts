@@ -5,6 +5,9 @@ import { createStore } from 'zustand/vanilla'
 interface ElectronAppApi {
   /** 첫 화면 준비 완료를 알린다. 메인 창이 실제로 보이면 resolve 된다 */
   ready: () => Promise<void>
+
+  /** 숨은 메인 창의 실제 로딩 진행률(0~100)을 스플래시 창에 보낸다 */
+  progress?: (value: number) => void
 }
 
 declare global {
@@ -37,6 +40,13 @@ export function revealAppWindow() {
     .ready()
     .catch((error: unknown) => console.error('Failed to reveal the app window:', error))
     .finally(() => appWindow.setState({ shown: true }))
+}
+
+/** 일렉트론 스플래시에 실제 로딩 진행률(0~100)을 보낸다. 웹 · 창이 이미 보이면 무시한다 */
+export function reportLoadingProgress(value: number) {
+  if (readySent && appWindow.getState().shown) return
+
+  window.electronApp?.progress?.(value)
 }
 
 export function isAppWindowShown() {
