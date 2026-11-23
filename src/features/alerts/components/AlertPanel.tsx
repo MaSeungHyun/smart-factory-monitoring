@@ -1,7 +1,7 @@
-import { Bell } from 'lucide-react'
+import { Bell, X } from 'lucide-react'
 
 import { playbackStore, useDashboardView } from '@/features/playback'
-import { useUi } from '@/shared/stores/useUiStore'
+import { uiStore, useUi } from '@/shared/stores/useUiStore'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 import { cn } from '@/shared/lib/cn'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
@@ -40,15 +40,26 @@ export default function AlertPanel() {
           {activeCount}
         </span>
 
-        {alarms && alarms.length > 0 && (
+        <div className="ml-auto flex items-center gap-1.5">
+          {alarms && alarms.length > 0 && (
+            <button
+              type="button"
+              onClick={() => playbackStore.getState().ackAll(alarms.map((alarm) => alarm.key))}
+              className="rounded px-1 text-caption text-primary-on-dark hover:underline"
+            >
+              모두 확인
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={() => playbackStore.getState().ackAll(alarms.map((alarm) => alarm.key))}
-            className="ml-auto rounded px-1 text-caption text-primary-on-dark hover:underline"
+            aria-label="알림 패널 닫기"
+            onClick={uiStore.getState().toggleAlarmPanel}
+            className="flex size-6 items-center justify-center rounded text-text-tertiary transition-colors duration-150 hover:bg-bg-surface-2 hover:text-text-primary"
           >
-            모두 확인
+            <X size={14} />
           </button>
-        )}
+        </div>
       </div>
 
       <ul className="mt-3 flex flex-col gap-2">

@@ -9,6 +9,7 @@ import type {
 } from '@/shared/types'
 import { KPI_KEYS, KPI_STAGE_OF, KPI_UNIT_LABEL, kpiKey } from '@/shared/constants/kpi'
 import { withThroughputBase } from '@/shared/constants/throughputBase'
+import { virtualOnHandExtra } from '@/shared/constants/virtualHistory'
 import type { KpiSample } from '@/shared/types/kpi'
 import type { EquipmentStateSample, PlaybackEquipment, PlaybackRun, PlaybackState, RunCounts } from '@/shared/types/playback'
 import { sceneEquipment } from '@/features/scene'
@@ -113,7 +114,8 @@ function toItem(entry: PlaybackEquipment, sample: EquipmentStateSample | undefin
       ...base,
       type: 'amr',
       statusLabel: status === 'warning' ? `배터리 ${battery}%` : base.statusLabel,
-      metricLeft: sample?.hasBox ? '팔레트 이송' : (sample?.label ?? '—'),
+      // 상태는 배지(작동/대기/배터리), 여기선 누적 사이클 수만 표시
+      metricLeft: '사이클',
       metricRight: `${sample?.count ?? 0} 회`,
       percent: battery,
     }
@@ -396,6 +398,10 @@ export function dashboardView(
 
   const rackBay = rackBayOccupancy(run)
 
+  const onHandExtra = virtualOnHandExtra(run.kpi?.virtualHistory)
+
+  const palletOnHand = Math.max(0, (counts.placed ?? counts.handled) - counts.outbound - onHandExtra)
+
   const stages: ProcessStage[] = [
     // 입고: 일일 목표 대비 진행률
     stage('inbound', '입고', counts.inbound, pct(counts.inbound, RUN_TARGET), []),
@@ -403,12 +409,12 @@ export function dashboardView(
     stage('conveyor', '컨베이어 투입', conveyorIn, pct(conveyorIn, counts.inbound), byKind('conveyor')),
     // 스캔 검사: 컨베이어 투입 대비 판정 완료
     stage('scan', '스캔 검사 · 분류', scanned, pct(scanned, conveyorIn), byKind('scanner')),
-    // 팔레트 적재 = 누적 적재 − 출고 (아직 공장에 남은 적재분)
+    // 팔레트 적재 = 누적 적재 − 출고 (실제 잔량만 — 가상 이력의 남은 적재분은 빼 둔다)
     stage(
       'pallet',
       '팔레트 적재',
-      Math.max(0, (counts.placed ?? counts.handled) - counts.outbound),
-      pct(Math.max(0, (counts.placed ?? counts.handled) - counts.outbound), scanned || counts.inbound),
+      palletOnHand,
+      pct(palletOnHand, scanned || counts.inbound),
       byKind('robot'),
     ),
     // 랙 보관: 메인 베이 7×3=21 중 적재된 칸 수 · 점유율
@@ -560,7 +566,7 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
     if (item.icon === 'scan') return { ...item, percent: pct(item.value, conveyorValue) }
 
     if (item.icon === 'pallet') {
-      const onHand = placedRaw === undefined ? item.value : Math.max(0, Math.round(placedRaw) - outboundValue)
+      const onHand = placedRaw === undefined ? item.value : Math.max(0, Math.round(placedRaw) - outboundValue - virtualOnHandExtra(run.kpi?.virtualHistory))
 
       return { ...item, value: onHand, percent: pct(onHand, scannedValue || inboundValue) }
     }

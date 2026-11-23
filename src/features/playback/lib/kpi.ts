@@ -1,3 +1,4 @@
+import { applyVirtualHistoryToKpiSample } from '@/shared/constants/virtualHistory'
 import type { KpiRow, KpiSample, KpiSchema, KpiTrack } from '@/shared/types/kpi'
 
 import { indexAt } from './frameAt'
@@ -63,11 +64,11 @@ export function kpiAt(track: KpiTrack | undefined, time: number): KpiSample | nu
 
   const index = indexAt(track.t, time)
 
-  if (index < 0) return track.samples[0]
+  if (index < 0) return applyVirtualHistoryToKpiSample(track.samples[0], track.virtualHistory)
 
   const next = index + 1
 
-  if (next >= track.samples.length) return track.samples[index]
+  if (next >= track.samples.length) return applyVirtualHistoryToKpiSample(track.samples[index], track.virtualHistory)
 
   const t0 = track.t[index]
 
@@ -75,7 +76,9 @@ export function kpiAt(track: KpiTrack | undefined, time: number): KpiSample | nu
 
   const k = t1 > t0 ? Math.min(1, Math.max(0, (time - t0) / (t1 - t0))) : 0
 
-  return k === 0 ? track.samples[index] : (lerpDeep(track.samples[index], track.samples[next], k) as KpiSample)
+  const sample = k === 0 ? track.samples[index] : (lerpDeep(track.samples[index], track.samples[next], k) as KpiSample)
+
+  return applyVirtualHistoryToKpiSample(sample, track.virtualHistory)
 }
 
 // [3] 점 경로 읽기

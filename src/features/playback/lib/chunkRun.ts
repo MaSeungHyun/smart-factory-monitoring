@@ -1,3 +1,4 @@
+import { VIRTUAL_HISTORY_ENABLED, buildVirtualHistory, type VirtualHistory } from '@/shared/constants/virtualHistory'
 import { buildPartTracks } from '@/shared/lib/animatedParts/partTimeline'
 import { unwrapDegrees } from '@/shared/lib/angles'
 import type { EquipmentStateSample, PlaybackRun, PoseSample, RunCounts, StatusFrame } from '@/shared/types/playback'
@@ -145,7 +146,7 @@ function utilizationOf(aggregates: RunAggregates | undefined, factoryElapsed: nu
   return aggregates.perMinute[index]?.robots
 }
 
-function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregates, factoryElapsedAtStart = offset): StatusFrame[] {
+function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregates, factoryElapsedAtStart = offset, history?: VirtualHistory): StatusFrame[] {
   // 뒤 청크는 상태 행이 변화분이어도 스냅샷 누계에서 이어진다
   const snapshot = (chunk.snapshot.counts ?? {}) as Record<string, number>
 
@@ -197,7 +198,19 @@ function expandStatus(chunk: RunChunk, offset: number, aggregates?: RunAggregate
 
     frame = applyRobotCountOffset(frame, robotBaseline)
 
-    const shown = applyCountsOffset(counts, baseline)
+    let shown = applyCountsOffset(counts, baseline)
+
+    if (VIRTUAL_HISTORY_ENABLED && history) {
+      shown = applyCountsOffset(shown, history.counts)
+
+      frame = applyRobotCountOffset(frame, history.robots)
+
+      const scannerOffset: Record<string, number> = {}
+
+      for (const [id, extra] of Object.entries(history.scanners)) scannerOffset[id] = extra.scanned
+
+      frame = applyRobotCountOffset(frame, scannerOffset)
+    }
 
     // 오늘 처리량 = 출고 누적
     shown.processed = Math.max(0, shown.outbound ?? 0)
@@ -220,6 +233,24 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
 
   const kpi = buildKpiTrack(chunk.tracks.kpi, chunk.snapshot.kpi, offset, manifest.kpiSchema)
 
+  let scannerShares: Record<string, { scanned?: number; defect?: number }> | null = null
+
+  if (kpi) {
+    for (let index = kpi.samples.length - 1; index >= 0; index--) {
+      const byScanner = kpi.samples[index]?.scan?.byScanner
+
+      if (byScanner && Object.keys(byScanner).length) {
+        scannerShares = byScanner
+
+        break
+      }
+    }
+  }
+
+  const history = buildVirtualHistory(aggregates, scannerShares)
+
+  if (kpi && history) kpi.virtualHistory = history
+
   return injectEquipmentFaults({
     meta: {
       source: `robot_IK headless ${manifest.runId}`,
@@ -234,7 +265,7 @@ export function chunkToRun(manifest: RunManifest, chunk: RunChunk, aggregates?: 
     },
     equipment: manifest.equipment.map(({ id, kind, name }) => ({ id, kind, name })),
     tracks,
-    status: expandStatus(chunk, offset, aggregates, factoryElapsedAtStart),
+    status: expandStatus(chunk, offset, aggregates, factoryElapsedAtStart, history),
     events: chunk.events.map((event) => ({ ...event, t: round(event.t - offset), from: event.from ?? event.to })),
     alarms: (chunk.alarms ?? []).map((alarm) => ({ ...alarm, t: round(alarm.t - offset), until: alarm.until === undefined ? undefined : round(alarm.until - offset) })) as PlaybackRun['alarms'],
     recording,

@@ -1,3 +1,5 @@
+import type { VirtualHistory } from '@/shared/constants/virtualHistory'
+
 /**
  * robot_IK 녹화 KPI 스트림 (manifest.kpiSchema + chunk tracks.kpi).
  * 수량은 시뮬 t=0 부터의 하루 누계 (워밍업 포함, 단조 증가).
@@ -70,4 +72,6 @@ export interface KpiTrack {
   t: number[]
   samples: KpiSample[]
   schema?: KpiSchema
+  /** 시작 시점 가상 누계. 없으면 녹화 값 그대로. 샘플 원본은 바꾸지 않고 kpiAt 에서만 더한다 */
+  virtualHistory?: VirtualHistory
 }
