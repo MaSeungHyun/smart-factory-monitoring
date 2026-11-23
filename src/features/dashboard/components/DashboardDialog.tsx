@@ -216,12 +216,12 @@ export default function DashboardDialog() {
                         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                           <div className="rounded border border-status-success/40 bg-status-success/10 px-2 py-3">
                             <p className="text-caption text-text-secondary">작동</p>
-                            <p className="text-h1 tabular-nums text-status-success">{status?.running ?? 0}</p>
+                            <p className="text-h1 tabular-nums text-status-success">{(status?.running ?? 0) + (status?.idle ?? 0)}</p>
                           </div>
 
                           <div className="rounded border border-status-warning/40 bg-status-warning/10 px-2 py-3">
-                            <p className="text-caption text-text-secondary">대기</p>
-                            <p className="text-h1 tabular-nums text-status-warning">{status?.idle ?? 0}</p>
+                            <p className="text-caption text-text-secondary">경고</p>
+                            <p className="text-h1 tabular-nums text-status-warning">{status?.warning ?? 0}</p>
                           </div>
 
                           <div className="rounded border border-status-error/40 bg-status-error/10 px-2 py-3">

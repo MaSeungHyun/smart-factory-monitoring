@@ -33,8 +33,10 @@ export interface EquipmentItem {
   percent: number
 }
 
+/** 장비 상태별 대수. 상단 칩의 작동 = running + idle (대기도 정상 상태) */
 export interface StatusCounts {
   running: number
   idle: number
+  warning: number
   error: number
 }

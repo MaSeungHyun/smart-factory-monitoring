@@ -51,6 +51,9 @@ export async function loadChunkedRun(url: string, time = 0): Promise<LoadedRun> 
   return { run: await window.build(time), window }
 }
 
-export async function loadRun(url = RUN_URL): Promise<LoadedRun> {
-  return isManifest(url) ? loadChunkedRun(url) : { run: await loadSingle(url) }
+/** 앱 시작 시 재생 시각 (s) */
+export const RUN_START_AT = ACTIVE_RUN.startAt
+
+export async function loadRun(url = RUN_URL, time = RUN_START_AT): Promise<LoadedRun> {
+  return isManifest(url) ? loadChunkedRun(url, time) : { run: await loadSingle(url) }
 }

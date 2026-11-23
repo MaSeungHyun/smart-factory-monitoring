@@ -8,8 +8,9 @@ import type {
   Throughput,
 } from '@/shared/types'
 import { KPI_KEYS, KPI_STAGE_OF, KPI_UNIT_LABEL, kpiKey } from '@/shared/constants/kpi'
+import { withThroughputBase } from '@/shared/constants/throughputBase'
 import type { KpiSample } from '@/shared/types/kpi'
-import type { EquipmentStateSample, PlaybackEquipment, PlaybackRun, PlaybackState, RunCounts, StatusFrame } from '@/shared/types/playback'
+import type { EquipmentStateSample, PlaybackEquipment, PlaybackRun, PlaybackState, RunCounts } from '@/shared/types/playback'
 import { sceneEquipment } from '@/features/scene'
 import { LOW_BATTERY } from '@/features/warehouse/config/warehouse.config'
 import { rackGrid } from '@/features/warehouse/lib/rackMap'
@@ -176,45 +177,103 @@ function scanCounts(run: PlaybackRun, time: number) {
 
 const RANK: Record<EquipmentStatus, number> = { error: 0, warning: 1, running: 2, idle: 3 }
 
-/** 로봇 가동률 평균(%). utilization 없는 샘플·고장 장비는 0 으로 넣어 끌어내린다 */
-function utilizationAt(frame: StatusFrame, faulted: ReadonlySet<string> = new Set()) {
-  const robots = Object.entries(frame.equipment).filter(([id, sample]) => id.startsWith('robot-') && sample.utilization !== undefined)
+/** OEE 스파크라인 점 개수 · 간격 (s) */
+const OEE_SPARK_POINTS = 8
 
-  if (!robots.length) return 0
+const OEE_SPARK_STEP = 60
 
-  return robots.reduce((sum, [id, sample]) => sum + (faulted.has(id) ? 0 : (sample.utilization ?? 0)), 0) / robots.length
-}
+/**
+ * 고장 알람 구간 (재생 시간 s). 전체 이력(aggregates.alarms) + 로드된 청크 알람, id 로 중복 제거.
+ * until 이 없으면 알람만 있는 고장 (확인 전까지 고장 유지)
+ */
+function faultAlarms(run: PlaybackRun) {
+  const offset = run.meta.simTimeOffset ?? 0
 
-/** 분당 집계 로봇 util 평균 (가상 5h 이력 스파크라인용) */
-function utilizationFromMinute(robots: Record<string, { util: number }> | undefined, faulted: ReadonlySet<string>) {
-  if (!robots) return 0
+  const byId = new Map<string, { equipmentId: string; t: number; until?: number }>()
 
-  const entries = Object.entries(robots)
+  for (const alarm of run.aggregates?.alarms ?? []) {
+    if (alarm.severity !== 'error') continue
 
-  if (!entries.length) return 0
-
-  return entries.reduce((sum, [id, robot]) => sum + (faulted.has(id) ? 0 : robot.util), 0) / entries.length
-}
-
-/** 공장 경과 기준 최근 8개 분당 OEE. 집계가 없으면 상태 프레임으로 대체 */
-function oeeSparkline(run: PlaybackRun, time: number, faulted: ReadonlySet<string>) {
-  const aggregates = run.aggregates?.perMinute
-
-  if (aggregates?.length) {
-    const elapsed = (run.meta.factoryElapsedAtStart ?? run.meta.simTimeOffset ?? 0) + time
-
-    const end = Math.min(Math.max(Math.floor(elapsed / 60), 0), aggregates.length - 1)
-
-    const start = Math.max(0, end - 7)
-
-    return aggregates.slice(start, end + 1).map((minute) => utilizationFromMinute(minute.robots, faulted))
+    byId.set(alarm.id, { equipmentId: alarm.equipmentId, t: alarm.t - offset, until: alarm.until === undefined ? undefined : alarm.until - offset })
   }
 
-  const history = run.status.filter((entry) => entry.t <= time)
+  for (const alarm of run.alarms) {
+    if (alarm.severity === 'error' && !isInspectionAlarm(alarm)) byId.set(alarm.id, alarm)
+  }
 
-  const step = Math.max(1, Math.floor(history.length / 8))
+  return [...byId.values()]
+}
 
-  return history.filter((_, index) => index % step === 0).slice(-8).map((entry) => utilizationAt(entry, faulted))
+/** 겹치는 구간을 합친 총 길이 */
+function mergedLength(spans: Array<[number, number]>) {
+  spans.sort((a, b) => a[0] - b[0])
+
+  let total = 0
+
+  let end = -Infinity
+
+  for (const [from, to] of spans) {
+    if (to <= end) continue
+
+    total += to - Math.max(from, end)
+
+    end = to
+  }
+
+  return total
+}
+
+/**
+ * OEE (%) = 공장 가동 시작부터 time 까지 로봇 전체 시간 중 고장이 아니었던 시간 비율 (누적).
+ * 대기도 일을 기다리는 정상 가동으로 보고, 고장 알람의 발생~해소(미해소면 지금까지) 시간만 뺀다
+ */
+function cumulativeOee(run: PlaybackRun, time: number, faulted: ReadonlySet<string>, alarms = faultAlarms(run)) {
+  const robots = run.equipment.filter((entry) => entry.id.startsWith('robot-')).map((entry) => entry.id)
+
+  const from = -(run.meta.factoryElapsedAtStart ?? 0)
+
+  const elapsed = time - from
+
+  if (!robots.length || elapsed <= 0) return 100
+
+  let down = 0
+
+  for (const id of robots) {
+    const spans: Array<[number, number]> = []
+
+    for (const alarm of alarms) {
+      if (alarm.equipmentId !== id || alarm.t > time) continue
+
+      // 해소 시각이 없으면 확인 전(faulted)인 동안만 지금까지 고장으로 본다
+      const until = alarm.until ?? (faulted.has(id) ? time : alarm.t)
+
+      const start = Math.max(alarm.t, from)
+
+      const end = Math.min(until, time)
+
+      if (end > start) spans.push([start, end])
+    }
+    down += mergedLength(spans)
+  }
+
+  return Math.max(0, (1 - down / (elapsed * robots.length)) * 100)
+}
+
+/** 최근 8분의 1분 간격 누적 OEE (마지막 점 = 현재 값) */
+function oeeSparkline(run: PlaybackRun, time: number, faulted: ReadonlySet<string>) {
+  const alarms = faultAlarms(run)
+
+  const from = -(run.meta.factoryElapsedAtStart ?? 0)
+
+  const points: number[] = []
+
+  for (let index = OEE_SPARK_POINTS - 1; index >= 0; index--) {
+    const at = time - index * OEE_SPARK_STEP
+
+    if (at > from) points.push(cumulativeOee(run, at, faulted, alarms))
+  }
+
+  return points
 }
 
 function stage(
@@ -280,14 +339,15 @@ export function dashboardView(
   const everything = [...all, ...conveyors]
 
   const statusCounts: StatusCounts = {
-    running: everything.filter((item) => item.status === 'running' || item.status === 'warning').length,
+    running: everything.filter((item) => item.status === 'running').length,
     idle: everything.filter((item) => item.status === 'idle').length,
+    warning: everything.filter((item) => item.status === 'warning').length,
     error: everything.filter((item) => item.status === 'error').length,
   }
 
   const sparkline = oeeSparkline(run, time, faulted)
 
-  const oee = frame ? utilizationAt(frame, faulted) : 0
+  const oee = sparkline.at(-1) ?? cumulativeOee(run, time, faulted)
 
   const byKind = (kind: string) => everything.filter((item) => run.equipment.find((entry) => entry.id === item.id)?.kind === kind)
 
@@ -426,12 +486,9 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
 
   const defectRate = num(KPI_KEYS.defectRate)
 
-  const robots = Object.values(kpi.robots ?? {}).map((robot) => robot.utilization)
-
-  const oee = robots.length ? robots.reduce((sum, value) => sum + value, 0) / robots.length : undefined
 
   const kpis = view.kpis.map((item): KpiItem => {
-    if (item.id === 'oee' && oee !== undefined) return { ...item, value: oee.toFixed(1) }
+    // OEE 는 KPI 작업 시간 비율(utilization)로 덮지 않는다. 누적 고장 시간 기준 (cumulativeOee)
 
     if (item.id === 'defect' && defects !== undefined) {
       return {
@@ -538,7 +595,7 @@ function withKpi(view: DashboardView, kpi: KpiSample, run: PlaybackRun): Dashboa
   return {
     ...view,
     // 오늘 처리량 = 출고 팔레트 (공정 출고·KPI 출고와 동일 소스)
-    throughput: { ...view.throughput, value: shipped },
+    throughput: { ...view.throughput, value: withThroughputBase(shipped) },
     kpis: kpis.map((item) =>
       item.id === 'outbound' ? { ...item, value: shipped.toLocaleString('ko-KR'), unit: '팔레트' } : item,
     ),

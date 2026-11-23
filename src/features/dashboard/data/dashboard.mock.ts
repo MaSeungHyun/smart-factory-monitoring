@@ -47,7 +47,7 @@ export const EQUIPMENT: EquipmentItem[] = [
   },
 ]
 
-export const STATUS_COUNTS: StatusCounts = { running: 18, idle: 4, error: 1 }
+export const STATUS_COUNTS: StatusCounts = { running: 17, idle: 4, warning: 1, error: 1 }
 
 export const TIMELINE_HOURS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00']
 

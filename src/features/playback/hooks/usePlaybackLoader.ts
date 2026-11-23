@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 import type { ChunkWindow } from '../lib/chunkWindow'
-import { loadRun } from '../lib/loadRun'
+import { loadRun, RUN_START_AT } from '../lib/loadRun'
 import { getExactTime, playbackStore } from '../lib/usePlaybackStore'
 
 /** 청크 창 확인 주기 (ms). 시크 / 루프는 스토어 time 변경으로도 바로 확인한다 */
@@ -56,7 +56,7 @@ export function usePlaybackLoader() {
       .then(({ run, window }) => {
         if (cancelled) return
 
-        playbackStore.getState().setRun(run)
+        playbackStore.getState().setRun(run, window ? RUN_START_AT : 0)
 
         if (window) stop = followChunks(window, () => cancelled)
       })

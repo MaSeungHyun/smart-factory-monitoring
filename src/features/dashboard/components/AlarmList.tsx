@@ -4,10 +4,10 @@ import { useUi, type StatusFilter } from '@/shared/stores/useUiStore'
 import { formatClock } from '@/shared/hooks/useTimelineRange'
 import { flyToEquipment } from '@/shared/lib/equipmentActions'
 
-/** LIVE 옆 칩 → 알람 severity 매핑 (작동 = warning 포함 비고장, 고장 = error) */
+/** LIVE 옆 칩 → 알람 severity 매핑 (작동 = success, 경고 = warning, 고장 = error) */
 const ALARM_MATCH: Record<StatusFilter, ActiveAlarm['severity'][]> = {
-  running: ['warning', 'success'],
-  idle: ['success'],
+  running: ['success'],
+  warning: ['warning'],
   error: ['error'],
 }
 

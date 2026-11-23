@@ -3,8 +3,8 @@ import { createStore } from 'zustand/vanilla'
 
 import type { EquipmentStatus } from '@/shared/types'
 
-/** 상태 칩 필터 (작동 = running + warning, 대기 = idle, 고장 = error) */
-export type StatusFilter = 'running' | 'idle' | 'error'
+/** 상태 칩 필터 (작동 = running + idle, 경고 = warning, 고장 = error). 대기는 일을 기다리는 정상 상태라 작동에 넣는다 */
+export type StatusFilter = 'running' | 'warning' | 'error'
 
 export interface UiState {
   /** 목록 · 3D 공통 선택 장비 id */
@@ -33,8 +33,8 @@ interface UiActions {
 }
 
 const FILTER_MATCH: Record<StatusFilter, EquipmentStatus[]> = {
-  running: ['running', 'warning'],
-  idle: ['idle'],
+  running: ['running', 'idle'],
+  warning: ['warning'],
   error: ['error'],
 }
 

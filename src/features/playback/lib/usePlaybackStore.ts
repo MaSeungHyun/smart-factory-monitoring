@@ -21,7 +21,8 @@ export interface PlaybackSnapshot {
 }
 
 interface PlaybackActions {
-  setRun: (run: PlaybackRun) => void
+  /** 새 run 을 넣고 재생 시각을 time (s) 으로 맞춘다. 그 이전 구간은 이미 지난 것으로 본다 */
+  setRun: (run: PlaybackRun, time?: number) => void
   /** 같은 run 의 다른 청크 구간으로 바꿔 끼운다. 재생 시각 · 회차 · 알람 확인은 유지 */
   replaceRun: (run: PlaybackRun) => void
   setError: () => void
@@ -116,26 +117,27 @@ export const playbackStore = createStore<PlaybackState>((set, get) => ({
   status: 'loading',
   run: null,
   playing: false,
-  speed: 1.5,
+  speed: 1.2,
   time: 0,
   origins: [Date.now()],
   reached: 0,
   acked: new Set(),
 
-  setRun(run) {
-    simTime = 0
+  setRun(run, time = 0) {
+    simTime = Math.min(Math.max(time, 0), run.meta.duration)
 
     pendingMs = 0
 
     lastPublish = 0
 
+    // 재생 시간 0 의 실제 시각을 그만큼 과거로 두어, 지금 = simTime 이 되게 한다
     publish({
       run,
       status: 'ready',
       playing: live,
-      time: 0,
-      origins: [Date.now()],
-      reached: 0,
+      time: simTime,
+      origins: [Date.now() - simTime * 1000],
+      reached: simTime,
       acked: new Set(),
     })
   },

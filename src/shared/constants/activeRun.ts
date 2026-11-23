@@ -11,11 +11,17 @@ export interface ActiveRunConfig {
   url: string
   layout: 'v2' | 'v2-optimized'
   realHistory: boolean
+  /** 앱을 켰을 때 재생을 시작할 녹화 시각 (s). 0 이면 처음부터, 녹화 길이를 넘으면 끝에 맞춘다 */
+  startAt: number
 }
+
+/** 기본 녹화(8시간)에서 5시간 30분이 지난 상태로 시작 */
+const DEFAULT_START_AT = 5.5 * 60 * 60
 
 /** 템플릿 10, 시뮬 0:00:00 ~ 8:00:00 전 구간 실제 이력 (워밍업 없음, 녹화 28800s = 10분 청크 48개, seed 12345) */
 export const ACTIVE_RUN: ActiveRunConfig = {
   url: '/data/run-2026-11-19-t10-8h-s12345/manifest.json',
   layout: 'v2-optimized',
   realHistory: true,
+  startAt: DEFAULT_START_AT,
 }

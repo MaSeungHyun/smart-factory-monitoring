@@ -24,7 +24,8 @@ export default function WarehouseTitleRow({ counts }: Props) {
       className: "text-status-success border-status-success/40",
     },
     {
-      id: "idle" as StatusFilter,
+      // 창고 차량은 대기를 경고 톤으로 그린다 (vehicles.ts)
+      id: "warning" as StatusFilter,
       label: "대기",
       value: counts.idle,
       icon: Clock,
@@ -56,7 +57,7 @@ export default function WarehouseTitleRow({ counts }: Props) {
               type="button"
               data-status-chip={id}
               aria-pressed={statusFilter === id}
-              title={statusFilter === id ? "필터 해제" : `${label} 알람·목록만 보기 (씬은 유지)`}
+              title={statusFilter === id ? "필터 해제" : `${label} 알람·목록만 보기`}
               onClick={() => uiStore.getState().toggleFilter(id)}
               className={cn(
                 "flex h-8 w-[88px] items-center justify-center gap-2 rounded border text-label hover:brightness-125",

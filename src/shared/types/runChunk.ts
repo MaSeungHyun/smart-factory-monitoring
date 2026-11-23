@@ -130,4 +130,6 @@ export interface RunAggregates {
   robots: Record<string, { cycles: number; utilization: number }>
   amrUtilization: Record<string, number>
   rackOccupancy: { stored: number; slots: number }
+  /** 전체 런 알람 (절대 sim 시각). OEE 누적 고장 시간 계산용 */
+  alarms?: { id: string; t: number; until?: number; equipmentId: string; severity: string; message: string; source?: string }[]
 }

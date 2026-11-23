@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, Clock, Layers } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, Layers } from "lucide-react";
 
 import { useDashboardView } from "@/features/playback";
 import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/ToggleGroup";
@@ -19,15 +19,16 @@ export default function MonitorToolbar() {
     {
       id: "running" as StatusFilter,
       label: "작동",
-      value: counts.running,
+      // 대기도 일을 기다리는 정상 상태라 작동에 포함
+      value: counts.running + counts.idle,
       icon: CheckCircle2,
       className: "text-status-success border-status-success/40",
     },
     {
-      id: "idle" as StatusFilter,
-      label: "대기",
-      value: counts.idle,
-      icon: Clock,
+      id: "warning" as StatusFilter,
+      label: "경고",
+      value: counts.warning,
+      icon: AlertTriangle,
       className: "text-status-warning border-status-warning/40",
     },
     {
@@ -58,7 +59,7 @@ export default function MonitorToolbar() {
           }
         >
         {counters.map(({ id, label, value, icon: Icon, className }) => (
-          <Tooltip key={id} content={statusFilter === id ? "필터 해제" : `${label} 알람·목록만 보기 (씬은 유지)`}>
+          <Tooltip key={id} content={statusFilter === id ? "필터 해제" : `${label} 알람·목록만 보기`}>
           <ToggleGroupItem
             value={id as string}
             data-status-chip={id}

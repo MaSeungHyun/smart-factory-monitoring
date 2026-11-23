@@ -25,6 +25,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/shared/components/ui/Tabs";
+import { withThroughputBase } from "@/shared/constants/throughputBase";
 import { formatNumber } from "@/shared/lib/format";
 import { sameEquipmentItem } from "@/shared/lib/sameEquipmentItem";
 import type { EquipmentItem } from "@/shared/types";
@@ -50,8 +51,8 @@ const KPI_ICONS = {
   outbound: <ArrowUpFromLine size={14} />,
 };
 
-/** 오늘 처리량: 출고 박스 누적 (일일 목표 대비) */
-const pickHandled = (frame: StatusFrame) => Math.max(0, frame.counts.outbound);
+/** 오늘 처리량: 출고 누적 + 시연용 베이스 (일일 목표 대비) */
+const pickHandled = (frame: StatusFrame) => withThroughputBase(Math.max(0, frame.counts.outbound));
 
 type TabId = "equipment" | "alarm" | "history";
 

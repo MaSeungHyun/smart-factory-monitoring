@@ -5,6 +5,7 @@ import { RUN_TARGET, useContinuousCount, useKpiGetter } from '@/features/playbac
 import { ArrowDownToLine, ArrowUpFromLine, ClipboardList, Layers, ScanLine, Truck, Workflow } from 'lucide-react'
 
 import SegmentBar from '@/shared/components/SegmentBar'
+import { withThroughputBase } from '@/shared/constants/throughputBase'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { cn } from '@/shared/lib/cn'
 import type { ProcessStage } from '@/shared/types'
@@ -20,22 +21,25 @@ const STAGE_ICON = {
   order: ClipboardList,
 }
 
-const pickOutbound = (frame: StatusFrame) => Math.max(0, frame.counts.outbound)
+/** 출고 = 오늘 처리량과 같은 값 (출고 누적 + 시연용 베이스) */
+const pickOutbound = (frame: StatusFrame) => withThroughputBase(Math.max(0, frame.counts.outbound))
 
 export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
   const Icon = STAGE_ICON[stage.icon]
 
-  // 출고는 오늘 처리량과 동일하게 status 프레임 보간값 사용
-  const liveOutbound = useContinuousCount(pickOutbound, stage.value)
+  const isOutbound = stage.icon === 'outbound'
+
+  // 출고는 오늘 처리량과 동일하게 status 프레임 보간값 + 베이스 사용 (KPI ship 키로 덮지 않음)
+  const liveOutbound = useContinuousCount(pickOutbound, isOutbound ? withThroughputBase(stage.value) : stage.value)
 
   const outboundPercent = useCallback(
     () => Math.min(100, (liveOutbound() / RUN_TARGET) * 100),
     [liveOutbound],
   )
 
-  const value = useKpiGetter(stage.valueKey, stage.icon === 'outbound' ? liveOutbound : stage.value)
+  const value = useKpiGetter(isOutbound ? undefined : stage.valueKey, isOutbound ? liveOutbound : stage.value)
 
-  const percent = useKpiGetter(stage.percentKey, stage.icon === 'outbound' ? outboundPercent : stage.percent)
+  const percent = useKpiGetter(isOutbound ? undefined : stage.percentKey, isOutbound ? outboundPercent : stage.percent)
 
   return (
     <div

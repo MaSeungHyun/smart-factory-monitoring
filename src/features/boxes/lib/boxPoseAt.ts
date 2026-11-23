@@ -42,3 +42,14 @@ export function boxOwnerAt(box: DecodedBox, time: number) {
 
   return kind
 }
+
+/** 불량 판정 뒤 팔레트에 한 번이라도 적재됐는지. 적재된 불량 박스는 원래 색으로 돌린다 */
+export function defectPalletized(box: DecodedBox, time: number) {
+  for (const segment of box.own) {
+    if (segment[0] > time) return false
+
+    if (segment[0] >= box.defectAt && segment[1] === 'pallet') return true
+  }
+
+  return false
+}

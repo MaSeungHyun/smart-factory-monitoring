@@ -8,7 +8,7 @@ import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import boxUrl from '@/assets/models/box.glb?url'
 
 import { boxGeometry } from '../lib/boxGeometry'
-import { boxOwnerAt } from '../lib/boxPoseAt'
+import { boxOwnerAt, defectPalletized } from '../lib/boxPoseAt'
 import type { BoxSync } from '../lib/boxSync'
 import type { DecodedBox } from '../lib/decodeBoxes'
 
@@ -70,7 +70,10 @@ export default function BoxInstances({ boxes, sync }: { boxes: DecodedBox[]; syn
 
       target.setMatrixAt(count, matrix)
 
-      const color = time >= box.defectAt ? DEFECT : mode === 'arm' || boxOwnerAt(box, time) === 'robot' ? CARRIED : NORMAL
+      // 불량은 빨강, 팔레트에 적재되면 원래 색으로
+      const defect = time >= box.defectAt && !defectPalletized(box, time)
+
+      const color = defect ? DEFECT : mode === 'arm' || boxOwnerAt(box, time) === 'robot' ? CARRIED : NORMAL
 
       target.setColorAt(count, color)
 
