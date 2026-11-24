@@ -3,7 +3,7 @@ import { Group, type Object3D } from 'three'
 
 import { FACTORY_GLB_URL } from '@/features/template'
 import { findGlbNode, stripLights } from '@/shared/lib/three/glbNode'
-import { centerOnFloor } from '@/shared/lib/three/modelBounds'
+import { centerOnFloor, staticShadows } from '@/shared/lib/three/modelBounds'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import type { SceneEquipment } from '@/shared/types'
 
@@ -14,13 +14,13 @@ import { useCloned } from '../../lib/useCloned'
 const zeroChildrenXZ = (model: Object3D) => {
   model.children.forEach((child) => child.position.set(0, child.position.y, 0))
 
-  return model
+  return staticShadows(model)
 }
 
 const zeroChildren = (model: Object3D) => {
   model.children.forEach((child) => child.position.set(0, 0, 0))
 
-  return centerOnFloor(model)
+  return staticShadows(centerOnFloor(model))
 }
 
 /** 곡선 경로 레일 rail_c.glb */
@@ -32,7 +32,7 @@ function RailCPath() {
 
     node.quaternion.identity()
 
-    return stripLights(node)
+    return staticShadows(stripLights(node))
   })
 
   return <primitive object={model} />
@@ -49,7 +49,7 @@ function Rail001Path() {
 
     if (!found) return group
 
-    const node = stripLights(found.clone(true))
+    const node = staticShadows(stripLights(found.clone(true)))
 
     node.position.set(0, RAIL_001_Y, 0)
 

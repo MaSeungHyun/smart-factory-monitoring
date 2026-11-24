@@ -27,6 +27,21 @@ export const SHADOW_MAP: Record<Exclude<ShadowLevel, 'off'>, number> = {
   high: 2048,
 }
 
+/**
+ * 한 번만 그리는 고정 그림자 태양의 맵 크기. 매 프레임 다시 그리지 않으므로 움직이는 태양보다 크게 둔다.
+ * 낮음은 GPU 메모리(4096 깊이 맵 ≈ 64 MB)를 아끼려고 한 단계 내린다
+ */
+export const STATIC_SHADOW_MAP: Record<Exclude<ShadowLevel, 'off'>, number> = {
+  low: 2048,
+  high: 4096,
+}
+
+/** 고정 그림자 스포트라이트(Process_Key · Dock_Daylight) 맵 크기 */
+export const SPOT_SHADOW_MAP: Record<Exclude<ShadowLevel, 'off'>, number> = {
+  low: 1024,
+  high: 2048,
+}
+
 interface Persisted {
   quality: RenderQuality
   shadow: ShadowLevel

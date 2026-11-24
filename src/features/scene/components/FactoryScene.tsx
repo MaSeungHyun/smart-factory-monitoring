@@ -8,6 +8,7 @@ import PlaybackStart from "@/features/playback/components/PlaybackStart";
 import { FACTORY_TEMPLATE, parseTemplate } from "@/features/template";
 import { isVisibleEquipment } from "../lib/sceneEquipment";
 import { configureKTX2 } from "@/shared/lib/three/gltfLoader";
+import { loadWebGPU, prefetchWebGPU } from "@/shared/lib/three/webgpuPrefetch";
 import { graphicsStore, QUALITY_DPR, useGraphics } from "@/shared/stores/useGraphicsStore";
 import { uiStore } from "@/shared/stores/useUiStore";
 
@@ -29,12 +30,15 @@ import VisionInset from "./VisionInset";
 
 const CAMERA = { fov: 45, near: 0.5, far: 2000 };
 
+/** 씬 배경색 (기준 씬: 검정). HDR 을 배경으로 쓰면(Environment background) 가려진다 */
+const SCENE_BACKGROUND = "#000000";
+
 /** WebGPU 를 시도하고, 실패하면 같은 캔버스에서 WebGL 로 올린다 */
 async function createWebGPU(props: ConstructorParameters<typeof WebGLRenderer>[0] = {}) {
   try {
     if (!("gpu" in navigator)) throw new Error("이 브라우저는 WebGPU를 지원하지 않습니다");
 
-    const { WebGPURenderer } = await import("three/webgpu");
+    const { WebGPURenderer } = await loadWebGPU();
 
     const antialias = graphicsStore.getState().antialias;
 
@@ -61,6 +65,9 @@ async function createWebGPU(props: ConstructorParameters<typeof WebGLRenderer>[0
 /** 템플릿 06 (factory-glb-v2) 읽기 전용 뷰어: factory.glb props + 장비 모델 + factory.glb main_cam/robot_cam 카메라 */
 /** children: 페이지별 3D 오버레이 (Canvas 안) */
 registerScenePartHandlers();
+
+// WebGPU 를 고른 경우: 에셋을 받는 동안 three/webgpu 청크 · GPU 어댑터를 함께 준비한다 (캔버스 마운트 뒤에 줄지어 기다리지 않게)
+if (graphicsStore.getState().renderer === "webgpu") prefetchWebGPU();
 
 export default function FactoryScene({ children }: { children?: ReactNode }) {
   const template = useMemo(() => parseTemplate(FACTORY_TEMPLATE), []);
@@ -100,8 +107,9 @@ export default function FactoryScene({ children }: { children?: ReactNode }) {
       }}
       onPointerMissed={(event) => event.type === "click" && uiStore.getState().select(null)}
     >
-      <color attach="background" args={["#0a0b0d"]} />
+      <color attach="background" args={[SCENE_BACKGROUND]} />
 
+        
       <Suspense fallback={null}>
         <FactoryLighting />
 

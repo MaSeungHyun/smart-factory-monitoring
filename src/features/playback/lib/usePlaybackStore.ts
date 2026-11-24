@@ -116,7 +116,7 @@ export const playbackStore = createStore<PlaybackState>((set, get) => ({
   status: 'loading',
   run: null,
   playing: false,
-  speed: 1.5,
+  speed: 1.2,
   time: 0,
   origins: [Date.now()],
   reached: 0,

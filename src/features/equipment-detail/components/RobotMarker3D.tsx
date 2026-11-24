@@ -6,6 +6,7 @@ import { decodeBoxes, robotWorkSpots, type WorkSpot } from '@/features/boxes'
 import { dashboardAt, playbackStore } from '@/features/playback'
 import { useMonitorState } from '@/shared/stores/useMonitorViewStore'
 import { screenBounds, type ScreenRect } from '@/shared/lib/three/screenBounds'
+import { AMR_DECK } from '@/features/scene/constants/modelPlacement'
 import { robotAnchor, robotBaseSpot } from '@/features/scene/lib/boundsRaycast'
 import { surfaceBelow } from '@/shared/lib/three/surfaceBelow'
 import type { PlaybackRun } from '@/shared/types/playback'
@@ -20,6 +21,9 @@ import WorkSpotMarker from './WorkSpotMarker'
 
 /** 바닥 마커를 표면 위로 살짝 띄움 (z-fighting 방지) */
 const LIFT = 0.015
+
+/** AMR 상태 링 높이. AMR.glb AMR_point(y=1.0068)를 centerOnFloor 한 팔레트 적재면(AMR_DECK) 바로 위 */
+const AMR_STATUS_RING_Y = AMR_DECK + LIFT
 
 /** 표면을 못 찾았을 때 박스 윗면 기준 추정 높이 */
 const FALLBACK_DROP = 0.3
@@ -65,7 +69,9 @@ function colorOf(robotId: string, fade: boolean) {
 export default function RobotMarker3D({ layout }: Props) {
   const { robotId } = useMonitorState()
 
-  const fade = detailKind(robotId) !== null && detailKind(robotId) !== 'robot'
+  const kind = detailKind(robotId)
+
+  const fade = kind !== null && kind !== 'robot'
 
   const scene = useThree((state) => state.scene)
 
@@ -132,7 +138,8 @@ export default function RobotMarker3D({ layout }: Props) {
     } else {
       robot.getWorldPosition(spot)
 
-      spot.y = LIFT
+      // AMR 은 팔레트 적재면, AGV·지게차는 바닥
+      spot.y = kind === 'amr' ? spot.y + AMR_STATUS_RING_Y : LIFT
     }
 
     group.current.position.copy(spot)

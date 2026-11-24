@@ -8,9 +8,13 @@ import { playbackStore } from '@/features/playback/lib/usePlaybackStore'
 import { TONE_BG, TONE_TEXT, TONE_TINT } from '@/shared/constants/status'
 import { getHover, uiStore } from '@/shared/stores/useUiStore'
 
-import { equipmentById, equipmentTop } from '../lib/boundsRaycast'
+import { equipmentBottom, equipmentById, equipmentTop } from '../lib/boundsRaycast'
+import { labelsBelow } from '../lib/labelBelow'
 
 const anchor = new Vector3()
+
+/** 칩을 장비 윗면에서 띄우는 높이 (m) */
+const HOVER_LIFT = 0.4
 
 function writeChip(
   active: string,
@@ -99,7 +103,10 @@ export default function HoverCallout3D() {
       writeChip(active, nameEl.current, processEl.current, badgeEl.current, dotEl.current, labelEl.current)
     }
 
-    if (!equipmentTop(target, anchor, 0.4)) return
+    // 지게차는 기준점(점)을 장비 아랫면에 두고 칩은 그대로 위로 뜬다
+    const placed = labelsBelow(active) ? equipmentBottom(target, anchor, 0) : equipmentTop(target, anchor, HOVER_LIFT)
+
+    if (!placed) return
 
     group.current.position.copy(anchor)
   })

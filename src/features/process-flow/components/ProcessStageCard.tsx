@@ -2,10 +2,12 @@ import { useCallback } from 'react'
 
 import AnimatedNumber from '@/shared/components/AnimatedNumber'
 import { RUN_TARGET, useContinuousCount, useKpiGetter } from '@/features/playback'
+import { flyToCameraBookmark } from '@/features/scene/lib/cameraBookmarks'
 import { ArrowDownToLine, ArrowUpFromLine, ClipboardList, Layers, ScanLine, Truck, Workflow } from 'lucide-react'
 
 import SegmentBar from '@/shared/components/SegmentBar'
 import StatusBadge from '@/shared/components/StatusBadge'
+import { processStageCameraBookmark } from '@/shared/constants/processStageCamera'
 import { cn } from '@/shared/lib/cn'
 import type { ProcessStage } from '@/shared/types'
 import type { StatusFrame } from '@/shared/types/playback'
@@ -37,17 +39,20 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
 
   const percent = useKpiGetter(stage.percentKey, stage.icon === 'outbound' ? outboundPercent : stage.percent)
 
-  return (
-    <div
-      className={cn(
-        'flex min-w-0 flex-col rounded border bg-bg-surface-2 p-3.5',
-        stage.status === 'error'
-          ? 'border-status-error bg-status-error/16'
-          : stage.status === 'warning'
-            ? 'border-status-warning/50 bg-status-warning/10'
-            : 'border-border-default',
-      )}
-    >
+  const bookmark = processStageCameraBookmark(stage.id)
+
+  const className = cn(
+    'flex min-w-0 flex-col rounded border bg-bg-surface-2 p-3.5 hover:border-text-tertiary hover:bg-bg-surface',
+    bookmark && 'h-full w-full cursor-pointer text-left',
+    stage.status === 'error'
+      ? 'border-status-error bg-status-error/16 hover:border-status-error hover:bg-status-error/16'
+      : stage.status === 'warning'
+        ? 'border-status-warning/50 bg-status-warning/10 hover:border-status-warning/50 hover:bg-status-warning/10'
+        : 'border-border-default',
+  )
+
+  const body = (
+    <>
       <div className="flex items-center gap-2 text-label font-medium text-text-secondary">
         <Icon size={14} />
 
@@ -69,6 +74,19 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
       </div>
 
       <SegmentBar percent={percent} tone={stage.status} segments={35} className="mt-2" />
-    </div>
+    </>
+  )
+
+  if (!bookmark) return <div className={className}>{body}</div>
+
+  return (
+    <button
+      type="button"
+      className={className}
+      aria-label={`${stage.name} ${bookmark}번 카메라 시점으로 이동`}
+      onClick={() => flyToCameraBookmark(bookmark)}
+    >
+      {body}
+    </button>
   )
 }

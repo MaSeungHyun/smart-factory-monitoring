@@ -1,5 +1,7 @@
 import type { Object3D } from 'three'
 
+import { staticShadows } from '@/shared/lib/three/modelBounds'
+
 import { SCAN_TUNNEL_LIFT } from '../../constants/modelPlacement'
 import { MODEL_URL } from '../../constants/modelUrls'
 import { useCloned } from '../../lib/useCloned'
@@ -9,7 +11,7 @@ const placeTunnel = (model: Object3D) => {
 
   model.position.y = SCAN_TUNNEL_LIFT
 
-  return model
+  return staticShadows(model)
 }
 
 /** ScanTunnel.glb: 출구 벨트가 레일 벨트 위에 오도록 들어 올림 (신호색 표시는 생략) */

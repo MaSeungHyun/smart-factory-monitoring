@@ -141,6 +141,8 @@ export function createCarriedPallets(run: PlaybackRun) {
 
     out[3] = carrier.yaw + local[2]
 
+    out[4] = 0
+
     const fork = event.parentId ? forkOf(event.parentId) : null
 
     const now = fork ? forkY(fork, time) : null
@@ -164,7 +166,7 @@ export function createCarriedPallets(run: PlaybackRun) {
     return true
   }
 
-  /** palletPoseAt 과 같은 out [x, y, z, yaw]. 차량에 안 실렸으면 스트림 포즈 */
+  /** palletPoseAt 과 같은 out [x, y, z, yaw, pitch]. 차량에 안 실렸으면 스트림 포즈 */
   return function carriedPoseAt(events: PalletEvent[], time: number, out: number[]) {
     if (!palletPoseAt(events, time, out)) return false
 
@@ -205,6 +207,8 @@ export function createCarriedPallets(run: PlaybackRun) {
         out[2] = from[2] + (to[2] - from[2]) * k
 
         out[3] = lerpAngle(from[3], to[3], k)
+
+        out[4] = 0
 
         return true
       }

@@ -1,6 +1,6 @@
 import { PALLET_SCAN_SWEEP_S, PALLET_TARGET_PULSE_S } from '@/shared/constants/animation'
 
-import { activeSlot, type PalletGroup, type PalletPlan } from './palletPlan'
+import { nextPlaceSlot, type PalletGroup, type PalletPlan } from './palletPlan'
 
 /** 화면 좌표 투영 (카메라 뒤면 null) */
 export type Project = (x: number, y: number, z: number) => [number, number] | null
@@ -97,8 +97,8 @@ export function paintPallet(host: HTMLElement, plan: PalletPlan | null, time: nu
 
   if (!nodes || nodes.plan !== plan) nodes = build(host, plan)
 
-  // 지금 적재 중인 칸(또는 다음 칸) — 미래 칸만 고르면 로봇이 놓는 곳과 녹색이 어긋남
-  const target = activeSlot(plan, time)
+  // 다음에 놓을 칸 (로봇이 들고 오는 박스가 놓일 곳). 놓는 순간 채워진 칸이 되고 다음 칸으로 넘어간다
+  const target = nextPlaceSlot(plan, time)
 
   const targetIndex = target ? plan.slots.indexOf(target) : -1
 
@@ -130,6 +130,8 @@ export function paintPallet(host: HTMLElement, plan: PalletPlan | null, time: nu
   let maxX = -Infinity
 
   let minY = Infinity
+
+  let maxY = -Infinity
 
   let visible = 0
 
@@ -172,6 +174,8 @@ export function paintPallet(host: HTMLElement, plan: PalletPlan | null, time: nu
       maxX = Math.max(maxX, x)
 
       minY = Math.min(minY, y)
+
+      maxY = Math.max(maxY, y)
     }
 
     const cx = points.reduce((sum, [x]) => sum + x, 0) / 4
@@ -227,9 +231,10 @@ export function paintPallet(host: HTMLElement, plan: PalletPlan | null, time: nu
 
   nodes.sweep.setAttribute('x2', sweepX.toFixed(1))
 
+  // 칸 전체 높이를 덮는다 (예전엔 맨 위 칸 근처만 덮어 박스 하나만 스캔하는 것처럼 보였다)
   nodes.sweep.setAttribute('y1', (minY - 4).toFixed(1))
 
-  nodes.sweep.setAttribute('y2', (minY + (maxX - minX) * 0.6).toFixed(1))
+  nodes.sweep.setAttribute('y2', (maxY + 4).toFixed(1))
 
   nodes.label.style.display = ''
 

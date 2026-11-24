@@ -5,7 +5,7 @@ export type CameraCommand =
   | { kind: 'zoom'; factor: number }
   | { kind: 'fit' }
   | { kind: 'home' }
-  | { kind: 'look'; position: [number, number, number]; target: [number, number, number] }
+  | { kind: 'look'; position: [number, number, number]; target: [number, number, number]; /** true 면 현재 방향을 유지한 채 위치를 먼저 옮긴 뒤 회전 */ moveThenTurn?: boolean }
 
 type Listener = (command: CameraCommand) => void
 

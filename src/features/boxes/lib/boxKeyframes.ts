@@ -2,6 +2,8 @@ import { Quaternion, Vector3, type Matrix4 } from 'three'
 
 import type { BoxKeyframe } from '@/shared/types/runEvents'
 
+import { BOX_FLIP_SNAP } from '../constants/conveyorHandoff'
+
 /** 계산 위치가 키프레임과 이만큼 넘게 어긋나면 키프레임으로 맞춘다 */
 const DRIFT = 0.05
 
@@ -50,7 +52,14 @@ export function keyPoseAt(keys: BoxKeyframe[], time: number, out: number[]) {
 
 const quatB = new Quaternion()
 
-/** v2 기록 쿼터니언 보간 (world). 쿼터니언이 없는 키프레임이면 false */
+/** 박스 자기 Y축 반 바퀴 (직사각형 박스의 대칭 짝) */
+const HALF_TURN = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI)
+
+/**
+ * v2 기록 쿼터니언 보간 (world). 쿼터니언이 없는 키프레임이면 false
+ * robot_IK 은 컨베이어에 놓은 박스를 반 바퀴 스냅해 컨베이어 방향(mod 360)에 맞추고, 1 Hz 키프레임엔 그 스냅이 한 칸으로 남는다.
+ * 그대로 slerp 하면 놓은 뒤 1 초 동안 반 바퀴 돌아 보이므로, 그런 칸은 앞 키를 대칭 짝으로 바꿔 돌지 않게 한다.
+ */
 export function keyQuatAt(keys: BoxKeyframe[], time: number, out: Quaternion) {
   const index = keyIndexAt(keys, time)
 
@@ -66,7 +75,13 @@ export function keyQuatAt(keys: BoxKeyframe[], time: number, out: Quaternion) {
 
   out.set(a[5], a[6], a[7], a[8]).normalize()
 
-  if (k > 0) out.slerp(quatB.set(b[5], b[6], b[7], b[8]).normalize(), k)
+  if (k > 0) {
+    quatB.set(b[5], b[6], b[7], b[8]).normalize()
+
+    if (out.angleTo(quatB) > BOX_FLIP_SNAP) out.multiply(HALF_TURN)
+
+    out.slerp(quatB, k)
+  }
 
   return true
 }

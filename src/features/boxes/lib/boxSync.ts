@@ -1,5 +1,6 @@
-import { Matrix4, Quaternion, Vector3, type Object3D } from 'three'
+import { Euler, Matrix4, Quaternion, Vector3, type Object3D } from 'three'
 
+import { wrapAngle } from '@/shared/lib/angles'
 import { findGripPoint } from '@/shared/lib/three/findGripPoint'
 import type { PlaybackRun } from '@/shared/types/playback'
 
@@ -10,8 +11,9 @@ import { buildParentSpans, insertSpan, localMatrix, spanAt, type ParentSpan, typ
 import { boxPoseAt } from './boxPoseAt'
 import type { DecodedBox } from './decodeBoxes'
 import { createCarriedPallets } from './carriedPallet'
+import { BOX_FLIP_SNAP, CONVEYOR_ALIGN_MAX_TURN, CONVEYOR_HANDOFF_WINDOW, CONVEYOR_SETTLE_PROBE } from '../constants/conveyorHandoff'
 import { PRE_ALIGN_TARGET_PROBE } from '../constants/preAlign'
-import { palletEventAt, palletNodeName, palletTracks } from './palletTracks'
+import { isRailCarrier, palletEventAt, palletNodeName, palletTracks } from './palletTracks'
 import { applyPreAlign, planPreAlign, yawOf, type PreAlignTurn } from './preAlign'
 import { readStreams } from './runStreams'
 
@@ -32,6 +34,9 @@ const SYNTHETIC_LEAD = 0.5
 const UP = new Vector3(0, 1, 0)
 
 const ONE = new Vector3(1, 1, 1)
+
+/** 박스 자기 Y축 반 바퀴 (직사각형 박스의 대칭 짝) */
+const HALF_TURN = new Matrix4().makeRotationY(Math.PI)
 
 export type BoxMode = SpanKind | 'synthetic'
 
@@ -59,10 +64,12 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
 
   const resync = createDriftResync()
 
-  // v2: 팔레트 부모 = 스트림 포즈 T(pos) * Ry(yaw) (EventPallets 그룹과 같음). 씬 노드 대신 스트림에서 바로 계산
+  // v2: 팔레트 부모 = 스트림 포즈 T(pos) * Ry(yaw) * Rx(pitch) (EventPallets 와 같은 YXZ). 씬 노드 대신 스트림에서 바로 계산
   const pallets = streams.palletLocal && streams.palletEvents ? palletTracks(streams.palletEvents) : null
 
-  const palletPose = [0, 0, 0, 0]
+  const palletPose = [0, 0, 0, 0, 0]
+
+  const palletEuler = new Euler(0, 0, 0, 'YXZ')
 
   const carrierLocals = new WeakMap<object, Matrix4>()
 
@@ -242,7 +249,9 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
 
         position.set(palletPose[0], palletPose[1], palletPose[2])
 
-        rotation.setFromAxisAngle(UP, palletPose[3])
+        palletEuler.set(palletPose[4] ?? 0, palletPose[3], 0)
+
+        rotation.setFromEuler(palletEuler)
 
         out.compose(position, rotation, ONE)
 
@@ -279,7 +288,70 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
     return previous?.kind === 'arm' && Math.abs(previous.end - span.start) < 0.05 ? previous : null
   }
 
+  // ---- 컨베이어 투입 (팔 -> 입고 팔레트 -> 컨베이어)
+
+  /** 팔 구간이 끝난 뒤 CONVEYOR_HANDOFF_WINDOW 안에 시작하는 기록 월드(컨베이어) 구간 */
+  function landingOf(box: DecodedBox, arm: ParentSpan) {
+    const list = parenting.spans.get(box.id) ?? []
+
+    return list.find((next) => next.kind === 'track' && next.start >= arm.end - 1e-6 && next.start - arm.end <= CONVEYOR_HANDOFF_WINDOW) ?? null
+  }
+
+  const settled = new Quaternion()
+
+  /** 컨베이어 투입이면 robot_IK 이 컨베이어에서 스냅한 뒤의 안착 각 (rad). 아니면 null */
+  function conveyorYaw(box: DecodedBox, arm: ParentSpan) {
+    const keys = streams.boxKeys?.[box.id]
+
+    const landing = landingOf(box, arm)
+
+    if (!landing || !keys?.length) return null
+
+    return keyQuatAt(keys, Math.min(arm.end + CONVEYOR_SETTLE_PROBE, landing.end), settled) ? yawOf(settled) : null
+  }
+
+  const handoffChecked = new WeakSet<ParentSpan>()
+
+  const handoffArm = new Matrix4()
+
+  const handoffParent = new Matrix4()
+
+  const handoffRotation = new Quaternion()
+
+  /**
+   * 놓자마자 기록 local 로 붙는 입고 팔레트 구간: 팔 끝 각과 반 바퀴 어긋나면 local 을 대칭 짝으로 바꾼다.
+   * (컨베이어 각으로 미리 맞춰 놓은 박스가 팔레트 기록 local 로 잠깐 반 바퀴 튀지 않게)
+   */
+  function alignHandoff(box: DecodedBox, span: ParentSpan) {
+    if (handoffChecked.has(span) || !span.local || span.kind === 'arm') return
+
+    handoffChecked.add(span)
+
+    const arm = armBefore(box, span)
+
+    if (!arm || !landingOf(box, arm)) return
+
+    const local = span.local
+
+    // 로봇이 아직 씬에 없으면 다음 프레임에 다시 본다
+    if (!rigidWorld(box, arm, arm.end, handoffArm) || !parentWorld(span, span.start, handoffParent)) {
+      handoffChecked.delete(span)
+
+      return
+    }
+
+    handoffArm.decompose(position, handoffRotation, scale)
+
+    const armYaw = yawOf(handoffRotation)
+
+    handoffParent.multiply(local).decompose(position, handoffRotation, scale)
+
+    if (Math.abs(wrapAngle(yawOf(handoffRotation) - armYaw)) > BOX_FLIP_SNAP) local.multiply(HALF_TURN)
+  }
+
   function ensureLocal(box: DecodedBox, span: ParentSpan, time: number) {
+    alignHandoff(box, span)
+
     if (span.local) return span.local
 
     // 팔: grip on 순간. AMR·팔레트: 과거 부모 위치를 모르므로 처음 보는 순간
@@ -324,9 +396,23 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
 
     source.decompose(position, heldEnd, scale)
 
-    const diff = yawOf(placedRotation) - yawOf(heldEnd)
+    const heldYaw = yawOf(heldEnd)
 
-    const plan = planPreAlign(run, span.parentId, span.start, span.end, Math.atan2(Math.sin(diff), Math.cos(diff)))
+    const placedYaw = yawOf(placedRotation)
+
+    let turn = wrapAngle(placedYaw - heldYaw)
+
+    // 컨베이어 투입: 90° 동률에서 robot_IK 이 반대로 돌면 컨베이어가 박스를 반 바퀴 스냅한다.
+    // 같은 크기만큼 컨베이어 안착 각 쪽으로 돌려 내려놓아, 놓은 뒤에는 돌지 않게 한다
+    const landed = conveyorYaw(box, span)
+
+    if (landed !== null && Math.abs(wrapAngle(landed - placedYaw)) > BOX_FLIP_SNAP) {
+      const toConveyor = wrapAngle(landed - heldYaw)
+
+      if (Math.abs(toConveyor) <= CONVEYOR_ALIGN_MAX_TURN) turn = toConveyor
+    }
+
+    const plan = planPreAlign(run, span.parentId, span.start, span.end, turn)
 
     preAligns.set(span, plan)
 
@@ -443,13 +529,14 @@ export function createBoxSync(scene: Object3D, run: PlaybackRun, boxes: DecodedB
 
   // ---- 프레임 계산
 
-  /** 이 시각 팔레트가 차량 위에 실려 있으면 true (차량 포즈 트랙 있음) */
+  /** 이 시각 팔레트가 차량·조건 레일 위에 있으면 true (키프레임 드리프트 보정을 건너뛴다) */
   function onVehicle(span: ParentSpan, time: number) {
     const list = span.kind === 'pallet' && span.parentId ? pallets?.get(span.parentId) : undefined
 
     const event = list?.[palletEventAt(list, time)]
 
-    return !!event?.parentId && !!run.tracks.poses[event.parentId]
+    // 차량·조건 레일 위에서는 1 Hz 키프레임으로 보정하지 않는다 (경사 구간에서 오프셋이 굳어 적재가 팔레트와 어긋나 흔들림)
+    return !!event?.parentId && (!!run.tracks.poses[event.parentId] || isRailCarrier(event.parentId))
   }
 
   function blend(out: Matrix4, from: Matrix4, k: number) {

@@ -140,6 +140,24 @@ function buildPlan(raw: Omit<PalletSlot, 'cell' | 'layer'>[]): PalletPlan {
   }
 }
 
+/** 놓인 자리에서 이만큼(m) 벗어나면 팔레트가 AMR 과 함께 떠난 것으로 본다 */
+const PALLET_DEPART_M = 0.3
+
+/** 박스가 놓인 자리 (x, z) 를 떠나는 시각. 키프레임에 이동이 없으면 fallback */
+function departAt(box: DecodedBox, at: number, x: number, z: number, fallback: number) {
+  for (let index = 0; index < box.times.length; index++) {
+    const time = box.times[index]
+
+    if (time <= at) continue
+
+    if (time >= fallback) break
+
+    if (Math.hypot(box.poses[index * 4] - x, box.poses[index * 4 + 2] - z) > PALLET_DEPART_M) return time
+  }
+
+  return fallback
+}
+
 /** 같은 팔레트로 묶는 거리(m). 이보다 멀면 다른 AMR 팔레트로 본다 */
 const PALLET_GROUP_RADIUS_M = 0.9
 
@@ -154,6 +172,17 @@ export function activeSlot(plan: PalletPlan, time: number) {
   }
 
   return next ?? plan.slots[plan.slots.length - 1] ?? null
+}
+
+/** 팔레타이징: time 이후 다음에 놓을 자리. 다 놓았으면 null */
+export function nextPlaceSlot(plan: PalletPlan, time: number) {
+  let next: PalletSlot | null = null
+
+  for (const slot of plan.slots) {
+    if (slot.at > time && (!next || slot.at < next.at)) next = slot
+  }
+
+  return next
 }
 
 /** time 에 작업 중인 팔레트 묶음. 같은 팔레트 안에서는 박스를 집어도 바뀌지 않는다 */
@@ -232,7 +261,8 @@ export function palletPlan(boxes: DecodedBox[], robotId: string): PalletPlan | n
 
       const [x, y, z, yaw] = poseBefore(box, at)
 
-      raw.push({ boxId: box.id, x, y, z, yaw, at, leave: box.own[index + 1]?.[0] ?? box.end })
+      // leave = 팔레트가 AMR 과 함께 자리를 떠난 시각 (박스 수명 끝까지 남겨 두면 칸이 계속 찬 것으로 보임)
+      raw.push({ boxId: box.id, x, y, z, yaw, at, leave: departAt(box, at, x, z, box.own[index + 1]?.[0] ?? box.end) })
     }
   }
 

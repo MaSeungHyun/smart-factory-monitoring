@@ -112,7 +112,8 @@ function toItem(entry: PlaybackEquipment, sample: EquipmentStateSample | undefin
       ...base,
       type: 'amr',
       statusLabel: status === 'warning' ? `배터리 ${battery}%` : base.statusLabel,
-      metricLeft: sample?.hasBox ? '팔레트 이송' : (sample?.label ?? '—'),
+      // 상태는 배지(작동/대기/배터리), 여기선 누적 사이클 수만 표시
+      metricLeft: '사이클',
       metricRight: `${sample?.count ?? 0} 회`,
       percent: battery,
     }

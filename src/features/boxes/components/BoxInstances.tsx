@@ -1,9 +1,10 @@
 import { useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Color, InstancedMesh, Matrix4, MeshStandardMaterial } from 'three'
 
 import { getExactTime } from '@/features/playback'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
+import { castShadows } from '@/shared/lib/three/modelBounds'
 
 import boxUrl from '@/assets/models/box.glb?url'
 
@@ -41,6 +42,11 @@ export default function BoxInstances({ boxes, sync }: { boxes: DecodedBox[]; syn
   )
 
   const mesh = useRef<InstancedMesh>(null)
+
+  // 박스는 움직이는 태양 그림자에 넣는다 (DYNAMIC_SHADOW_LAYER). 다시 만들어지면 ShadowUpdateGate 가 레이어를 채운다
+  useLayoutEffect(() => {
+    if (mesh.current) castShadows(mesh.current)
+  }, [])
 
   const applied = useRef(Number.NaN)
 
@@ -93,6 +99,8 @@ export default function BoxInstances({ boxes, sync }: { boxes: DecodedBox[]; syn
       name="factory-boxes"
       args={[geometry, material, capacity]}
       frustumCulled={false}
+      castShadow
+      receiveShadow
       raycast={() => null}
       onUpdate={(self) => self.setColorAt(0, NORMAL)}
     />

@@ -10,7 +10,8 @@ import StatusBadge from '@/shared/components/StatusBadge'
 import { LEADER_OVERLAP, LEADER_RISE, LEADER_RUN } from '@/shared/lib/leaderLine'
 import type { EquipmentItem } from '@/shared/types'
 
-import { equipmentById, equipmentTop } from '../lib/boundsRaycast'
+import { equipmentBottom, equipmentById, equipmentTop } from '../lib/boundsRaycast'
+import { labelsBelow } from '../lib/labelBelow'
 
 const anchor = new Vector3()
 
@@ -38,6 +39,9 @@ export default function SelectionCallout3D({ id }: { id: string }) {
 
   const sig = useRef(itemKey(id, item))
 
+  // 지게차는 기준점을 장비 아랫면(바닥)에 두고, 리더선 · 카드는 그대로 위로 뜬다
+  const below = labelsBelow(id)
+
   useFrame(() => {
     const next = itemOf(id)
 
@@ -51,7 +55,9 @@ export default function SelectionCallout3D({ id }: { id: string }) {
 
     const target = equipmentById(id)
 
-    if (!target || !group.current || !equipmentTop(target, anchor, 0)) return
+    if (!target || !group.current) return
+
+    if (!(below ? equipmentBottom(target, anchor, 0) : equipmentTop(target, anchor, 0))) return
 
     group.current.position.copy(anchor)
   })
@@ -62,7 +68,7 @@ export default function SelectionCallout3D({ id }: { id: string }) {
   return (
     <group ref={group}>
       <Html zIndexRange={[6, 0]} style={{ pointerEvents: 'none' }}>
-        {/* ㄱ자 리더선: 점에서 위로 LEADER_RISE, 오른쪽으로 LEADER_RUN 꺾인 뒤 카드 옆면 세로 가운데에 붙는다 (상세 · 스캔 콜아웃과 같은 길이) */}
+        {/* ㄱ자 리더선: 점(지게차는 바닥)에서 위로 LEADER_RISE, 오른쪽으로 LEADER_RUN 꺾인 뒤 카드 옆면 세로 가운데에 붙는다 (상세 · 스캔 콜아웃과 같은 길이) */}
         <div data-viewport-annotation="hide" className="relative">
           <svg className="pointer-events-none absolute top-0 left-0 overflow-visible" width={1} height={1}>
             <polyline

@@ -3,7 +3,7 @@ import { Group, Mesh, type Material, type MeshStandardMaterial } from 'three'
 
 import { FACTORY_GLB_URL } from '@/features/template'
 import { findGlbNode, stripLights } from '@/shared/lib/three/glbNode'
-import { receiveShadows } from '@/shared/lib/three/modelBounds'
+import { receiveShadows, staticShadows } from '@/shared/lib/three/modelBounds'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import type { TemplateProp } from '@/shared/types'
 
@@ -15,7 +15,10 @@ const FLOOR_MARKING = 'FloorMarking'
 /** factory.glb Enviroment 의 바닥 재질 */
 const GROUND = 'BG_Floor'
 
-const GROUND_OPACITY = 0.45
+const GROUND_OPACITY = 0.55
+
+/** 그림자를 받기만 하는 prop: 바닥 · 벽 · 지붕 셸과 바닥 표식. 셸이 드리우면 공장 안이 통째로 그늘진다 */
+const RECEIVE_ONLY_PROPS = new Set(['Enviroment', FLOOR_MARKING])
 
 const withOffset = (material: Material) => {
   const clone = material.clone()
@@ -75,8 +78,9 @@ function cloneProp(scene: Group, prop: TemplateProp) {
 
   if (prop.yaw !== undefined) node.rotation.set(0, prop.yaw, 0)
 
-  // 공장 구조물은 그림자 맵에 넣지 않고, 로봇 그림자만 받는다
-  receiveShadows(node)
+  // 철창 · 기둥 · 랙 등 가만히 있는 prop 은 고정 그림자 조명에만 드리운다 (한 번만 그림). 셸은 받기만 한다
+  if (RECEIVE_ONLY_PROPS.has(prop.node)) receiveShadows(node)
+  else staticShadows(node)
 
   if (prop.node === FLOOR_MARKING) liftFloorMarking(node)
 

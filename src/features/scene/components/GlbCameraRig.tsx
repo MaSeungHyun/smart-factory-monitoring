@@ -11,7 +11,7 @@ import { DEFAULT_ROBOT_ID, monitorView, useMonitorState, type MonitorViewState }
 import { uiStore } from '@/shared/stores/useUiStore'
 
 import { cameraArrival } from '../lib/cameraArrival'
-import { cameraBookmarks } from '../lib/cameraBookmarks'
+import { flyToCameraBookmark } from '../lib/cameraBookmarks'
 import { focusPose, zoomPose } from '../lib/focusPose'
 import { useSceneWarm } from '../lib/sceneWarm'
 import { glbCameraPose, type CameraPose } from '../lib/glbCameraPose'
@@ -32,6 +32,15 @@ const DURATION = 1.4
 
 /** 키보드 시점(1~9) 전환 비행 시간 (초) */
 const BOOKMARK_DURATION = 0.7
+
+/** 이동 후 회전: 현재 방향을 유지한 채 위치로 가는 시간 (초) */
+const MOVE_THEN_TURN_MOVE_DURATION = 0.5
+
+/** 이동 후 회전: 도착 후 목표를 바라보는 시간 (초) */
+const MOVE_THEN_TURN_TURN_DURATION = 0.35
+
+/** 이동 후 회전: 이미 가까우면 이동 단계를 건너뛴다 (m) */
+const MOVE_THEN_TURN_MIN_DISTANCE = 0.05
 
 /** 시점 북마크 키 (윗줄 숫자 + 숫자패드 1~9). NumLock 과 무관하게 물리 키로 판별 */
 const BOOKMARK_KEY = /^(?:Digit|Numpad)([1-9])$/
@@ -84,6 +93,8 @@ interface Flight {
   /** 타깃 기준 카메라 오프셋 (구면 좌표). 회전·고도·거리를 같이 보간해 도착 후 도는 일이 없게 한다 */
   fromOrbit: Spherical
   toOrbit: Spherical
+  /** 이 구간이 끝나면 이어서 시작할 다음 비행 */
+  next?: { to: CameraPose; duration: number; arc: boolean }
 }
 
 const scratchOffset = new Vector3()
@@ -563,15 +574,39 @@ export default function GlbCameraRig() {
       }
 
       if (command.kind === 'look') {
+        const goal = {
+          position: new Vector3(command.position[0], command.position[1], command.position[2]),
+          target: new Vector3(command.target[0], command.target[1], command.target[2]),
+        }
+
+        // 이동 후 회전: 현재 시선 방향을 유지한 채 직선으로 옮긴 다음, 제자리에서 목표를 본다
+        if (command.moveThenTurn) {
+          if (camera.position.distanceTo(goal.position) < MOVE_THEN_TURN_MIN_DISTANCE) {
+            fly(goal, MOVE_THEN_TURN_TURN_DURATION, false)
+
+            return
+          }
+
+          const lookOffset = orbit.target.clone().sub(camera.position)
+
+          fly(
+            {
+              position: goal.position.clone(),
+              target: goal.position.clone().add(lookOffset),
+            },
+            MOVE_THEN_TURN_MOVE_DURATION,
+            false,
+          )
+
+          if (flight.current) {
+            flight.current.next = { to: goal, duration: MOVE_THEN_TURN_TURN_DURATION, arc: false }
+          }
+
+          return
+        }
+
         // 북마크 전환은 타깃 둘레 호 보간 — 직선 lookAt 이 한쪽으로만 휙 도는 것을 막는다
-        fly(
-          {
-            position: new Vector3(command.position[0], command.position[1], command.position[2]),
-            target: new Vector3(command.target[0], command.target[1], command.target[2]),
-          },
-          BOOKMARK_DURATION,
-          true,
-        )
+        fly(goal, BOOKMARK_DURATION, true)
 
         return
       }
@@ -617,8 +652,6 @@ export default function GlbCameraRig() {
 
   useEffect(() => {
     // 1~9 (윗줄·숫자패드) = 템플릿 bookmarks[0~8], 빈 칸이면 무시
-    const bookmarks = cameraBookmarks()
-
     const onKey = (event: KeyboardEvent) => {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return
 
@@ -630,21 +663,9 @@ export default function GlbCameraRig() {
 
       if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || (field instanceof HTMLElement && field.isContentEditable)) return
 
-      if (monitorView.getState().view !== 'main') return
-
-      const bookmark = bookmarks[Number(match[1]) - 1]
-
-      if (!bookmark) return
+      if (!flyToCameraBookmark(Number(match[1]))) return
 
       event.preventDefault()
-
-      monitorView.getState().release()
-
-      cameraBus.request({
-        kind: 'look',
-        position: [bookmark.position[0], bookmark.position[1], bookmark.position[2]],
-        target: [bookmark.target[0], bookmark.target[1], bookmark.target[2]],
-      })
     }
 
     window.addEventListener('keydown', onKey)
@@ -825,7 +846,13 @@ export default function GlbCameraRig() {
 
     orbit.update()
 
-    if (active.elapsed >= active.duration) flight.current = null
+    if (active.elapsed >= active.duration) {
+      const queued = active.next
+
+      flight.current = null
+
+      if (queued) fly(queued.to, queued.duration, queued.arc)
+    }
   })
 
   return <OrbitControls ref={controls} makeDefault enableDamping={false} maxDistance={MAX_ZOOM_OUT_DISTANCE} onStart={() => monitorView.getState().release()} />

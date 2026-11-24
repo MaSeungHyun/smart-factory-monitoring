@@ -3,7 +3,9 @@ import { useMemo } from 'react'
 import { ChartNoAxesCombined, X } from 'lucide-react'
 
 import { RUN_TARGET, useDashboardView, usePlayback, usePlaybackPick } from '@/features/playback'
+import { flyToCameraBookmark } from '@/features/scene/lib/cameraBookmarks'
 import Card from '@/shared/components/Card'
+import { processStageCameraBookmark } from '@/shared/constants/processStageCamera'
 import SegmentProgressBar from '@/shared/components/SegmentProgressBar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/Tabs'
 import { formatNumber } from '@/shared/lib/format'
@@ -254,31 +256,58 @@ export default function DashboardDialog() {
                     <p className="text-title text-text-primary">공정 흐름</p>
 
                     <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
-                      {stages.map((stage) => (
-                        <div
-                          key={stage.id}
-                          className={cn(
-                            'rounded border p-2',
-                            stage.status === 'error'
-                              ? 'border-status-error/50 bg-status-error/10'
-                              : stage.status === 'warning'
-                                ? 'border-status-warning/40 bg-status-warning/10'
-                                : 'border-border-default bg-bg-surface-2',
-                          )}
-                        >
-                          <p className="text-caption text-text-secondary">{stage.name}</p>
+                      {stages.map((stage) => {
+                        const bookmark = processStageCameraBookmark(stage.id)
 
-                          <p className="mt-1 text-h2 tabular-nums text-text-primary">
-                            {formatNumber(stage.value)}
-                            <span className="ml-1 text-caption text-text-tertiary">{stage.unit}</span>
-                          </p>
+                        const className = cn(
+                          'rounded border p-2',
+                          bookmark && 'w-full cursor-pointer text-left',
+                          stage.status === 'error'
+                            ? 'border-status-error/50 bg-status-error/10'
+                            : stage.status === 'warning'
+                              ? 'border-status-warning/40 bg-status-warning/10'
+                              : 'border-border-default bg-bg-surface-2',
+                        )
 
-                          <p className="mt-1 flex justify-between text-caption text-text-tertiary">
-                            <span>{stage.statusLabel}</span>
-                            <span className="tabular-nums">{stage.percent}%</span>
-                          </p>
-                        </div>
-                      ))}
+                        const body = (
+                          <>
+                            <p className="text-caption text-text-secondary">{stage.name}</p>
+
+                            <p className="mt-1 text-h2 tabular-nums text-text-primary">
+                              {formatNumber(stage.value)}
+                              <span className="ml-1 text-caption text-text-tertiary">{stage.unit}</span>
+                            </p>
+
+                            <p className="mt-1 flex justify-between text-caption text-text-tertiary">
+                              <span>{stage.statusLabel}</span>
+                              <span className="tabular-nums">{stage.percent}%</span>
+                            </p>
+                          </>
+                        )
+
+                        if (!bookmark) {
+                          return (
+                            <div key={stage.id} className={className}>
+                              {body}
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <button
+                            key={stage.id}
+                            type="button"
+                            className={className}
+                            aria-label={`${stage.name} ${bookmark}번 카메라 시점으로 이동`}
+                            onClick={() => {
+                              dashboardDialogStore.getState().setOpen(false)
+                              flyToCameraBookmark(bookmark)
+                            }}
+                          >
+                            {body}
+                          </button>
+                        )
+                      })}
                     </div>
                   </Card>
 

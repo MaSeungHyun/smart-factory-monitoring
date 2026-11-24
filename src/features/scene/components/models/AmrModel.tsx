@@ -1,7 +1,7 @@
 import { useLayoutEffect } from 'react'
 import type { Object3D } from 'three'
 
-import { centerOnFloor } from '@/shared/lib/three/modelBounds'
+import { castShadows, centerOnFloor } from '@/shared/lib/three/modelBounds'
 import type { SceneEquipment } from '@/shared/types'
 
 import { BLOOM_LAYER } from '../../constants/bloomLayer'
@@ -10,10 +10,12 @@ import { useCloned } from '../../lib/useCloned'
 
 const FORKLIFT_ROLES = new Set(['forklift', 'rack'])
 
-/** 블룸은 이 메시만 탄다. 레이어 0 은 유지해서 일반 화면에도 보인다 */
+/** 블룸은 이 메시만 탄다. 레이어 0 은 유지해서 일반 화면에도 보인다. 움직이는 차량이라 그림자를 드리운다 */
 function BloomVehicle({ object }: { object: Object3D }) {
   useLayoutEffect(() => {
     object.traverse((node) => node.layers.enable(BLOOM_LAYER))
+
+    castShadows(object)
   }, [object])
 
   return <primitive object={object} />

@@ -34,3 +34,8 @@ export function unwrapDegrees(frames: (number[] | null | undefined)[]) {
 
   return frames
 }
+
+/** 라디안 각을 (-π, π] 로 감싼다: 두 각의 최단 회전 차이 */
+export function wrapAngle(angle: number) {
+  return Math.atan2(Math.sin(angle), Math.cos(angle))
+}

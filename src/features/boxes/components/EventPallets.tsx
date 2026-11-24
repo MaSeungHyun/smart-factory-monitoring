@@ -26,7 +26,7 @@ export default function EventPallets({ run, events }: { run: PlaybackRun; events
 
   const slots = useRef(new Map<string, Group | null>())
 
-  const scratch = useMemo(() => ({ parent: new Matrix4(), world: new Matrix4(), locals: new Map<PalletEvent, Matrix4>(), pose: [0, 0, 0, 0] }), [])
+  const scratch = useMemo(() => ({ parent: new Matrix4(), world: new Matrix4(), locals: new Map<PalletEvent, Matrix4>(), pose: [0, 0, 0, 0, 0] }), [])
 
   const applied = useRef(Number.NaN)
 
@@ -68,11 +68,13 @@ export default function EventPallets({ run, events }: { run: PlaybackRun; events
 
       if (!poseAt(list, time, scratch.pose)) continue
 
-      const [x, y, z, yaw] = scratch.pose
+      const [x, y, z, yaw, pitch = 0] = scratch.pose
 
       slot.position.set(x, y, z)
 
-      slot.rotation.set(0, yaw, 0)
+      slot.rotation.order = 'YXZ'
+
+      slot.rotation.set(pitch, yaw, 0)
     }
   })
 

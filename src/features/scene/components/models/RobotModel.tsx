@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo } from 'react'
 import { Group, Matrix4, type Object3D } from 'three'
 
 import { findGlbNode } from '@/shared/lib/three/glbNode'
-import { castShadows } from '@/shared/lib/three/modelBounds'
+import { castShadows, staticShadows } from '@/shared/lib/three/modelBounds'
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import type { SceneEquipment } from '@/shared/types'
 
@@ -20,7 +20,8 @@ function Pedestal({ kind }: { kind: keyof typeof PEDESTAL_URL }) {
   const { scene } = useGLTF(PEDESTAL_URL[kind])
 
   const model = useMemo(() => {
-    const clone = castShadows(scene.clone(true))
+    // 받침대는 움직이지 않는다: 고정 그림자에만 넣는다
+    const clone = staticShadows(scene.clone(true))
 
     clone.updateMatrixWorld(true)
 

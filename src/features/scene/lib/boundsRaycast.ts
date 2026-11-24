@@ -178,6 +178,17 @@ export function equipmentTop(object: Object3D, out: Vector3, lift: number) {
   return true
 }
 
+/** 장비 아랫면 중앙 (라벨 기준점을 바닥에 두는 장비용). drop 만큼 더 내린다 */
+export function equipmentBottom(object: Object3D, out: Vector3, drop: number) {
+  if (!equipmentWorldBox(object, worldBox)) return false
+
+  worldBox.getCenter(out)
+
+  out.y = worldBox.min.y - drop
+
+  return true
+}
+
 function localBox(host: Object3D) {
   const box = boxes.get(host)?.box
 

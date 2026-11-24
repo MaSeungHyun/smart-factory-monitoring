@@ -3,6 +3,8 @@ import { WebGLRenderer } from 'three'
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 
+import { prepareShadowDecals } from './shadowDecals'
+
 /**
  * 모든 GLB 로드는 여기를 거친다: KTX2(KHR_texture_basisu) 텍스처와 Meshopt 압축(factory.glb)을 디코딩.
  * Basis transcoder 는 public/basis/ 에서 제공.
@@ -57,9 +59,20 @@ const extendLoader: ExtendLoader = (loader) => {
  */
 const USE_DRACO = false
 
-/** drei useGLTF + KTX2/Meshopt */
+/** 그림자 판 손질을 마친 GLB 원본 (캐시된 같은 scene 에는 한 번만) */
+const prepared = new WeakSet<object>()
+
+/** drei useGLTF + KTX2/Meshopt. 구운 그림자 판은 바닥 위에 그리도록 순서를 올린다 */
 export function useGLTF(url: string) {
-  return useDreiGLTF(url, USE_DRACO, true, extendLoader)
+  const gltf = useDreiGLTF(url, USE_DRACO, true, extendLoader)
+
+  if (!prepared.has(gltf.scene)) {
+    prepareShadowDecals(gltf.scene)
+
+    prepared.add(gltf.scene)
+  }
+
+  return gltf
 }
 
 /** Canvas 밖 Suspense 에서도 같은 캐시 키로 먼저 받는다 */
