@@ -59,7 +59,8 @@ function revealMainWindow() {
   finishSplash().then(() => {
     if (!mainWindow || mainWindow.isDestroyed()) return
 
-    mainWindow.show()
+    // 작업 표시줄은 남기고 창이 있는 디스플레이의 작업 영역만큼 최대화한다 (F11 전체 화면이 아님)
+    showMaximized(mainWindow)
     mainWindow.focus()
 
     // 숨김 상태 로딩용으로 껐던 백그라운드 스로틀링을 원래대로 되돌린다
@@ -70,6 +71,14 @@ function revealMainWindow() {
     for (const resolve of revealWaiters) resolve()
     revealWaiters = []
   })
+}
+
+/** 숨은 메인 창을 최대화한 뒤 보여 준다. Windows 에서는 숨은 창에 maximize() 를 호출하면 바로 보이기도 해서, 보통 크기(1600x1000)가 한 프레임 깜빡이지 않게 최대화를 먼저 한다 */
+function showMaximized(win) {
+  if (win.isDestroyed()) return
+
+  if (!win.isMaximized()) win.maximize()
+  if (!win.isVisible()) win.show()
 }
 
 /** 스플래시 창에 100% 채우기를 요청하고 끝날 때까지 기다린다. 스플래시가 없거나 응답이 없으면 바로(또는 시간 초과 뒤) 넘어간다 */

@@ -1,7 +1,8 @@
 import { AlertCircle, CheckCircle2, Clock, Layers } from "lucide-react";
 
 import { Timeline } from "@/features/dashboard";
-import { playbackStore, usePlaybackPick } from "@/features/playback";
+import { usePlaybackPick } from "@/features/playback";
+import LiveBadge from "@/shared/components/LiveBadge";
 import { cn } from "@/shared/lib/cn";
 import { uiStore, useUi, type StatusFilter } from "@/shared/stores/useUiStore";
 
@@ -78,17 +79,7 @@ export default function WarehouseTitleRow({ counts }: Props) {
             </button>
           ))}
 
-          <button
-            type="button"
-            title={playing ? "일시정지" : "재생"}
-            onClick={() => playbackStore.getState().toggle()}
-            className="flex h-9 w-20 items-center justify-center gap-1 rounded bg-primary-fill text-label font-semibold text-text-primary hover:brightness-110"
-          >
-            <span
-              className={`size-1.5 rounded-full bg-text-primary ${playing ? "animate-pulse" : "opacity-40"}`}
-            />
-            {playing ? "LIVE" : "PAUSE"}
-          </button>
+          <LiveBadge playing={playing} />
         </div>
       </div>
 

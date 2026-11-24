@@ -19,7 +19,7 @@ export default function Tooltip({ content, children, side = 'bottom' }: TooltipP
         <TooltipPrimitive.Content
           side={side}
           sideOffset={6}
-          className="z-50 rounded border border-border-default bg-bg-surface px-2 py-1 text-caption text-text-primary shadow-lg"
+          className="tooltip-content z-50 rounded border border-border-default bg-bg-surface px-2 py-1 text-caption text-text-primary shadow-lg"
         >
           {content}
         </TooltipPrimitive.Content>

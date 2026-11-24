@@ -113,7 +113,8 @@ function statusOf(sample: EquipmentStateSample | undefined, faulted: boolean): [
   if (sample?.state === 'charging') return ['warning', '충전 중']
 
   if (sample?.battery !== undefined && sample.battery < LOW_BATTERY) {
-    return ['warning', `배터리 ${Math.round(sample.battery)}%`]
+    // 배터리 % 는 아래 막대에 있으니 배지는 짧게
+    return ['warning', '배터리 부족']
   }
 
   if (!sample || sample.state === 'idle') return ['warning', '대기']

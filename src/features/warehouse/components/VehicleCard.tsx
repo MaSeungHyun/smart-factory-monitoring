@@ -33,7 +33,7 @@ export default function VehicleCard({ vehicle, selected, onSelect }: Props) {
       onClick={() => onSelect(vehicle.id)}
       onDoubleClick={() => followEquipment(vehicle.id)}
       className={cn(
-        'flex h-[84px] w-full shrink-0 flex-col justify-between rounded border bg-bg-surface-2 px-3 py-2.5 text-left',
+        'flex h-[84px] w-full min-w-0 shrink-0 flex-col justify-between overflow-hidden rounded border bg-bg-surface-2 px-3 py-2.5 text-left',
         selected ? 'border-primary-on-dark bg-primary-fill/16' : 'border-transparent hover:border-border-default hover:bg-bg-surface',
       )}
     >
@@ -42,20 +42,20 @@ export default function VehicleCard({ vehicle, selected, onSelect }: Props) {
           <VehicleIcon category={vehicle.category} />
         </span>
 
-        <span className="min-w-0">
+        {/* 설명 칸은 남은 폭만 쓰고 넘치면 말줄임 (상태 배지를 밀어내지 않는다) */}
+        <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5 text-label font-semibold text-text-primary">
             {vehicle.code}
 
             {vehicle.mock && <MockBadge />}
           </span>
 
-          <span className="block truncate text-[11px] leading-4 text-text-tertiary">{vehicle.route}
-
-            {vehicle.utilization !== undefined && ` · 가동 ${Math.round(vehicle.utilization)}%`}
+          <span className="block truncate text-[11px] leading-4 text-text-tertiary" title={vehicle.route}>
+            {vehicle.route}
           </span>
         </span>
 
-        <span className="ml-auto">
+        <span className="ml-auto shrink-0">
           <StatusBadge tone={vehicle.tone} label={vehicle.statusLabel} />
         </span>
       </div>
@@ -65,9 +65,9 @@ export default function VehicleCard({ vehicle, selected, onSelect }: Props) {
 
         <span className="w-12 shrink-0 text-text-secondary">{rack ? vehicle.usedSlots : `${vehicle.speed} m/s`}</span>
 
-        <SegmentProgressBar value={vehicle.percent} count={30} height={8} fillClassName={barFill(vehicle)} className="flex-1" />
+        <SegmentProgressBar value={vehicle.percent} count={30} height={8} fillClassName={barFill(vehicle)} className="min-w-0 flex-1" />
 
-        <span className="w-9 shrink-0 text-right font-semibold text-text-primary"><AnimatedNumber value={vehicle.percent} suffix="%" /></span>
+        <span className="w-10 shrink-0 text-right font-semibold text-text-primary"><AnimatedNumber value={vehicle.percent} suffix="%" /></span>
       </div>
     </button>
   )

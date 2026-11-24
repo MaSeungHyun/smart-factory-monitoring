@@ -4,7 +4,9 @@ import AnimatedNumber from '@/shared/components/AnimatedNumber'
 import { RUN_TARGET, useContinuousCount, useKpiGetter } from '@/features/playback'
 import { ArrowDownToLine, ArrowUpFromLine, ClipboardList, Layers, ScanLine, Truck, Workflow } from 'lucide-react'
 
+import { flyToCameraBookmark } from '@/features/scene/lib/cameraBookmarks'
 import SegmentBar from '@/shared/components/SegmentBar'
+import { processStageCameraBookmark } from '@/shared/constants/processStageCamera'
 import { withThroughputBase } from '@/shared/constants/throughputBase'
 import StatusBadge from '@/shared/components/StatusBadge'
 import { cn } from '@/shared/lib/cn'
@@ -41,17 +43,20 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
 
   const percent = useKpiGetter(isOutbound ? undefined : stage.percentKey, isOutbound ? outboundPercent : stage.percent)
 
-  return (
-    <div
-      className={cn(
-        'flex min-w-0 flex-col rounded border bg-bg-surface-2 p-3.5',
-        stage.status === 'error'
-          ? 'border-status-error bg-status-error/16'
-          : stage.status === 'warning'
-            ? 'border-status-warning/50 bg-status-warning/10'
-            : 'border-border-default',
-      )}
-    >
+  const bookmark = processStageCameraBookmark(stage.id)
+
+  const className = cn(
+    'flex min-w-0 flex-col rounded border bg-bg-surface-2 p-3.5',
+    bookmark && 'h-full w-full cursor-pointer text-left',
+    stage.status === 'error'
+      ? 'border-status-error bg-status-error/16'
+      : stage.status === 'warning'
+        ? 'border-status-warning/50 bg-status-warning/10'
+        : 'border-border-default',
+  )
+
+  const body = (
+    <>
       <div className="flex items-center gap-2 text-label font-medium text-text-secondary">
         <Icon size={14} />
 
@@ -73,6 +78,19 @@ export default function ProcessStageCard({ stage }: { stage: ProcessStage }) {
       </div>
 
       <SegmentBar percent={percent} tone={stage.status} segments={35} className="mt-2" />
-    </div>
+    </>
+  )
+
+  if (!bookmark) return <div className={className}>{body}</div>
+
+  return (
+    <button
+      type="button"
+      className={className}
+      aria-label={`${stage.name} ${bookmark}번 카메라 시점으로 이동`}
+      onClick={() => flyToCameraBookmark(bookmark)}
+    >
+      {body}
+    </button>
   )
 }

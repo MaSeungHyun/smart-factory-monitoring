@@ -1,6 +1,7 @@
 import { AlertCircle, AlertTriangle, CheckCircle2, Layers } from "lucide-react";
 
-import { useDashboardView } from "@/features/playback";
+import { useDashboardView, usePlaybackPick } from "@/features/playback";
+import LiveBadge from "@/shared/components/LiveBadge";
 import { ToggleGroup, ToggleGroupItem } from "@/shared/components/ui/ToggleGroup";
 import Tooltip from "@/shared/components/ui/Tooltip";
 import { cn } from "@/shared/lib/cn";
@@ -10,6 +11,8 @@ import { STATUS_COUNTS } from "../data/dashboard.mock";
 
 export default function MonitorToolbar() {
   const view = useDashboardView();
+
+  const playing = usePlaybackPick((snap) => snap.playing);
 
   const { statusFilter } = useUi();
 
@@ -83,6 +86,8 @@ export default function MonitorToolbar() {
           </Tooltip>
         ))}
         </ToggleGroup>
+
+        <LiveBadge playing={playing} />
       </div>
     </div>
   );

@@ -47,10 +47,10 @@ export function AnimatedList(props: Omit<HTMLMotionProps<'div'>, 'variants' | 'i
   return <motion.div {...props} variants={listVariants} />
 }
 
-/** 카드 한 장. 단일 셀 grid 로 감싸 원래 카드가 칸 전체를 채우게 둔다 */
+/** 카드 한 장. 단일 셀 grid 로 감싸 원래 카드가 칸 전체를 채우게 둔다. 열을 minmax(0,1fr) 로 고정해 긴 내용이 칸을 넓히지 않게 한다 */
 export function AnimatedItem({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <motion.div variants={itemVariants} className={className ?? 'grid min-h-0 min-w-0'}>
+    <motion.div variants={itemVariants} className={className ?? 'grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)]'}>
       {children}
     </motion.div>
   )

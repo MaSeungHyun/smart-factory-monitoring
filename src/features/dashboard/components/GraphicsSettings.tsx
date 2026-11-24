@@ -29,6 +29,16 @@ export default function GraphicsSettings() {
 
   const [open, setOpen] = useState(false)
 
+  const isWebGPU = graphics.renderer === 'webgpu'
+
+  const handleClickAmrBloom = () => {
+    if (isWebGPU) {
+      return
+    }
+
+    graphicsStore.getState().setAmrBloom(!graphics.amrBloom)
+  }
+
   return (
     <div className="mt-auto">
       <Popover open={open} onOpenChange={setOpen}>
@@ -73,7 +83,7 @@ export default function GraphicsSettings() {
             onClick={() => graphicsStore.getState().setAntialias(!graphics.antialias)}
           />
 
-          <Toggle label="AMR Bloom" checked={graphics.amrBloom} onClick={() => graphicsStore.getState().setAmrBloom(!graphics.amrBloom)} />
+          <Toggle disabled={isWebGPU} label="AMR Bloom" checked={graphics.amrBloom} onClick={handleClickAmrBloom} />
 
           <Field label="렌더러">
             <Select
@@ -101,9 +111,9 @@ export default function GraphicsSettings() {
   )
 }
 
-function Toggle({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
+function Toggle({ label, checked, onClick, disabled }: { label: string; checked: boolean; onClick: () => void; disabled?: boolean }) {
   return (
-    <div className="flex h-11 items-center justify-between rounded border border-border-default bg-bg-surface-2 px-3">
+    <div className={cn("flex h-11 items-center justify-between rounded border border-border-default bg-bg-surface-2 px-3", disabled ? 'opacity-50 cursor-not-allowed' : '')}>
       <span className="text-label font-semibold text-text-primary">{label}</span>
 
       <button
@@ -111,8 +121,9 @@ function Toggle({ label, checked, onClick }: { label: string; checked: boolean; 
         role="switch"
         aria-checked={checked}
         aria-label={label}
+        disabled={disabled}
         onClick={onClick}
-        className={cn('relative h-6 w-11 rounded-full', checked ? 'bg-primary-fill' : 'bg-bg-base')}
+        className={cn('relative h-6 w-11 rounded-full', checked ? 'bg-primary-fill' : 'bg-bg-base', disabled ? 'cursor-not-allowed' : '')}
       >
         <span className={cn('absolute top-0.5 size-5 rounded-full bg-text-primary', checked ? 'left-5' : 'left-0.5')} />
       </button>

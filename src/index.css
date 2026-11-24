@@ -179,6 +179,27 @@ body {
   }
 }
 
+/* 툴팁: 짧게 페이드 인 (ease-out, 오버슈트 없음) */
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.tooltip-content {
+  animation: tooltip-fade-in 150ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip-content {
+    animation: none;
+  }
+}
+
 /* sonner 토스트를 창이 아닌 3D 뷰포트 기준으로 배치 */
 .viewport-toaster [data-sonner-toaster] {
   position: absolute;

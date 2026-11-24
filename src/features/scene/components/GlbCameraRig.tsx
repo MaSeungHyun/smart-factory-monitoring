@@ -11,7 +11,7 @@ import { DEFAULT_ROBOT_ID, monitorView, useMonitorState, type MonitorViewState }
 import { uiStore } from '@/shared/stores/useUiStore'
 
 import { cameraArrival } from '../lib/cameraArrival'
-import { cameraBookmarks } from '../lib/cameraBookmarks'
+import { flyToCameraBookmark } from '../lib/cameraBookmarks'
 import { focusPose, zoomPose } from '../lib/focusPose'
 import { useSceneWarm } from '../lib/sceneWarm'
 import { glbCameraPose, type CameraPose } from '../lib/glbCameraPose'
@@ -617,8 +617,6 @@ export default function GlbCameraRig() {
 
   useEffect(() => {
     // 1~9 (윗줄·숫자패드) = 템플릿 bookmarks[0~8], 빈 칸이면 무시
-    const bookmarks = cameraBookmarks()
-
     const onKey = (event: KeyboardEvent) => {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return
 
@@ -630,21 +628,9 @@ export default function GlbCameraRig() {
 
       if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || (field instanceof HTMLElement && field.isContentEditable)) return
 
-      if (monitorView.getState().view !== 'main') return
-
-      const bookmark = bookmarks[Number(match[1]) - 1]
-
-      if (!bookmark) return
+      if (!flyToCameraBookmark(Number(match[1]))) return
 
       event.preventDefault()
-
-      monitorView.getState().release()
-
-      cameraBus.request({
-        kind: 'look',
-        position: [bookmark.position[0], bookmark.position[1], bookmark.position[2]],
-        target: [bookmark.target[0], bookmark.target[1], bookmark.target[2]],
-      })
     }
 
     window.addEventListener('keydown', onKey)

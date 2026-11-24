@@ -9,6 +9,7 @@ import {
 
 import GraphicsSettings from "./GraphicsSettings";
 
+import Tooltip from "@/shared/components/ui/Tooltip";
 import { cn } from "@/shared/lib/cn";
 import {
   useMonitorView,
@@ -17,11 +18,11 @@ import {
 import { openView } from "@/shared/lib/equipmentActions";
 import { dashboardDialogStore, useDashboardDialog } from "@/shared/stores/useDashboardDialogStore";
 
-const NAV_ITEMS: { id: string; icon: typeof Box; view?: MonitorView }[] = [
-  { id: "main", icon: LayoutGrid, view: "main" },
-  { id: "equipment", icon: Cpu, view: "robot" },
-  { id: "scan", icon: ScanLine, view: "scan" },
-  { id: "storage", icon: Warehouse, view: "warehouse" },
+const NAV_ITEMS: { id: string; icon: typeof Box; label: string; view?: MonitorView }[] = [
+  { id: "main", icon: LayoutGrid, label: "공정 상세보기", view: "main" },
+  { id: "equipment", icon: Cpu, label: "작업 설비 상세보기", view: "robot" },
+  { id: "scan", icon: ScanLine, label: "스캐너 상세보기", view: "scan" },
+  { id: "storage", icon: Warehouse, label: "적재 현황 상세보기", view: "warehouse" },
 ];
 
 export default function IconRail() {
@@ -39,42 +40,45 @@ export default function IconRail() {
         className="mt-2.5 mb-3.5 size-11"
       />
 
-      {NAV_ITEMS.map(({ id, icon: Icon, view }) => (
-        <button
-          key={id}
-          type="button"
-          aria-pressed={view === current && !dashboardOpen}
-          onClick={() => {
-            dashboardDialogStore.getState().setOpen(false)
+      {NAV_ITEMS.map(({ id, icon: Icon, label, view }) => (
+        <Tooltip key={id} content={label} side="right">
+          <button
+            type="button"
+            aria-label={label}
+            aria-pressed={view === current && !dashboardOpen}
+            onClick={() => {
+              dashboardDialogStore.getState().setOpen(false)
 
-            view && openView(view)
-          }}
+              if (view) openView(view)
+            }}
+            className={cn(
+              "flex size-10 items-center justify-center rounded",
+              view === current && !dashboardOpen
+                ? "bg-primary-fill/16 text-primary-on-dark"
+                : "text-text-tertiary hover:text-text-secondary",
+            )}
+          >
+            <Icon size={24} />
+          </button>
+        </Tooltip>
+      ))}
+
+      <Tooltip content="대시보드" side="right">
+        <button
+          type="button"
+          aria-label="대시보드"
+          aria-pressed={dashboardOpen}
+          onClick={() => dashboardDialogStore.getState().toggle()}
           className={cn(
             "flex size-10 items-center justify-center rounded",
-            view === current && !dashboardOpen
+            dashboardOpen
               ? "bg-primary-fill/16 text-primary-on-dark"
               : "text-text-tertiary hover:text-text-secondary",
           )}
         >
-          <Icon size={24} />
+          <ChartNoAxesCombined size={24} />
         </button>
-      ))}
-
-      <button
-        type="button"
-        aria-label="대시보드"
-        aria-pressed={dashboardOpen}
-        title="대시보드"
-        onClick={() => dashboardDialogStore.getState().toggle()}
-        className={cn(
-          "flex size-10 items-center justify-center rounded",
-          dashboardOpen
-            ? "bg-primary-fill/16 text-primary-on-dark"
-            : "text-text-tertiary hover:text-text-secondary",
-        )}
-      >
-        <ChartNoAxesCombined size={24} />
-      </button>
+      </Tooltip>
 
       <GraphicsSettings />
     </nav>
