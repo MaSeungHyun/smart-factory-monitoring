@@ -1,6 +1,5 @@
 import agvUrl from '@/assets/models/AGV.glb?url'
 import amrUrl from '@/assets/models/AMR.glb?url'
-import doorUrl from '@/assets/models/door.glb?url'
 import forkliftUrl from '@/assets/models/Forklift.glb?url'
 import palletUrl from '@/assets/models/pallet.glb?url'
 import rackUrl from '@/assets/models/Rack.glb?url'
@@ -19,7 +18,6 @@ import transferForkliftUrl from '@/assets/models/Transfer_Forklift.glb?url'
 export const MODEL_URL = {
   agv: agvUrl,
   amr: amrUrl,
-  door: doorUrl,
   forklift: forkliftUrl,
   pallet: palletUrl,
   rack: rackUrl,

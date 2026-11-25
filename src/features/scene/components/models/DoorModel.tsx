@@ -4,8 +4,9 @@ import { Box3, DoubleSide, Mesh, type BufferGeometry, type Material, type MeshSt
 import { useGLTF } from '@/shared/lib/three/gltfLoader'
 import type { SceneEquipment } from '@/shared/types'
 
+import doorUrl from '@/assets/models/door.glb?url'
+
 import { DOOR_OPEN_RATIO } from '../../constants/modelPlacement'
-import { MODEL_URL } from '../../constants/modelUrls'
 
 interface Panel {
   geometry: BufferGeometry
@@ -13,9 +14,10 @@ interface Panel {
   height: number
 }
 
-/** door.glb 첫 메시: 중심 정렬, 윗변에 매달고, 실내(+Z) 방향으로 회전 (doorGlb 와 동일) */
+/** 현재 미사용. 문은 factory.glb 의 wall_door 를 원래 위치에 표시한다.
+ *  door.glb 첫 메시: 중심 정렬, 윗변에 매달고, 실내(+Z) 방향으로 회전 (doorGlb 와 동일) */
 function useDoorPanel(): Panel | null {
-  const { scene } = useGLTF(MODEL_URL.door)
+  const { scene } = useGLTF(doorUrl)
 
   return useMemo(() => {
     let mesh: Mesh | undefined
