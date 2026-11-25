@@ -5,6 +5,7 @@ import { getExactTime, playbackStore } from '@/features/playback'
 import { scanRecords, type ScanRecord } from '@/features/scan/lib/scanDetail'
 import { findGripPoint } from '@/shared/lib/three/findGripPoint'
 import { renderSecondary } from '@/shared/lib/three/secondaryRender'
+import { clampViewport, viewportY } from '@/shared/lib/three/viewportOrigin'
 import type { PlaybackRun } from '@/shared/types/playback'
 
 import { AMR_DECK, BASE_PALLET_POINT, SCAN_TUNNEL_LIFT } from '../constants/modelPlacement'
@@ -331,7 +332,12 @@ function holeViewport(gl: WebGLRenderer, hole: HTMLElement) {
 
   gl.getSize(size)
 
-  if (canvasRect.width < 1 || canvasRect.height < 1 || holeRect.width < 2 || holeRect.height < 2) return null
+  // 패널이 접혔거나, 아직 레이아웃 전, 또는 캔버스와 안 겹치면 시저를 잡지 않는다
+  const overlapW = Math.min(holeRect.right, canvasRect.right) - Math.max(holeRect.left, canvasRect.left)
+
+  const overlapH = Math.min(holeRect.bottom, canvasRect.bottom) - Math.max(holeRect.top, canvasRect.top)
+
+  if (canvasRect.width < 1 || canvasRect.height < 1 || holeRect.width <= 0 || holeRect.height <= 0 || overlapW <= 0 || overlapH <= 0) return null
 
   const scaleX = size.x / canvasRect.width
 
@@ -339,15 +345,20 @@ function holeViewport(gl: WebGLRenderer, hole: HTMLElement) {
 
   const x = (holeRect.left - canvasRect.left) * scaleX
 
-  const y = (canvasRect.bottom - holeRect.bottom) * scaleY
+  const yFromBottom = (canvasRect.bottom - holeRect.bottom) * scaleY
 
   const width = holeRect.width * scaleX
 
   const height = holeRect.height * scaleY
 
-  if (width < 2 || height < 2) return null
+  // WebGL 은 왼쪽 아래, WebGPU 는 왼쪽 위 원점. 단위는 getSize (논리 픽셀)
+  const y = viewportY(gl, yFromBottom, height, size.y)
 
-  return { x, y, width, height, cssWidth: holeRect.width, cssHeight: holeRect.height }
+  const rect = clampViewport(x, y, width, height, size.x, size.y)
+
+  if (!rect) return null
+
+  return { ...rect, cssWidth: holeRect.width, cssHeight: holeRect.height }
 }
 
 function rememberBounds(mesh: InstancedMesh) {
@@ -737,13 +748,14 @@ export function drawVision(gl: WebGLRenderer, scene: Scene) {
 
   const scissorTest = gl.getScissorTest()
 
-  gl.setScissorTest(true)
-
-  gl.setViewport(view.x, view.y, view.width, view.height)
-
-  gl.setScissor(view.x, view.y, view.width, view.height)
-
+  // setViewport / setScissor 가 실패해도 메인 렌더 시저를 복구한다
   try {
+    gl.setScissorTest(true)
+
+    gl.setViewport(view.x, view.y, view.width, view.height)
+
+    gl.setScissor(view.x, view.y, view.width, view.height)
+
     withoutSensorChrome(scene, () => withRealMaterials(() => renderSecondary(gl, scene, () => gl.render(scene, camera))), kind === 'robot' && !overheadPlan ? subject : null)
   } finally {
     gl.setViewport(savedView)
