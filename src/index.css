@@ -178,3 +178,8 @@ body {
     background-position: -100% 0;
   }
 }
+/* sonner 토스트를 창이 아닌 3D 뷰포트 기준으로 배치 */
+.viewport-toaster [data-sonner-toaster] {
+  position: absolute;
+  z-index: 45;
+}

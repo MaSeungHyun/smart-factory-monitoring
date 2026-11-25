@@ -22,6 +22,8 @@ interface AlertItemRowProps {
   /** 클릭: 해당 장비 선택 + 카메라 이동 */
   onOpen?: () => void;
   selected?: boolean;
+  /** 감싸는 요소. 목록 밖(토스트 등)에서 쓸 때는 div */
+  as?: "li" | "div";
 }
 
 export default function AlertItemRow({
@@ -29,13 +31,14 @@ export default function AlertItemRow({
   onAck,
   onOpen,
   selected,
+  as: Root = "li",
 }: AlertItemRowProps) {
   const Icon = SEVERITY_ICON[alert.severity];
 
   return (
-    <li
+    <Root
       className={cn(
-        "flex h-16 items-center gap-2 rounded border-l-2 bg-bg-surface-2 px-3.5 transition-colors duration-150",
+        "flex h-16 items-center gap-2 rounded border-l-2 bg-bg-surface-2/90 px-3.5 transition-colors duration-150",
         TONE_BORDER[alert.severity],
         onOpen && "cursor-pointer hover:bg-bg-surface",
         selected && "bg-primary-fill/16 ring-1 ring-primary-on-dark",
@@ -63,6 +66,6 @@ export default function AlertItemRow({
           {alert.time}
         </p>
       </button>
-    </li>
+    </Root>
   );
 }
