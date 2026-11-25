@@ -2,16 +2,13 @@ import { Vector3 } from 'three'
 
 import type { CameraPose } from './glbCameraPose'
 
-/**
- * 창고 · AMR 탑뷰: factory.glb 에 창고 전용 카메라가 없어 직접 프레이밍.
- * 랙 구역(z -45 ~ -5) ~ 출고/입하 구역(z 60)을 가로로 놓도록 +x 쪽에서 아래를 내려다봄.
- */
-const TARGET = new Vector3(-2, 0, -14)
+/** 랙 적재 상세(왼쪽 레일 창고 보기) 기본 시점 */
+const POSITION = new Vector3(12.559, 3.269, -49.166)
 
-const OFFSET = new Vector3(12, 60, 0)
+const TARGET = new Vector3(8.839, 2.971, -37.401)
 
 const DEFAULT_FOV = 45
 
 export function warehouseCameraPose(fov = DEFAULT_FOV): CameraPose {
-  return { position: TARGET.clone().add(OFFSET), target: TARGET.clone(), fov }
+  return { position: POSITION.clone(), target: TARGET.clone(), fov }
 }

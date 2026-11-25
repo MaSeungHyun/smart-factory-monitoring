@@ -1,5 +1,4 @@
 import { FACTORY_TEMPLATE } from '@/features/template'
-import { cameraBookmarkMoveThenTurn } from '@/shared/constants/processStageCamera'
 import { cameraBus } from '@/shared/stores/cameraBus'
 import { monitorView } from '@/shared/stores/useMonitorViewStore'
 import type { CameraView } from '@/shared/types'
@@ -31,21 +30,23 @@ export function cameraBookmark(slot: number) {
   return cameraBookmarks()[slot - 1] ?? null
 }
 
-/** 숫자 키 1~9 를 누른 것과 같게 해당 시점으로 비행. 메인 관제가 아니거나 빈 칸이면 무시 */
+/** 숫자 키 1~9 를 누른 것과 같게 해당 시점으로 비행. 빈 칸이면 무시. 다른 탭이면 메인 관제로 바꾼 뒤 비행한다 */
 export function flyToCameraBookmark(slot: number) {
-  if (monitorView.getState().view !== 'main') return false
-
   const bookmark = cameraBookmark(slot)
 
   if (!bookmark) return false
 
-  monitorView.getState().release()
+  const view = monitorView.getState()
+
+  // 장비 상세 · 스캔 · 창고 탭에서도 공장 메인 화면으로 전환한 뒤 북마크로 비행한다
+  if (view.view !== 'main') view.set('main')
+
+  view.release()
 
   cameraBus.request({
     kind: 'look',
     position: [bookmark.position[0], bookmark.position[1], bookmark.position[2]],
-    target: [bookmark.target[0], bookmark.target[1], bookmark.target[2]],
-    moveThenTurn: cameraBookmarkMoveThenTurn(slot),
+    target: [bookmark.target[0], bookmark.target[1], bookmark.target[2]]
   })
 
   return true

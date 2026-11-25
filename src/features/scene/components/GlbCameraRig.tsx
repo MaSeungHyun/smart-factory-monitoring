@@ -30,17 +30,8 @@ const CLIP_NAME = 'main_camAction'
 /** 시점 이동 비행 시간 (초) */
 const DURATION = 1.4
 
-/** 키보드 시점(1~9) 전환 비행 시간 (초) */
+/** 키보드 시점(1~9) · 랙 적재 상세(창고 탭) 전환 비행 시간 (초) */
 const BOOKMARK_DURATION = 0.7
-
-/** 이동 후 회전: 현재 방향을 유지한 채 위치로 가는 시간 (초) */
-const MOVE_THEN_TURN_MOVE_DURATION = 0.5
-
-/** 이동 후 회전: 도착 후 목표를 바라보는 시간 (초) */
-const MOVE_THEN_TURN_TURN_DURATION = 0.35
-
-/** 이동 후 회전: 이미 가까우면 이동 단계를 건너뛴다 (m) */
-const MOVE_THEN_TURN_MIN_DISTANCE = 0.05
 
 /** 시점 북마크 키 (윗줄 숫자 + 숫자패드 1~9). NumLock 과 무관하게 물리 키로 판별 */
 const BOOKMARK_KEY = /^(?:Digit|Numpad)([1-9])$/
@@ -93,8 +84,6 @@ interface Flight {
   /** 타깃 기준 카메라 오프셋 (구면 좌표). 회전·고도·거리를 같이 보간해 도착 후 도는 일이 없게 한다 */
   fromOrbit: Spherical
   toOrbit: Spherical
-  /** 이 구간이 끝나면 이어서 시작할 다음 비행 */
-  next?: { to: CameraPose; duration: number; arc: boolean }
 }
 
 const scratchOffset = new Vector3()
@@ -103,6 +92,16 @@ const scratchOrbit = new Spherical()
 
 function orbitOf(pose: CameraPose) {
   return new Spherical().setFromVector3(scratchOffset.subVectors(pose.position, pose.target))
+}
+
+/** 콘솔·클립보드용 북마크 자세. 템플릿 camera.bookmarks 와 같은 키, 소수점 3자리 */
+function cameraBookmarkSnapshot(camera: PerspectiveCamera, target: Vector3) {
+  const r = (value: number) => Math.round(value * 1000) / 1000
+
+  return {
+    position: camera.position.toArray().map(r),
+    target: target.toArray().map(r),
+  }
 }
 
 interface CameraClip {
@@ -348,6 +347,23 @@ function goalPose(state: MonitorViewState, main: CameraPose | null, robotCam: Ca
   return robotCameraPose(robotCam, reference, robot, state.angle)
 }
 
+/** 화면 전환 비행. 창고(랙)는 북마크와 같은 빠른 호 보간, 정면·측면·탑뷰만 더 짧게 */
+function flyToView(fly: (goal: CameraPose, duration?: number, arc?: boolean) => void, goal: CameraPose, state: MonitorViewState, angleOnly = false) {
+  if (angleOnly) {
+    fly(goal, ANGLE_DURATION, true)
+
+    return
+  }
+
+  if (state.view === 'warehouse') {
+    fly(goal, BOOKMARK_DURATION, true)
+
+    return
+  }
+
+  fly(goal)
+}
+
 /**
  * 카메라: 처음에는 main_camera.glb 의 main_camAction 을 한 번 재생한다.
  * 클립이 끝나면 마지막 프레임이 메인 홈이 되고 OrbitControls 가 열린다.
@@ -503,7 +519,7 @@ export default function GlbCameraRig() {
 
       const goal = goalPose(state, poses.main, poses.robot, scene)
 
-      if (goal) fly(goal)
+      if (goal) flyToView(fly, goal, state)
 
       return
     }
@@ -514,6 +530,9 @@ export default function GlbCameraRig() {
       seenView.current = state
 
       stopChase(chase, flight, false)
+
+      // 다른 탭에서 메인으로 오며 시점을 푼 경우(공정 흐름 카드 등): 이미 시작된 북마크 비행을 덮지 않는다
+      if (state.view === 'main' && state.free) return
     } else if (prev.free !== state.free) {
       // 직접 조작으로 시점 버튼만 풀린 경우: 카메라는 그대로 둔다
       seenView.current = state
@@ -527,8 +546,7 @@ export default function GlbCameraRig() {
 
     const angleOnly = prev.view === state.view && prev.robotId === state.robotId && prev.scannerId === state.scannerId && (prev.angle !== state.angle || prev.angleNonce !== state.angleNonce)
 
-    if (angleOnly) fly(goal, ANGLE_DURATION, true)
-    else fly(goal)
+    flyToView(fly, goal, state, angleOnly)
   }, [warm, get, poses, state, fly, clip, chase])
 
   useEffect(() => {
@@ -574,39 +592,15 @@ export default function GlbCameraRig() {
       }
 
       if (command.kind === 'look') {
-        const goal = {
-          position: new Vector3(command.position[0], command.position[1], command.position[2]),
-          target: new Vector3(command.target[0], command.target[1], command.target[2]),
-        }
-
-        // 이동 후 회전: 현재 시선 방향을 유지한 채 직선으로 옮긴 다음, 제자리에서 목표를 본다
-        if (command.moveThenTurn) {
-          if (camera.position.distanceTo(goal.position) < MOVE_THEN_TURN_MIN_DISTANCE) {
-            fly(goal, MOVE_THEN_TURN_TURN_DURATION, false)
-
-            return
-          }
-
-          const lookOffset = orbit.target.clone().sub(camera.position)
-
-          fly(
-            {
-              position: goal.position.clone(),
-              target: goal.position.clone().add(lookOffset),
-            },
-            MOVE_THEN_TURN_MOVE_DURATION,
-            false,
-          )
-
-          if (flight.current) {
-            flight.current.next = { to: goal, duration: MOVE_THEN_TURN_TURN_DURATION, arc: false }
-          }
-
-          return
-        }
-
         // 북마크 전환은 타깃 둘레 호 보간 — 직선 lookAt 이 한쪽으로만 휙 도는 것을 막는다
-        fly(goal, BOOKMARK_DURATION, true)
+        fly(
+          {
+            position: new Vector3(command.position[0], command.position[1], command.position[2]),
+            target: new Vector3(command.target[0], command.target[1], command.target[2]),
+          },
+          BOOKMARK_DURATION,
+          true,
+        )
 
         return
       }
@@ -738,11 +732,19 @@ export default function GlbCameraRig() {
   }, [])
 
   useEffect(() => {
-    if (!import.meta.env.DEV) return
-
-    // 개발용: P 키로 현재 카메라 자세를 콘솔에 출력
+    // Shift+C: 현재 자세를 북마크 JSON 으로 콘솔에 찍고 클립보드에 복사. 개발 모드 P 키는 화각까지 출력
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'p' && event.key !== 'P') return
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
+
+      const shiftC = event.shiftKey && event.code === 'KeyC'
+
+      const pKey = import.meta.env.DEV && !event.shiftKey && (event.key === 'p' || event.key === 'P')
+
+      if (!shiftC && !pKey) return
+
+      const field = event.target
+
+      if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || (field instanceof HTMLElement && field.isContentEditable)) return
 
       const { camera } = get()
 
@@ -750,11 +752,23 @@ export default function GlbCameraRig() {
 
       if (!(camera instanceof PerspectiveCamera) || !orbit) return
 
-      const r = (v: number) => Math.round(v * 1000) / 1000
+      event.preventDefault()
 
-      const pose = { position: camera.position.toArray().map(r), target: orbit.target.toArray().map(r), fov: r(camera.fov) }
+      const pose = cameraBookmarkSnapshot(camera, orbit.target)
 
-      console.log('[camera pose]', JSON.stringify(pose))
+      if (shiftC) {
+        const line = JSON.stringify(pose)
+
+        console.log('[camera]', line)
+
+        void navigator.clipboard?.writeText(line).catch(() => {})
+
+        return
+      }
+
+      const r = (value: number) => Math.round(value * 1000) / 1000
+
+      console.log('[camera pose]', JSON.stringify({ ...pose, fov: r(camera.fov) }))
     }
 
     window.addEventListener('keydown', onKey)
@@ -810,7 +824,7 @@ export default function GlbCameraRig() {
 
           const goal = goalPose(now, poses.main, poses.robot, scene)
 
-          if (goal) fly(goal)
+          if (goal) flyToView(fly, goal, now)
         }
       } else {
         return
@@ -846,13 +860,7 @@ export default function GlbCameraRig() {
 
     orbit.update()
 
-    if (active.elapsed >= active.duration) {
-      const queued = active.next
-
-      flight.current = null
-
-      if (queued) fly(queued.to, queued.duration, queued.arc)
-    }
+    if (active.elapsed >= active.duration) flight.current = null
   })
 
   return <OrbitControls ref={controls} makeDefault enableDamping={false} maxDistance={MAX_ZOOM_OUT_DISTANCE} onStart={() => monitorView.getState().release()} />
